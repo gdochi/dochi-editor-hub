@@ -1,0 +1,18 @@
+{
+  "package": "trainer",
+  "version": "1.0.2",
+  "editor": "trainer",
+  "mc_version": "fabric_1_21_1",
+  "description": "Trainer package sample for Fabric 1.21.1",
+  "entry": "trainer.js",
+  "files": [
+    {
+      "source": "trainer_1.0.2.js",
+      "install_as": "trainer.js"
+    },
+    {
+      "source": "trainer_1.0.2.html",
+      "install_as": "trainer.html"
+    }
+  ]
+}

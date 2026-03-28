@@ -1,0 +1,16 @@
+{
+  "id": "dochi_lib",
+  "name": "Dochi Library",
+  "version": "0.1.0",
+  "description": "Versioned script package library for Dochi editors",
+  "packages": [
+    {
+      "package": "trainer",
+      "editor": "trainer",
+      "mc_version": "fabric_1_21_1",
+      "versions": [
+        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
+      ]
+    }
+  ]
+}
