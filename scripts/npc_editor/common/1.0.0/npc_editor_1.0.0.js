@@ -2,7 +2,7 @@
 // @version 1.0.0
 // @file npc_editor.js
 
-var CFG={HTML:"npc_browser_nbt_tabbed_v16.html",CMD_OPEN:"dochieditor",CMD_LIST:"dochieditorlist",CMD_ADD:"dochieditoradd",CMD_DELETE:"dochieditordelete"};
+var CFG={HTML:"npc_editor.html",CMD_OPEN:"dochieditor",CMD_LIST:"dochieditorlist",CMD_ADD:"dochieditoradd",CMD_DELETE:"dochieditordelete"};
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
 var ADMIN_CACHE=null;
 
