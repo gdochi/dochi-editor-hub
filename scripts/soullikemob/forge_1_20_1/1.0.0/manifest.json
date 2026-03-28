@@ -1,0 +1,18 @@
+{
+  "package": "soullikemob",
+  "version": "1.0.0",
+  "editor": "soullikemob",
+  "mc_version": "fabric_1_21_1",
+  "description": "Trainer package sample for Fabric 1.21.1",
+  "entry": "soullikemob.js",
+  "files": [
+    {
+      "source": "soullikemob_1.0.0.js",
+      "install_as": "soullikemob.js"
+    },
+    {
+      "source": "soullikemob_1.0.0.html",
+      "install_as": "soullikemob.html"
+    }
+  ]
+}
