@@ -2,11 +2,12 @@
 // @version 1.0.0
 // @file npc_editor.js
 
-var CFG={HTML:"html/npc_editor.html",CMD_OPEN:"dochieditor",CMD_LIST:"dochieditorlist",CMD_ADD:"dochieditoradd",CMD_DELETE:"dochieditordelete"};
+var CFG={HTML:"html/npc_editor.html"};
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
 var ADMIN_CACHE=null;
 
-function init(e){ensureAdminFile();resetEditorCommand();createEditorCommand();}
+function init(e){var existed=adminFileExists();ensureAdminFile();if(!existed&&e&&e.player){notifyPlayer(e.player,'Initial setup: type "@npceditor" in chat to launch the NPC Editor.');tryOpenEditor(e.player);}}
+function chat(e){if(String(e.message)!=="@npceditor")return;tryOpenEditor(e.player);e.setCanceled(true);}
 
 function htmlGuiEvent(e){var data={};try{if(e.data&&String(e.data)!=="")data=JSON.parse(String(e.data));}catch(err){print("[NPC_BROWSER] JSON parse failed: "+err);data={};}
 if(e.eventName==="admin_bootstrap"){onAdminBootstrap(e,data);return;}
@@ -84,64 +85,11 @@ function onAdminRemove(e,data){var res=removeAdminEntry(e.player,data);pushBrows
 function onAdminReset(e,data){var res=resetAdminFile(e.player);pushBrowser(e.player,"adminActionResult",res);pushBrowser(e.player,"adminState",buildClientAdminState(e.player,ADMIN_CACHE||defaultAdminData()));}
 function onKeybindSave(e,data){var res=savePlayerKeybind(e.player,data);pushBrowser(e.player,"adminActionResult",res);pushAdminState(e.player);}
 
-function tryOpenEditor(player){var guard,payload;guard=getOpenGuard(player);if(!guard.ok){notifyPlayer(player,guard.error||"No permission");return false;}payload=JSON.stringify(buildNpcBrowserInit(player));return openHtmlGuiForPlayer(player,payload);}
-function getOpenGuard(player){var admin=touchAdminDataForPlayer(player);if(!admin.initialized)return {ok:true,admin:admin};if(isOwner(player,admin)||isAdmin(player,admin))return {ok:true,admin:admin};return {ok:false,error:"No permission",admin:admin};}
+function tryOpenEditor(player){var guard,payload;if(!adminFileExists()){payload=JSON.stringify(buildNpcBrowserInit(player));return openHtmlGuiForPlayer(player,payload);}guard=getOpenGuard(player);if(!guard.ok){notifyPlayer(player,guard.error||"No permission");return false;}payload=JSON.stringify(buildNpcBrowserInit(player));return openHtmlGuiForPlayer(player,payload);}
+function getOpenGuard(player){if(!adminFileExists())return {ok:true,admin:defaultAdminData()};var admin=touchAdminDataForPlayer(player);if(!admin.initialized)return {ok:true,admin:admin};if(isOwner(player,admin)||isAdmin(player,admin))return {ok:true,admin:admin};return {ok:false,error:"No permission",admin:admin};}
 function pushAdminState(player){pushBrowser(player,"adminState",getClientAdminState(player));}
 function getClientAdminState(player){return buildClientAdminState(player,touchAdminDataForPlayer(player));}
 function buildClientAdminState(player,admin){admin=admin||defaultAdminData();return {initialized:!!admin.initialized,owner:admin.owner||emptyAdminEntry(),admins:admin.admins||[],players:listOnlinePlayers(player&&player.world?player.world:null),keybind:getPlayerKeybind(player),isOwner:isOwner(player,admin),isAdmin:isAdmin(player,admin),canOpen:!admin.initialized||isOwner(player,admin)||isAdmin(player,admin),canManageAdmins:isOwner(player,admin)};}
-function resetEditorCommand(){
-var worlds=API.getIWorlds(),world=worlds&&worlds.length?worlds[0]:null;
-if(!world)return;
-API.executeCommand(world,"/cnpcext command delete "+CFG.CMD_OPEN);
-API.executeCommand(world,"/cnpcext command delete "+CFG.CMD_LIST);
-API.executeCommand(world,"/cnpcext command delete "+CFG.CMD_ADD);
-API.executeCommand(world,"/cnpcext command delete "+CFG.CMD_DELETE);
-}
-function createEditorCommand(){
-var worlds=API.getIWorlds(),world=worlds&&worlds.length?worlds[0]:null;
-if(!world)return;
-API.executeCommand(world,"/cnpcext command create "+CFG.CMD_OPEN);
-API.executeCommand(world,"/cnpcext command create "+CFG.CMD_LIST);
-API.executeCommand(world,"/cnpcext command create "+CFG.CMD_ADD+" player:target");
-API.executeCommand(world,"/cnpcext command create "+CFG.CMD_DELETE+" string:target");
-}
-function customCommand(e){handleEditorCommand(e);}
-function handleEditorCommand(e){
-var name=safeCommandName(e),args=safeCommandArgs(e),player=e&&e.player?e.player:null;
-if(name===CFG.CMD_OPEN){
-tryOpenEditor(player);
-return;
-}
-if(name===CFG.CMD_LIST){handleListCommand(player);return;}
-if(name===CFG.CMD_ADD){handleAddCommand(player,args);return;}
-if(name===CFG.CMD_DELETE){handleDeleteCommand(player,args);return;}
-}
-function handleListCommand(player){
-var admin=touchAdminDataForPlayer(player);
-if(!admin.initialized){notifyPlayer(player,"Owner is not initialized. Open the editor and bootstrap owner first.");return;}
-if(!isOwner(player,admin)){notifyPlayer(player,"Owner only");return;}
-showAdminOverview(player,admin);
-}
-function handleAddCommand(player,args){
-var token=args.length?String(args[0]):"",admin=touchAdminDataForPlayer(player),entry,res;
-if(!admin.initialized){notifyPlayer(player,"Owner is not initialized. Open the editor and bootstrap owner first.");return;}
-if(!isOwner(player,admin)){notifyPlayer(player,"Owner only");return;}
-if(!token){showServerPlayerList(player);return;}
-entry=resolveOnlinePlayerTarget(player,token);
-if(!entry||!entry.uuid){notifyPlayer(player,"Usage: /"+CFG.CMD_ADD+" <player>");return;}
-res=addAdminEntry(player,entry);
-notifyPlayer(player,res.ok?"Admin added: "+(entry.name||entry.uuid):String(res.error||"Admin add failed"));
-}
-function handleDeleteCommand(player,args){
-var token=args.length?String(args[0]):"",admin=touchAdminDataForPlayer(player),entry,res;
-if(!admin.initialized){notifyPlayer(player,"Owner is not initialized. Open the editor and bootstrap owner first.");return;}
-if(!isOwner(player,admin)){notifyPlayer(player,"Owner only");return;}
-if(!token){showRemovableAdminList(player,admin);return;}
-entry=resolveExistingAdminTarget(token,admin);
-if(!entry||!entry.uuid){notifyPlayer(player,"Usage: /"+CFG.CMD_DELETE+" <adminName>");return;}
-res=removeAdminEntry(player,{uuid:entry.uuid});
-notifyPlayer(player,res.ok?"Admin deleted: "+(entry.name||entry.uuid):String(res.error||"Admin delete failed"));
-}
 function showAdminOverview(player,admin){
 showAdminList(player,admin);
 showServerPlayerList(player);
@@ -212,6 +160,7 @@ function keyPressed(e){var player=e&&e.player?e.player:null;if(!player)return;if
 function openHtmlGuiForPlayer(player,payload){cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);return true;}
 
 function getAdminFile(){var File=Java.type("java.io.File"),dirs=findAdminRoots(true),dir=dirs.length?dirs[0]:new File("customnpcs/scripts/admin");if(!dir.exists())dir.mkdirs();return new File(dir,"admin.json");}
+function adminFileExists(){return getAdminFile().exists();}
 function emptyAdminEntry(){return {uuid:"",name:""};}
 function defaultAdminData(){return {initialized:false,owner:emptyAdminEntry(),admins:[]};}
 function ensureAdminFile(){var file=getAdminFile(),data;if(!file.exists()){data=defaultAdminData();saveAdminData(data);ADMIN_CACHE=data;return data;}return loadAdminData();}
