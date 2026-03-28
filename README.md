@@ -4,7 +4,7 @@ Local package library for Dochi script distribution.
 
 ## Structure
 
-- Root `manifest.json` indexes packages.
+- Root `manifest.json` indexes packages!
 - Each version folder contains its own `manifest.json`.
 - Source files may keep versioned names.
 - Installed files can use fixed names through `install_as`.
