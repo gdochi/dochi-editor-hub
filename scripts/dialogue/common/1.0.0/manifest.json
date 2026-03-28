@@ -1,8 +1,10 @@
 {
+  "id": "dialogue/common/1.0.0",
   "package": "dialogue",
   "version": "1.0.0",
   "editor": "dialogue",
   "mc_version": "common",
+  "base_path": "scripts/dialogue/common/1.0.0",
   "description": "Dialogue package sample shared for Forge and Fabric",
   "entry": "dialogue.js",
   "files": [

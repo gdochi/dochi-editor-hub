@@ -3,13 +3,73 @@
   "name": "Dochi Library",
   "version": "0.1.0",
   "description": "Versioned script package library for Dochi editors",
+  "package_index": {
+    "trainer:fabric_1_21_1": {
+      "package": "trainer",
+      "editor": "trainer",
+      "mc_version": "fabric_1_21_1",
+      "latest": "1.0.2",
+      "versions": [
+        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
+        "scripts/trainer/fabric_1_21_1/1.0.1/manifest.json",
+        "scripts/trainer/fabric_1_21_1/1.0.2/manifest.json"
+      ]
+    },
+    "soullikemob:forge_1_20_1": {
+      "package": "soullikemob",
+      "editor": "soullikemob",
+      "mc_version": "forge_1_20_1",
+      "latest": "1.0.2",
+      "versions": [
+        "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
+        "scripts/soullikemob/forge_1_20_1/1.0.1/manifest.json",
+        "scripts/soullikemob/forge_1_20_1/1.0.2/manifest.json"
+      ]
+    },
+    "dialogue:common": {
+      "package": "dialogue",
+      "editor": "dialogue",
+      "mc_version": "common",
+      "latest": "1.0.2",
+      "versions": [
+        "scripts/dialogue/common/1.0.0/manifest.json",
+        "scripts/dialogue/common/1.0.1/manifest.json",
+        "scripts/dialogue/common/1.0.2/manifest.json"
+      ]
+    }
+  },
   "packages": [
     {
       "package": "trainer",
       "editor": "trainer",
       "mc_version": "fabric_1_21_1",
+      "latest": "1.0.2",
       "versions": [
-        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
+        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
+        "scripts/trainer/fabric_1_21_1/1.0.1/manifest.json",
+        "scripts/trainer/fabric_1_21_1/1.0.2/manifest.json"
+      ]
+    },
+    {
+      "package": "soullikemob",
+      "editor": "soullikemob",
+      "mc_version": "forge_1_20_1",
+      "latest": "1.0.2",
+      "versions": [
+        "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
+        "scripts/soullikemob/forge_1_20_1/1.0.1/manifest.json",
+        "scripts/soullikemob/forge_1_20_1/1.0.2/manifest.json"
+      ]
+    },
+    {
+      "package": "dialogue",
+      "editor": "dialogue",
+      "mc_version": "common",
+      "latest": "1.0.2",
+      "versions": [
+        "scripts/dialogue/common/1.0.0/manifest.json",
+        "scripts/dialogue/common/1.0.1/manifest.json",
+        "scripts/dialogue/common/1.0.2/manifest.json"
       ]
     }
   ]
