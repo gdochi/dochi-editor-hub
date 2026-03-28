@@ -1,0 +1,20 @@
+{
+  "id": "npc_editor/common/1.0.0",
+  "package": "npc_editor",
+  "version": "1.0.0",
+  "editor": "npc_editor",
+  "mc_version": "common",
+  "base_path": "scripts/npc_editor/common/1.0.0",
+  "description": "NPC editor package sample shared for Forge and Fabric",
+  "entry": "npc_editor.js",
+  "files": [
+    {
+      "source": "npc_editor_1.0.0.js",
+      "install_as": "npc_editor.js"
+    },
+    {
+      "source": "npc_editor_1.0.0.html",
+      "install_as": "npc_editor.html"
+    }
+  ]
+}

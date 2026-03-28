@@ -36,6 +36,15 @@
         "scripts/dialogue/common/1.0.1/manifest.json",
         "scripts/dialogue/common/1.0.2/manifest.json"
       ]
+    },
+    "npc_editor:common": {
+      "package": "npc_editor",
+      "editor": "npc_editor",
+      "mc_version": "common",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_editor/common/1.0.0/manifest.json"
+      ]
     }
   },
   "packages": [
@@ -70,6 +79,15 @@
         "scripts/dialogue/common/1.0.0/manifest.json",
         "scripts/dialogue/common/1.0.1/manifest.json",
         "scripts/dialogue/common/1.0.2/manifest.json"
+      ]
+    },
+    {
+      "package": "npc_editor",
+      "editor": "npc_editor",
+      "mc_version": "common",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_editor/common/1.0.0/manifest.json"
       ]
     }
   ]
