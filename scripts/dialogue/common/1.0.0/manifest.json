@@ -2,8 +2,8 @@
   "package": "dialogue",
   "version": "1.0.0",
   "editor": "dialogue",
-  "mc_version": "forge_1_20_1",
-  "description": "Dialogue package sample for Forge 1.20.1",
+  "mc_version": "common",
+  "description": "Dialogue package sample shared for Forge and Fabric",
   "entry": "dialogue.js",
   "files": [
     {
