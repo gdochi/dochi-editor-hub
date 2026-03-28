@@ -4,7 +4,7 @@
 
 var CFG={HTML:"html/npc_editor.html"};
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
-var ADMIN_CACHE=null;
+var ADMIN_CACHE=null; 
 
 function init(e){var existed=adminFileExists();ensureAdminFile();if(!existed&&e&&e.player){notifyPlayer(e.player,'Initial setup: type "@npceditor" in chat to launch the NPC Editor.');tryOpenEditor(e.player);}}
 function chat(e){if(String(e.message)!=="@npceditor")return;tryOpenEditor(e.player);e.setCanceled(true);}
