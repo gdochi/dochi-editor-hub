@@ -1,0 +1,30 @@
+{
+  "id": "npc_util/common/1.0.0",
+  "package": "npc_util",
+  "version": "1.0.0",
+  "editor": "npc_util",
+  "mc_version": "common",
+  "base_path": "scripts/npc_util/common/1.0.0",
+  "description": "Common NPC utility package shared across Forge and Fabric",
+  "entry": "dc_npc_core_module.js",
+  "files": [
+    {
+      "source": "dc_npc_core_module.js"
+    },
+    {
+      "source": "dc_util_common.js"
+    },
+    {
+      "source": "dc_cfg_checker.js"
+    },
+    {
+      "source": "dc_cond_checker.js"
+    },
+    {
+      "source": "dc_reward_checker.js"
+    },
+    {
+      "source": "dc_sequence_core.js"
+    }
+  ]
+}

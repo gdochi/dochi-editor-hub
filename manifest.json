@@ -45,6 +45,15 @@
       "versions": [
         "scripts/npc_editor/common/1.0.0/manifest.json"
       ]
+    },
+    "npc_util:common": {
+      "package": "npc_util",
+      "editor": "npc_util",
+      "mc_version": "common",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_util/common/1.0.0/manifest.json"
+      ]
     }
   },
   "packages": [
@@ -88,6 +97,15 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_editor/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "npc_util",
+      "editor": "npc_util",
+      "mc_version": "common",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_util/common/1.0.0/manifest.json"
       ]
     }
   ]
