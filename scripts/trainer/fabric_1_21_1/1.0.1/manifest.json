@@ -4,7 +4,6 @@
   "version": "1.0.1",
   "editor": "trainer",
   "mc_version": "fabric_1_21_1",
-  "sub_path": "",
   "description": "Trainer package sample for Fabric 1.21.1",
   "entry": "trainer.js",
   "files": [

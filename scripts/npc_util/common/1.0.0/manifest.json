@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "editor": "npc_util",
   "mc_version": "common",
-  "sub_path": "ds_npc_util",
   "description": "Common NPC utility package shared across Forge and Fabric",
   "entry": "dc_npc_core_module.js",
   "files": [

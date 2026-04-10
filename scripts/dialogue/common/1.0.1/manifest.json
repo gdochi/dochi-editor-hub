@@ -4,7 +4,6 @@
   "version": "1.0.1",
   "editor": "dialogue",
   "mc_version": "common",
-  "sub_path": "",
   "description": "Dialogue package sample shared for Forge and Fabric",
   "entry": "dialogue.js",
   "files": [

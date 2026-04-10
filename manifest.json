@@ -9,6 +9,7 @@
       "package": "trainer",
       "editor": "trainer",
       "mc_version": "fabric_1_21_1",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
@@ -20,6 +21,7 @@
       "package": "soullikemob",
       "editor": "soullikemob",
       "mc_version": "forge_1_20_1",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
@@ -31,6 +33,7 @@
       "package": "dialogue",
       "editor": "dialogue",
       "mc_version": "common",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/dialogue/common/1.0.0/manifest.json",
@@ -42,6 +45,7 @@
       "package": "npc_editor",
       "editor": "npc_editor",
       "mc_version": "common",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_editor/common/1.0.0/manifest.json"
@@ -51,6 +55,7 @@
       "package": "npc_util",
       "editor": "npc_util",
       "mc_version": "common",
+      "sub_path": "ds_npc_util",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"
@@ -62,6 +67,7 @@
       "package": "trainer",
       "editor": "trainer",
       "mc_version": "fabric_1_21_1",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
@@ -73,6 +79,7 @@
       "package": "soullikemob",
       "editor": "soullikemob",
       "mc_version": "forge_1_20_1",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
@@ -84,6 +91,7 @@
       "package": "dialogue",
       "editor": "dialogue",
       "mc_version": "common",
+      "sub_path": "",
       "latest": "1.0.2",
       "versions": [
         "scripts/dialogue/common/1.0.0/manifest.json",
@@ -95,6 +103,7 @@
       "package": "npc_editor",
       "editor": "npc_editor",
       "mc_version": "common",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_editor/common/1.0.0/manifest.json"
@@ -104,6 +113,7 @@
       "package": "npc_util",
       "editor": "npc_util",
       "mc_version": "common",
+      "sub_path": "ds_npc_util",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"
