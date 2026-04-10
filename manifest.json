@@ -3,6 +3,7 @@
   "name": "Dochi Library",
   "version": "0.1.0",
   "description": "Versioned script package library for Dochi editors",
+  "base_path": "minecraft/customnpcs/scripts/ecmascript/dc_lib",
   "package_index": {
     "trainer:fabric_1_21_1": {
       "package": "trainer",

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "editor": "soullikemob",
   "mc_version": "forge_1_20_1",
-  "base_path": "scripts/soullikemob/forge_1_20_1/1.0.0",
+  "sub_path": "",
   "description": "Soullikemob package sample for Forge 1.20.1",
   "entry": "soullikemob.js",
   "files": [

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "editor": "npc_editor",
   "mc_version": "common",
-  "base_path": "scripts/npc_editor/common/1.0.0",
+  "sub_path": "",
   "description": "NPC editor package sample shared for Forge and Fabric",
   "entry": "npc_editor.js",
   "files": [
