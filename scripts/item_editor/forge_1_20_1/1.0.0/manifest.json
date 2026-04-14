@@ -1,0 +1,14 @@
+{
+  "id": "item_editor/forge_1_20_1/1.0.0",
+  "package": "item_editor",
+  "version": "1.0.0",
+  "editor": "item_editor",
+  "mc_version": "forge_1_20_1",
+  "description": "item_editor package sample for Forge 1.20.1",
+  "entry": "item_editor.js",
+  "files": [
+    {
+      "source": "item_editor_1.0.0.js"
+    }
+  ]
+}
