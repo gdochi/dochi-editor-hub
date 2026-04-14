@@ -29,6 +29,16 @@
         "scripts/soullikemob/forge_1_20_1/1.0.2/manifest.json"
       ]
     },
+      "item_editor:forge_1_20_1": {
+      "package": "item_editor",
+      "editor": "item_editor",
+      "mc_version": "forge_1_20_1",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/item_editor/forge_1_20_1/1.0.0/manifest.json"
+      ]
+    },
     "dialogue:common": {
       "package": "dialogue",
       "editor": "dialogue",
