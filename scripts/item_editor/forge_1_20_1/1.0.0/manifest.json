@@ -8,7 +8,8 @@
   "entry": "item_editor.js",
   "files": [
     {
-      "source": "item_editor_1.0.0.js"
+      "source": "item_editor_1.0.0.js",
+      "install_as": "item_editor.js"
     }
   ]
 }
