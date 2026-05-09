@@ -1,0 +1,1200 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --stage-w:1280;
+      --stage-h:720;
+      --ui-scale:1;
+    }
+    html,body{width:100%;height:100%}
+    body{margin:0;overflow:hidden;background:transparent;font-family:Segoe UI, Arial, sans-serif}
+    #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:relative;transform:scale(var(--stage-scale, 1));transform-origin:center center}
+    #stageBg{position:absolute;inset:0;background:#000;overflow:hidden}
+    #stageBg::before{content:"";position:absolute;inset:0;background:var(--bg-overlay, transparent);opacity:var(--bg-overlay-opacity, 0);pointer-events:none}
+    #stageBgImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:cover;opacity:var(--bg-img-opacity, 1);filter:blur(var(--bg-blur, 0px));transform:scale(1.03)}
+    #stage{position:absolute;inset:0}
+
+    /* Prevent invisible element boxes from eating clicks. Enable pointer events only for interactive widgets. */
+    .el{position:absolute;box-sizing:border-box;border-radius:14px;background:transparent;border:0;pointer-events:none}
+
+    .dialog{position:relative;width:100%;height:100%;pointer-events:none}
+    .dialogOverlay{position:absolute;z-index:1;display:flex;flex-direction:column;gap:10px;justify-content:flex-start;align-items:stretch}
+    .dialog .speaker{font-weight:900;letter-spacing:.5px;color:rgba(255,255,255,.92);text-shadow:0 2px 10px rgba(0,0,0,.35)}
+    .dialog .lines{color:rgba(255,255,255,.9);line-height:1.35;white-space:pre-wrap;word-break:keep-all}
+
+    .choiceBox{position:absolute;inset:0;overflow:visible}
+    .choiceBtn{
+      pointer-events:auto;
+      touch-action: manipulation;
+      user-select:none;
+      position:static;
+      padding:10px 14px;
+      border-radius:14px;
+      border:1px solid rgba(97,218,251,.18);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.04),
+        0 8px 18px rgba(0,0,0,.18);
+      color:#dbe8f6;
+      font-weight:700;
+      font-size:13px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      text-align:left;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      box-sizing:border-box;    }
+    .choiceBtn:active{transform:translateY(1px)}
+
+    .mediaImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:contain}
+    .entitySlot{position:absolute;left:50%;bottom:0;transform:translateX(-50%)}
+    .itemRenderSlot{position:absolute;display:block;color:rgba(238,242,255,.92);font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.55);overflow:visible}
+    .itemRenderSlot .itemRenderFallback{max-width:90%;padding:6px 8px;border-radius:8px;background:rgba(8,12,20,.55);border:1px solid rgba(255,255,255,.12);font-size:13px;line-height:1.2;word-break:break-word}
+
+    .dialogIndicator{
+      position:absolute;
+      right:12px;
+      bottom:10px;
+      color:rgba(255,255,255,.9);
+      text-shadow:0 2px 10px rgba(0,0,0,.35);
+      opacity:1;
+      animation:dcDialogCursorBlink var(--cursor-speed, .8s) steps(1) infinite;
+      user-select:none;
+      pointer-events:none;
+    }
+    .dialogIndicator.hidden{display:none}
+    .dialogIndicator.cursor-symbol{font-weight:900;letter-spacing:.5px}
+    .dialogIndicator.cursor-bar{width:10px;height:18px;border-right:2px solid rgba(255,255,255,.9)}
+    .dialogIndicator.cursor-block{width:10px;height:18px;background:rgba(255,255,255,.9)}
+    .dialogIndicator.cursor-underscore{width:16px;height:3px;background:rgba(255,255,255,.9);margin-bottom:2px}
+    .pageNav{position:absolute;z-index:3;display:flex;align-items:center;gap:8px;pointer-events:auto}
+    .pageBtn{min-width:40px;min-height:30px;border-radius:10px;border:1px solid rgba(255,255,255,0.16);background:rgba(10,14,22,0.75);color:#eef2ff;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 10px}
+    .pageBtn:disabled{opacity:.35;cursor:default}
+    .pageCounter{min-width:64px;text-align:center;color:rgba(255,255,255,.86);font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.35);user-select:none}
+    .pagerWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+    .pagerWrap .pageNav{position:relative;left:auto;top:auto;right:auto;bottom:auto}
+
+    @keyframes dcDialogCursorBlink{
+      0%,49%{opacity:1}
+      50%,100%{opacity:0}
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="stageWrap">
+      <div id="stageBg">
+        <div id="stageBgImg"></div>
+      </div>
+      <div id="stage"></div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    let INIT = (window.cnpc && window.cnpc.initData) ? window.cnpc.initData : {};
+    let GUI = INIT && INIT.gui ? INIT.gui : {};
+    let BIND = INIT && INIT.bindings ? INIT.bindings : {};
+
+    const DEBUG = (INIT && (INIT.debug === true || INIT.debug === 1 || String(INIT.debug || '').trim() === '1')) || (/[?&]debug=1/.test(String(location.search || '')));
+    const DCLOG = (...args) => { if(DEBUG) console.log('[dc_gui_runtime]', ...args); };
+    const DCWARN = (...args) => { if(DEBUG) console.warn('[dc_gui_runtime]', ...args); };
+    const DCERR = (...args) => { console.error('[dc_gui_runtime]', ...args); };
+
+    let runtimeTimers = [];
+    let HAS_PAGER = false;
+    function clearRuntimeTimers(){
+      for(let i=0;i<runtimeTimers.length;i++){
+        try{ clearTimeout(runtimeTimers[i]); }catch{}
+      }
+      runtimeTimers = [];
+    }
+
+    function isNoneColorValue(value){
+      return value === null || value === undefined || String(value).trim() === "" || String(value).trim().toLowerCase() === "none";
+    }
+
+    window.addEventListener('error', (ev) => {
+      try{ DCERR('window.error', { message: ev.message, file: ev.filename, line: ev.lineno, col: ev.colno, error: String(ev.error || '') }); }catch{}
+    });
+    window.addEventListener('unhandledrejection', (ev) => {
+      try{ DCERR('unhandledrejection', String(ev && ev.reason || '')); }catch{}
+    });
+
+    try{
+      DCLOG('boot', {
+        hasCnpc: !!window.cnpc,
+        initKeys: INIT ? Object.keys(INIT) : [],
+        guiKeys: GUI ? Object.keys(GUI) : [],
+        elementCount: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0,
+        entitySlotKeys: INIT && INIT.entitySlots ? Object.keys(INIT.entitySlots) : [],
+        overlayEntities: Array.isArray(INIT && INIT.overlayEntities) ? INIT.overlayEntities.length : 0
+      });
+    }catch(err){ DCERR('boot log failed', String(err)); }
+
+    function assetUrl(path){
+      let raw = String(path || "").trim();
+      if(!raw) return "";
+      if(/^(?:https?|file|data|cnpc):\/\//i.test(raw)) return raw;
+      raw = raw.replace(/\\/g, "/");
+      if(raw.charAt(0) === "/") raw = raw.slice(1);
+      const base = (window.cnpc && window.cnpc.assetUrl) ? window.cnpc.assetUrl : "cnpc://";
+      return base + raw;
+    }
+
+    function clamp(n, a, b){
+      const v = Number(n);
+      if(Number.isNaN(v)) return a;
+      return Math.max(a, Math.min(b, v));
+    }
+
+
+    function applyAlphaToColor(color, alphaMul){
+      try{
+        var s = String(color == null ? '' : color).trim();
+        var mul = Number(alphaMul);
+        if(!isFinite(mul)) mul = 1;
+        mul = Math.max(0, Math.min(1, mul));
+        if(!s) return s;
+        var low = s.toLowerCase();
+        if(low === 'transparent' || low === 'none') return 'transparent';
+
+        var m = s.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*(?:,\s*([0-9.]+)\s*)?\)$/i);
+        if(m){
+          var r = Math.max(0, Math.min(255, Math.round(parseFloat(m[1]) || 0)));
+          var g = Math.max(0, Math.min(255, Math.round(parseFloat(m[2]) || 0)));
+          var b = Math.max(0, Math.min(255, Math.round(parseFloat(m[3]) || 0)));
+          var a = (m[4] == null) ? 1 : (parseFloat(m[4]) || 0);
+          a = Math.max(0, Math.min(1, a * mul));
+          return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+        }
+
+        var hex = s.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+        if(hex){
+          var h = hex[1];
+          var r2, g2, b2, a2;
+          if(h.length === 3 || h.length === 4){
+            r2 = parseInt(h.charAt(0) + h.charAt(0), 16);
+            g2 = parseInt(h.charAt(1) + h.charAt(1), 16);
+            b2 = parseInt(h.charAt(2) + h.charAt(2), 16);
+            a2 = (h.length === 4) ? (parseInt(h.charAt(3) + h.charAt(3), 16) / 255) : 1;
+          }else{
+            r2 = parseInt(h.slice(0,2), 16);
+            g2 = parseInt(h.slice(2,4), 16);
+            b2 = parseInt(h.slice(4,6), 16);
+            a2 = (h.length === 8) ? (parseInt(h.slice(6,8), 16) / 255) : 1;
+          }
+          a2 = Math.max(0, Math.min(1, a2 * mul));
+          return 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',' + a2 + ')';
+        }
+      }catch(e){}
+      return String(color == null ? '' : color);
+    }
+    function getBaseResolution(){
+      const w = Number(GUI?.stage?.baseResolution?.width || GUI?.stage?.width || 1280) || 1280;
+      const h = Number(GUI?.stage?.baseResolution?.height || GUI?.stage?.height || 720) || 720;
+      return { w: Math.max(160, w), h: Math.max(90, h) };
+    }
+
+    function setScale(){
+      const { w: bw, h: bh } = getBaseResolution();
+      const aw = Math.max(160, Math.floor(window.innerWidth || bw));
+      const ah = Math.max(90, Math.floor(window.innerHeight || bh));
+      const s = Math.min(aw / bw, ah / bh);
+      document.documentElement.style.setProperty("--stage-w", String(bw));
+      document.documentElement.style.setProperty("--stage-h", String(bh));
+      document.documentElement.style.setProperty("--stage-scale", String(Math.max(0.25, Math.min(3, s))));
+      document.documentElement.style.setProperty("--ui-scale", "1");
+    }
+    function readImageCrop(source, prefix){
+      const src = source && typeof source === "object" ? source : {};
+      const direct = src[String(prefix || "image") + "Crop"];
+      if(!direct || typeof direct !== "object") return null;
+      const x = Math.max(0, Number(direct.x != null ? direct.x : direct.cropX) || 0);
+      const y = Math.max(0, Number(direct.y != null ? direct.y : direct.cropY) || 0);
+      const w = Math.max(0, Number(direct.w != null ? direct.w : (direct.width != null ? direct.width : direct.cropW)) || 0);
+      const h = Math.max(0, Number(direct.h != null ? direct.h : (direct.height != null ? direct.height : direct.cropH)) || 0);
+      if(direct.enabled === false || w <= 0 || h <= 0) return null;
+      return { x:x, y:y, w:w, h:h, sourceW:Math.max(0, Number(direct.sourceW || direct.sourceWidth || 0) || 0), sourceH:Math.max(0, Number(direct.sourceH || direct.sourceHeight || 0) || 0) };
+    }
+
+    function applyCropBackground(node, path, crop, options){
+      const opts = options && typeof options === "object" ? options : {};
+      node.style.backgroundImage = path ? `url("${assetUrl(path)}")` : "none";
+      if(!path){
+        node.style.backgroundSize = "contain";
+        node.style.backgroundPosition = "center";
+        return;
+      }
+      node.style.backgroundRepeat = "no-repeat";
+      const applyWithSize = function(sourceW, sourceH){
+        const box = node.getBoundingClientRect();
+        const insetX = Math.max(0, Number(opts.insetX || 0));
+        const scale = Math.max(0.01, Number(opts.scale || 100) / 100);
+        const offsetX = Number(opts.offsetX || 0);
+        const offsetY = Number(opts.offsetY || 0);
+        const bw = Math.max(1, (box.width || node.clientWidth || sourceW || 1) - insetX * 2);
+        const bh = Math.max(1, box.height || node.clientHeight || sourceH || 1);
+        const baseW = crop ? Math.max(1, crop.w) : Math.max(1, sourceW || bw);
+        const baseH = crop ? Math.max(1, crop.h) : Math.max(1, sourceH || bh);
+        const s = Math.min(bw / baseW, bh / baseH) * scale;
+        const drawW = Math.max(1, Math.round((sourceW || baseW) * s));
+        const drawH = Math.max(1, Math.round((sourceH || baseH) * s));
+        node.style.backgroundSize = `${drawW}px ${drawH}px`;
+        const cropX = crop ? crop.x : 0;
+        const cropY = crop ? crop.y : 0;
+        const viewW = Math.max(1, Math.round(baseW * s));
+        const viewH = Math.max(1, Math.round(baseH * s));
+        const left = insetX + ((bw - viewW) / 2) + offsetX - cropX * s;
+        const top = ((bh - viewH) / 2) + offsetY - cropY * s;
+        node.style.backgroundPosition = `${Math.round(left)}px ${Math.round(top)}px`;
+      };
+      if(crop && crop.sourceW > 0 && crop.sourceH > 0) applyWithSize(crop.sourceW, crop.sourceH);
+      else {
+        const img = new Image();
+        img.onload = function(){ applyWithSize(img.naturalWidth || (crop && crop.w) || 1, img.naturalHeight || (crop && crop.h) || 1); };
+        img.src = assetUrl(path);
+      }
+    }
+    function setBackground(){
+      const bg = GUI && GUI.stage ? GUI.stage : {};
+      const baseColor = (bg.backgroundColorNone || isNoneColorValue(bg.backgroundColor)) ? "transparent" : String(bg.backgroundColor || "transparent");
+      const overlayColor = (bg.backgroundOverlayColorNone || isNoneColorValue(bg.backgroundOverlayColor)) ? "transparent" : String(bg.backgroundOverlayColor || "transparent");
+      const overlayOpacity = clamp(bg.backgroundOverlayOpacity != null ? (Number(bg.backgroundOverlayOpacity) / 100) : 0.62, 0, 1);
+      const imgOpacity = clamp(bg.backgroundImageOpacity != null ? (Number(bg.backgroundImageOpacity) / 100) : 1, 0, 1);
+      const blur = clamp(bg.backgroundBlur || 0, 0, 40);
+
+      const imgPath =
+        String(bg.backgroundAsset && bg.backgroundAsset.runtimePath || bg.backgroundImagePath || "").trim();
+
+      const stageBg = document.getElementById("stageBg");
+      const stageBgImg = document.getElementById("stageBgImg");
+      if(stageBg) stageBg.style.background = baseColor;
+      if(stageBgImg){
+        stageBgImg.style.opacity = String(imgOpacity);
+        stageBgImg.style.filter = blur > 0 ? `blur(${blur}px)` : "none";
+        applyCropBackground(stageBgImg, imgPath, readImageCrop(bg, "backgroundImage"), { scale:bg.backgroundImageScale || 100, insetX:bg.backgroundImageInsetX || 0, offsetX:0, offsetY:0 });
+      }
+      document.documentElement.style.setProperty("--bg-overlay", overlayColor);
+      document.documentElement.style.setProperty("--bg-overlay-opacity", overlayColor === "transparent" ? "0" : String(overlayOpacity));
+      document.documentElement.style.setProperty("--bg-img-opacity", String(imgOpacity));
+      document.documentElement.style.setProperty("--bg-blur", `${blur}px`);
+    }
+
+    function byZThenIndex(a, b){
+      const za = a && a.z != null ? Number(a.z) : 0;
+      const zb = b && b.z != null ? Number(b.z) : 0;
+      if(za !== zb) return za - zb;
+      const ia = a && a.__index != null ? Number(a.__index) : 0;
+      const ib = b && b.__index != null ? Number(b.__index) : 0;
+      return ia - ib;
+    }
+
+    function getChoices(){
+      const direct = INIT.choice || INIT.choices || BIND.choice || BIND.choices;
+      const list = Array.isArray(direct) ? direct : [];
+      const out = [];
+      for(let i=0;i<list.length;i++){
+        const item = list[i];
+        if(typeof item === "string"){
+          out.push({ label: item, index: i, role: "", data: null });
+        }else if(item && typeof item === "object"){
+          const role = String(item.role || item.action || item.key || item.id || "");
+          const data = (item.data != null) ? item.data : (item.payload != null ? item.payload : null);
+          out.push({ label: String(item.label || ""), index: i, role: role, data: data });
+        }else{
+          out.push({ label: "", index: i, role: "", data: null });
+        }
+      }
+      return out;
+    }
+
+    function getDialogLines(){
+      const direct = INIT.text || INIT.dialogLines || BIND.text || BIND.dialogLines || (BIND.dialog && (BIND.dialog.lines || BIND.dialog.text));
+      if(Array.isArray(direct)) return direct.map(v => String(v ?? ""));
+      if(typeof direct === "string") return [direct];
+      return [];
+    }
+
+    function getSpeaker(){
+      const direct = INIT.speaker || (BIND.dialog && BIND.dialog.speaker);
+      return String(direct || "").trim();
+    }
+
+    function makeElBox(item){
+      const base = getBaseResolution();
+      const stageW = Math.max(160, Number(getComputedStyle(document.documentElement).getPropertyValue("--stage-w")) || window.innerWidth || base.w);
+      const stageH = Math.max(90, Number(getComputedStyle(document.documentElement).getPropertyValue("--stage-h")) || window.innerHeight || base.h);
+      const sx = stageW / base.w;
+      const sy = stageH / base.h;
+      const uiScale = Math.min(sx, sy);
+      const norm = item && item.responsive && item.responsive.normalized ? item.responsive.normalized : null;
+      const box = norm
+        ? {
+            x: Number(norm.x || 0) * stageW,
+            y: Number(norm.y || 0) * stageH,
+            w: Math.max(1, Number(norm.width || 0) * stageW),
+            h: Math.max(1, Number(norm.height || 0) * stageH)
+          }
+        : {
+            x: Number(item.x || 0) * sx,
+            y: Number(item.y || 0) * sy,
+            w: Math.max(1, Number(item.w || 1) * sx),
+            h: Math.max(1, Number(item.h || 1) * sy)
+          };
+
+      const node = document.createElement("div");
+      node.className = "el";
+      try{ node.setAttribute("data-el-id", String((item && item.id) || "")); }catch(e){}
+      node.style.left = `${Math.round(box.x)}px`;
+      node.style.top = `${Math.round(box.y)}px`;
+      node.style.width = `${Math.round(box.w)}px`;
+      node.style.height = `${Math.round(box.h)}px`;
+      node.style.zIndex = String(Number(item.z || 0));
+      node.style.borderRadius = `${Math.max(0, Number(item.radius ?? 14) * uiScale)}px`;
+            const alpha = clamp((item.opacity ?? 100) / 100, 0.05, 1);
+      const typeKey = String(item && item.type || "").toLowerCase();
+      const boxAlpha = (typeKey === "choice") ? alpha : 1;
+      node.style.opacity = (typeKey === "choice") ? "1" : String(alpha);
+
+      const borderWidth = Math.max(0, Number(item.borderWidth ?? 1) * uiScale);
+      const borderNone = (item.borderNone === true) || !(borderWidth > 0) || isNoneColorValue(item.border);
+      node.style.borderStyle = borderNone ? "none" : "solid";
+      node.style.borderWidth = borderNone ? "0px" : `${borderWidth}px`;
+      node.style.borderColor = borderNone ? "transparent" : applyAlphaToColor(String(item.border || "rgba(255,255,255,0.12)"), boxAlpha);
+
+      const fillNone = (item.fillNone === true) || isNoneColorValue(item.fill);
+      node.style.background = fillNone ? "transparent" : applyAlphaToColor(String(item.fill || "rgba(20,24,32,0.75)"), boxAlpha);
+
+      // Provide resolved box to children (e.g. entity scale).
+      node.__dc_box = box;
+      node.__dc_uiScale = uiScale;
+      node.__dc_sx = sx;
+      node.__dc_sy = sy;
+      return node;
+    }
+
+    function getDialogCursorShape(style, customValue){
+      switch(String(style || "none")){
+        case "chevron": return { className:"dialogIndicator cursor-symbol", text:">" };
+        case "double-chevron": return { className:"dialogIndicator cursor-symbol", text:">>" };
+        case "diamond": return { className:"dialogIndicator cursor-symbol", text:"\u25C6" };
+        case "dot": return { className:"dialogIndicator cursor-symbol", text:"\u2022" };
+        case "ellipsis": return { className:"dialogIndicator cursor-symbol", text:"..." };
+        case "custom": return { className:"dialogIndicator cursor-symbol", text:(String(customValue || ">>")) };
+        case "bar": return { className:"dialogIndicator cursor-bar", text:"" };
+        case "block": return { className:"dialogIndicator cursor-block", text:"" };
+        case "underscore": return { className:"dialogIndicator cursor-underscore", text:"" };
+        default: return { className:"dialogIndicator hidden", text:"" };
+      }
+    }
+
+    function startTyping(linesNode, fullText, mode, cps, onDone){
+      const text = String(fullText || "");
+      const speed = Math.max(1, Math.min(120, Number(cps || 24)));
+      const stepMs = Math.max(5, Math.floor(1000 / speed));
+      let idx = 0;
+      linesNode.textContent = "";
+      const tick = () => {
+        if(idx >= text.length){
+          onDone && onDone();
+          return;
+        }
+        const ch = text.charAt(idx++);
+        linesNode.textContent += ch;
+        let delay = stepMs;
+        if(mode === "sentence" && /[.!?]/.test(ch)) delay += 220;
+        if(ch === "\n") delay += 120;
+        const id = setTimeout(tick, delay);
+        runtimeTimers.push(id);
+      };
+      tick();
+    }
+    function wrapCanvasLines(ctx, text, maxWidth){
+      var out = [];
+      var paragraphs = String(text || '').replace(/\r\n/g, '\n').split('\n');
+      for(var p=0;p<paragraphs.length;p++){
+        var raw = String(paragraphs[p] || '');
+        if(!raw){ out.push(''); continue; }
+        var parts = raw.split(/(\s+)/).filter(Boolean);
+        var line = '';
+        for(var i=0;i<parts.length;i++){
+          var part = parts[i];
+          var test = line + part;
+          if(line && ctx.measureText(test).width > maxWidth){
+            out.push(line);
+            line = String(part).replace(/^\s+/, '');
+          }else{
+            line = test;
+          }
+        }
+        out.push(line);
+      }
+      return out;
+    }
+
+    function paginateDialogText(linesNode, fullText, maxW, maxH){
+      var cs = getComputedStyle(linesNode);
+      var fontSize = Math.max(8, parseFloat(cs.fontSize) || 14);
+      var fontFamily = cs.fontFamily || 'sans-serif';
+      var lineHeight = parseFloat(cs.lineHeight);
+      if(!isFinite(lineHeight) || lineHeight <= 0) lineHeight = fontSize * 1.35;
+
+      var canvas = paginateDialogText._c || (paginateDialogText._c = document.createElement('canvas'));
+      var ctx = canvas.getContext('2d');
+      if(!ctx) return [String(fullText || '')];
+      ctx.font = fontSize + 'px ' + fontFamily;
+
+      var wrapped = wrapCanvasLines(ctx, fullText, Math.max(1, maxW));
+      var perPage = Math.max(1, Math.floor(Math.max(1, maxH) / lineHeight));
+      var pages = [];
+      for(var j=0;j<wrapped.length;j+=perPage){
+        pages.push(wrapped.slice(j, j + perPage).join('\n'));
+      }
+      return pages.length ? pages : [''];
+    }
+
+    function setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps){
+      var raf = window.requestAnimationFrame || function(fn){ return setTimeout(fn, 0); };
+      raf(function(){
+        try{
+          var gapPx = parseFloat(getComputedStyle(overlay).gap) || 0;
+          var speakerH = speakerNode ? speakerNode.offsetHeight : 0;
+          var availW = Math.max(1, (lines.clientWidth || overlay.clientWidth || 1));
+          var availH = Math.max(1, (overlay.clientHeight || 1) - (speakerNode ? (speakerH + gapPx) : 0));
+          lines.style.maxHeight = String(Math.floor(availH)) + 'px';
+          lines.style.overflow = 'hidden';
+
+          var pages = paginateDialogText(lines, fullText, availW, availH);
+          var paging = pages.length > 1;
+          var pageIndex = 0;
+
+          var renderPage = function(){
+            clearRuntimeTimers();
+            var pageText = pages[pageIndex] || '';
+            if(anim === 'none' || anim === 'at-once'){
+              lines.textContent = pageText;
+            }else{
+              lines.textContent = '';
+              startTyping(lines, pageText, anim, cps, function(){});
+            }
+          };
+
+          if(!paging){
+            if(anim === 'none' || anim === 'at-once'){
+              lines.textContent = fullText;
+            }else{
+              lines.textContent = '';
+              var skipOnce = function(ev){
+                try{ if(ev){ ev.preventDefault(); ev.stopPropagation(); } }catch(e){}
+                try{ clearRuntimeTimers(); lines.textContent = fullText; }catch(e){}
+                cleanupSkipOnce();
+              };
+              var cleanupSkipOnce = function(){
+                try{ node.removeEventListener('pointerdown', skipOnce); }catch(e){}
+                try{ node.removeEventListener('mousedown', skipOnce); }catch(e){}
+                try{ node.removeEventListener('click', skipOnce); }catch(e){}
+              };
+              startTyping(lines, fullText, anim, cps, function(){ cleanupSkipOnce(); });
+              try{ node.addEventListener('pointerdown', skipOnce, { passive:false }); }catch(e){}
+              node.addEventListener('mousedown', skipOnce);
+              node.addEventListener('click', skipOnce);
+            }
+            return;
+          }
+
+          if(indicator) try{ indicator.classList.add('hidden'); }catch(e){}
+          var setPage = function(nextIdx){
+            var ni = Number(nextIdx || 0);
+            if(!isFinite(ni)) ni = 0;
+            if(ni < 0) ni = 0;
+            if(ni > pages.length - 1) ni = pages.length - 1;
+            pageIndex = ni;
+            renderPage();
+            try{ node.__dc_paging.pageIndex = pageIndex; }catch(e){}
+          };
+          try{ node.__dc_paging = { pages: pages, pageIndex: pageIndex, pageCount: pages.length, setPage: setPage }; }catch(e){}
+
+          if(HAS_PAGER){
+            setPage(0);
+            var fastForward = function(ev){
+
+              try{ if(ev){ ev.preventDefault(); ev.stopPropagation(); } }catch(e){}
+              if(anim === 'none' || anim === 'at-once') return;
+              var pageText = pages[pageIndex] || '';
+              if(String(lines.textContent || '').length < String(pageText).length){
+                try{ clearRuntimeTimers(); lines.textContent = pageText; }catch(e){}
+              }
+            };
+            try{ node.addEventListener('pointerdown', fastForward, { passive:false }); }catch(e){}
+            node.addEventListener('mousedown', fastForward);
+            node.addEventListener('click', fastForward);
+            return;
+          }
+
+          var nav = document.createElement('div');
+          nav.className = 'pageNav';
+          var prev = document.createElement('button');
+          prev.type = 'button';
+          prev.className = 'pageBtn';
+      prev.textContent = "\u25C0";
+          var counter = document.createElement('div');
+          counter.className = 'pageCounter';
+          var next = document.createElement('button');
+          next.type = 'button';
+          next.className = 'pageBtn';
+      next.textContent = "\u25B6";
+          nav.appendChild(prev);
+          nav.appendChild(counter);
+          nav.appendChild(next);
+          node.appendChild(nav);
+
+          var uiScale = node.__dc_uiScale || 1;
+          var btnW = Math.max(16, Number(item.dialogPageBtnW != null ? item.dialogPageBtnW : 44) * uiScale);
+          var btnH = Math.max(16, Number(item.dialogPageBtnH != null ? item.dialogPageBtnH : 34) * uiScale);
+          var btnGap = Math.max(0, Number(item.dialogPageBtnGap != null ? item.dialogPageBtnGap : 8) * uiScale);
+          nav.style.gap = String(Math.round(btnGap)) + 'px';
+          prev.style.width = String(Math.round(btnW)) + 'px';
+          prev.style.height = String(Math.round(btnH)) + 'px';
+          next.style.width = String(Math.round(btnW)) + 'px';
+          next.style.height = String(Math.round(btnH)) + 'px';
+          counter.style.fontSize = String(Math.max(10, Math.round(12 * uiScale))) + 'px';
+
+          var syncNavPos = function(){
+            var box = node.__dc_box || { w: node.clientWidth, h: node.clientHeight };
+            var pad = Math.max(0, Number(item.padding != null ? item.padding : 12) * uiScale);
+            var xBase = Number(item.dialogPageNavX != null ? item.dialogPageNavX : -1);
+            var yBase = Number(item.dialogPageNavY != null ? item.dialogPageNavY : -1);
+            nav.style.right = '';
+            nav.style.bottom = '';
+            if(xBase >= 0) nav.style.left = String(Math.round(xBase * uiScale)) + 'px';
+            else { nav.style.left = ''; nav.style.right = String(Math.max(0, Math.round(pad + 10))) + 'px'; }
+            if(yBase >= 0) nav.style.top = String(Math.round(yBase * uiScale)) + 'px';
+            else { nav.style.top = ''; nav.style.bottom = String(Math.max(0, Math.round(pad + 10))) + 'px'; }
+          };
+          raf(syncNavPos);
+
+          var sync = function(){
+            prev.disabled = pageIndex <= 0;
+            next.disabled = pageIndex >= pages.length - 1;
+            counter.textContent = String(pageIndex + 1) + ' / ' + String(pages.length);
+            renderPage();
+          };
+prev.addEventListener('click', function(ev){
+            try{ ev.stopPropagation(); }catch(e){}
+            if(pageIndex > 0){ pageIndex -= 1; sync(); }
+          });
+          next.addEventListener('click', function(ev){
+            try{ ev.stopPropagation(); }catch(e){}
+            if(pageIndex < pages.length - 1){ pageIndex += 1; sync(); }
+          });
+
+          var fastForward = function(ev){
+              try{ if(ev){ ev.preventDefault(); ev.stopPropagation(); } }catch(e){}
+              if(anim === 'none' || anim === 'at-once') return;
+            var pageText = pages[pageIndex] || '';
+            if(String(lines.textContent || '').length < String(pageText).length){
+              try{ clearRuntimeTimers(); lines.textContent = pageText; }catch(e){}
+            }
+          };
+          try{ node.addEventListener('pointerdown', fastForward, { passive:false }); }catch(e){}
+          node.addEventListener('mousedown', fastForward);
+          node.addEventListener('click', fastForward);
+
+          sync();
+        }catch(err){
+          DCERR('setupDialogPaging failed', err);
+        }
+      });
+    }
+
+    function renderDialog(stage, item){
+      const node = makeElBox(item);
+      node.classList.add("dialog");
+      const uiScale = node.__dc_uiScale || 1;
+      const pad = Math.max(0, Number(item.padding ?? 12) * uiScale);
+      const textX = Number(item.dialogTextOffsetX || 0) * uiScale;
+      const textY = Number(item.dialogTextOffsetY || 0) * uiScale;
+      const verticalMap = { top:"flex-start", center:"center", bottom:"flex-end" };
+
+      const overlay = document.createElement("div");
+      overlay.className = "dialogOverlay";
+      overlay.style.left = String(Math.round(pad + textX)) + 'px';
+      overlay.style.top = String(Math.round(pad + textY)) + 'px';
+      overlay.style.right = String(Math.round(pad)) + 'px';
+      overlay.style.bottom = String(Math.round(pad)) + 'px';
+      overlay.style.justifyContent = verticalMap[String(item.dialogTextVAlign || "top")] || "flex-start";
+      overlay.style.gap = String(Math.max(4, Math.round(10 * uiScale))) + 'px';
+
+      const speakerText = getSpeaker() || String(item.speaker || "").trim();
+      let speakerNode = null;
+      if(speakerText){
+        speakerNode = document.createElement("div");
+        speakerNode.className = "speaker";
+        speakerNode.textContent = speakerText;
+      }
+
+      const lines = document.createElement("div");
+      lines.className = "lines";
+
+      const list = getDialogLines();
+      const fullText = list.length ? list.join("\n") : String(item.text || "");
+
+      const anim = String(item.dialogTextAnim || "none");
+      const cps = Number(item.dialogTypingSpeed || 24);
+      const cursorStyle = String(item.dialogCursorStyle || "none");
+      const cursorCustom = String(item.dialogCursorCustom || "");
+      const blink = Math.max(0.2, Math.min(3, Number(item.dialogCursorBlink || 0.8)));
+
+      const textSizeBase = Math.max(8, Math.min(72, Number(item.dialogTextSize || 14)));
+      const textSizePx = Math.max(8, Math.round(textSizeBase * uiScale));
+      lines.style.fontSize = String(textSizePx) + 'px';
+      lines.style.textAlign = String(item.dialogTextAlign || "left");
+      lines.style.color = (item.dialogTextColorNone || isNoneColorValue(item.dialogTextColor)) ? "transparent" : String(item.dialogTextColor || "rgba(255,255,255,.9)");
+      const speakerPx = Math.max(10, Math.round((textSizeBase + 4) * uiScale));
+      if(speakerNode) speakerNode.style.fontSize = String(speakerPx) + 'px';
+
+      const indicatorShape = getDialogCursorShape(cursorStyle, cursorCustom);
+      const indicator = document.createElement("div");
+      indicator.className = indicatorShape.className + ((anim === "none" || cursorStyle === "none") ? " hidden" : "");
+      indicator.textContent = indicatorShape.text;
+      indicator.style.setProperty("--cursor-speed", String(blink) + 's');
+
+      if(speakerNode) overlay.appendChild(speakerNode);
+      overlay.appendChild(lines);
+      node.appendChild(overlay);
+      node.appendChild(indicator);
+      stage.appendChild(node);
+
+      setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps);
+    }
+
+    function renderImage(stage, item, runtimePath){
+      const node = makeElBox(item);
+      const img = document.createElement("div");
+      img.className = "mediaImg";
+      const path = String(runtimePath || "").trim();
+      applyCropBackground(img, path, readImageCrop(item, "image"), { scale:item.imageScale || 100, insetX:item.imageInsetX || 0, offsetX:item.imageOffsetX || 0, offsetY:item.imageOffsetY || 0 });
+      node.appendChild(img);
+      stage.appendChild(node);
+    }
+
+    function renderEntity(stage, item){
+      const node = makeElBox(item);
+      const box = node.__dc_box || { w: Math.max(1, Number(item.w || 1)), h: Math.max(1, Number(item.h || 1)) };
+      const labelKey = String(item.entityLabel || item.name || "").trim();
+      const slot = (INIT && INIT.entitySlots) ? INIT.entitySlots[labelKey] : null;
+      if(slot == null) DCWARN("entity slot missing", { labelKey, entitySlots: INIT && INIT.entitySlots ? Object.keys(INIT.entitySlots) : [] });
+      DCLOG("entity", { labelKey, slot });
+      const el = document.createElement("div");
+      el.className = "entitySlot";
+      if(slot != null){
+        el.setAttribute("data-mc-entity", String(slot));
+        let mul = Number(item.entityScale);
+        if(!Number.isFinite(mul)) mul = 1;
+        if(mul > 10) mul = mul / 100;
+        if(mul < 0.1) mul = 0.1;
+        if(mul > 5) mul = 5;
+        el.style.width = `${Math.max(1, Math.round(box.w * mul))}px`;
+        el.style.height = `${Math.max(1, Math.round(box.h * mul))}px`;
+      }
+      node.appendChild(el);
+      stage.appendChild(node);
+    }
+    function buildItemSlotMapFromGui(){
+      const out = {};
+      const elements = Array.isArray(GUI && GUI.elements) ? GUI.elements.slice() : [];
+      for(let i=0;i<elements.length;i++){
+        if(elements[i] && typeof elements[i] === "object" && elements[i].__index == null) elements[i].__index = i;
+      }
+      elements.sort(byZThenIndex);
+      let slot = 0;
+      for(let i=0;i<elements.length;i++){
+        const el = elements[i] || {};
+        if(String(el.type || "").toLowerCase() !== "itemrender") continue;
+        const id = String(el.id || "");
+        const label = String(el.itemLabel || el.name || id || "");
+        if(id) out[id] = slot;
+        if(label) out[label] = slot;
+        slot += 1;
+      }
+      return out;
+    }
+
+    function resolveItemRenderSlot(item){
+      const id = String(item && item.id || "");
+      const label = String(item && (item.itemLabel || item.name || id) || "");
+      const fromInit = INIT && INIT.itemSlots ? INIT.itemSlots : {};
+      if(id && fromInit[id] != null) return fromInit[id];
+      if(label && fromInit[label] != null) return fromInit[label];
+      const computed = buildItemSlotMapFromGui();
+      if(id && computed[id] != null) return computed[id];
+      if(label && computed[label] != null) return computed[label];
+      return null;
+    }
+    function renderItemRender(stage, item){
+      const node = makeElBox(item);
+      const slot = document.createElement("div");
+      slot.className = "itemRenderSlot";
+      const slotId = resolveItemRenderSlot(item);
+      const scale = Math.max(0.1, Number(item.itemRenderScale || 100) / 100);
+      const size = Math.max(16, Math.round(32 * scale));
+      slot.style.width = `${size}px`;
+      slot.style.height = `${size}px`;
+      slot.style.left = `calc(50% - ${Math.round(size / 2)}px)`;
+      slot.style.top = `calc(50% - ${Math.round(size / 2)}px)`;
+      if(slotId != null){
+        slot.setAttribute("data-mc-slot", String(slotId));
+        slot.setAttribute("data-mc-scale", String(scale));
+      }else{
+        slot.style.display = "none";
+        DCWARN("item slot missing", { id:String(item.id || ""), name:String(item.name || ""), itemSlots:INIT && INIT.itemSlots ? Object.keys(INIT.itemSlots) : [] });
+      }
+      const bgPath = String(item.itemRenderImageAsset && item.itemRenderImageAsset.runtimePath || item.itemRenderImagePath || "").trim();
+      if(bgPath){
+        const bg = document.createElement("div");
+        bg.className = "mediaImg";
+        applyCropBackground(bg, bgPath, readImageCrop(item, "itemRenderImage"), { scale:item.itemRenderImageScale || 100, insetX:0, offsetX:item.itemRenderImageOffsetX || 0, offsetY:item.itemRenderImageOffsetY || 0 });
+        node.appendChild(bg);
+      }
+      node.appendChild(slot);
+      stage.appendChild(node);
+    }
+
+    function renderChoiceBox(stage, item, choices, startIndex){
+      const node = makeElBox(item);
+      const box = document.createElement("div");
+      box.className = "choiceBox";
+      node.appendChild(box);
+
+      const sx = node.__dc_sx || 1;
+      const sy = node.__dc_sy || 1;
+      const uiScale = node.__dc_uiScale || 1;
+
+      const pad = 0;
+
+      const content = document.createElement("div");
+      content.style.position = "absolute";
+      content.style.inset = "0";
+      content.style.padding = `${Math.round(pad)}px`;
+      content.style.boxSizing = "border-box";
+      content.style.overflow = "visible";
+      box.appendChild(content);
+
+      const startX = Number(item.choiceStartX ?? 12) * sx;
+      const startY = Number(item.choiceStartY ?? 12) * sy;
+      const gapX = Number(item.choiceGapX ?? 0) * sx;
+      const gapY = Number(item.choiceGapY ?? 10) * sy;
+      const btnMinW = Math.max(60, Number(item.choiceWidth ?? 180) * sx);
+      const btnH = Math.max(24, Number(item.choiceHeight ?? 42) * sy);
+      const cols = Math.max(1, Number(item.choiceColumns ?? 2));
+      const baseSize = Number(item.choiceBtnTextSize ?? 13);
+      const fontSize = Math.max(8, Math.round((isFinite(baseSize) ? baseSize : 13) * uiScale));
+      const stageW = Math.max(160, Number(getComputedStyle(document.documentElement).getPropertyValue("--stage-w")) || window.innerWidth || 1280);
+      const nodeBox = node.__dc_box || { x:0, w:Math.max(1, Number(item.w || 1) * sx) };
+      const availableW = Math.max(btnMinW, stageW - (Number(nodeBox.x || 0) + startX) - Math.max(12, 16 * uiScale));
+      const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
+      const measureCtx = measureCanvas.getContext("2d");
+      if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+      const choiceWidths = choices.map((ch) => {
+        const label = String(ch && ch.label || "");
+        const textW = measureCtx ? measureCtx.measureText(label).width : label.length * fontSize * 0.62;
+        const padded = textW + Math.max(28, 36 * uiScale);
+        return Math.min(availableW, Math.max(btnMinW, Math.ceil(padded)));
+      });
+      let layoutW = btnMinW;
+      for(let rowStart=0; rowStart<choiceWidths.length; rowStart+=cols){
+        const row = choiceWidths.slice(rowStart, rowStart + cols);
+        const rowW = row.reduce((sum, w) => sum + w, 0) + Math.max(0, row.length - 1) * gapX;
+        layoutW = Math.max(layoutW, rowW);
+      }
+      layoutW = Math.min(availableW, layoutW);
+
+      const layout = document.createElement("div");
+      layout.style.position = "absolute";
+      layout.style.left = `${Math.round(startX)}px`;
+      layout.style.top = `${Math.round(startY)}px`;
+      layout.style.display = "flex";
+      layout.style.flexWrap = "wrap";
+      layout.style.alignItems = "flex-start";
+      layout.style.justifyContent = "flex-start";
+      layout.style.alignContent = "flex-start";
+      layout.style.gap = `${Math.round(gapY)}px ${Math.round(gapX)}px`;
+      layout.style.width = `${Math.round(layoutW)}px`;
+            content.appendChild(layout);
+
+      for(let i=0;i<choices.length;i++){
+        const ch = choices[i];
+        const btnW = choiceWidths[i] || btnMinW;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choiceBtn";
+        btn.style.flex = `0 0 ${Math.round(btnW)}px`;
+        btn.style.width = `${Math.round(btnW)}px`;
+        btn.style.height = `${Math.round(btnH)}px`;
+        try{
+          const btnAlpha = clamp((Number(item.choiceBtnOpacity ?? 85) / 100), 0, 1);
+          const fillNone = (item.choiceBtnFillNone === true) || isNoneColorValue(item.choiceBtnFill);
+          const borderNone = (item.choiceBtnBorderNone === true) || isNoneColorValue(item.choiceBtnBorder);
+          btn.style.background = fillNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnFill || "rgba(10,14,22,0.75)"), btnAlpha);
+          btn.style.borderStyle = borderNone ? "none" : "solid";
+          btn.style.borderWidth = borderNone ? "0px" : "1px";
+          btn.style.borderColor = borderNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnBorder || "rgba(255,255,255,0.16)"), btnAlpha);
+          const align = String(item.choiceBtnTextAlign || "left").toLowerCase();
+          btn.style.textAlign = (align === "center" || align === "right") ? align : "left";
+          btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
+          btn.style.fontSize = String(fontSize) + "px";
+          btn.style.lineHeight = "1.2";
+        }catch(e){}
+        btn.textContent = String(ch.label || "");
+        btn.dataset.choiceIndex = String(ch.index);
+        
+        const fireChoice = (ev) => {
+          try{ if(ev && typeof ev.preventDefault === "function") ev.preventDefault(); }catch(e){}
+          try{ if(ev && typeof ev.stopPropagation === "function") ev.stopPropagation(); }catch(e){}
+          try{
+            const now = Date.now();
+            if(btn.__dc_lastFire && (now - btn.__dc_lastFire) < 250) return;
+            btn.__dc_lastFire = now;
+          }catch(e){}
+          try{
+            if(window.cnpc && typeof window.cnpc.sendEvent === "function"){
+              const payload = {
+                __overlayName: String((INIT && INIT.__overlayName) || 'dc_gui_runtime'),
+                __event: 'choice',
+                sessionId: String((INIT && INIT.sessionId) || ''),
+                index: Number(btn.dataset.choiceIndex || "0"),
+                label: String((ch && ch.label) || ""),
+                role: String((ch && (ch.role || ch.action || ch.key || ch.id)) || ""),
+                data: (ch && (ch.data || ch.payload))
+              };
+              window.cnpc.sendEvent("choice", payload);
+            }
+          }catch(e){}
+        };
+        // Click can be flaky depending on cursor lock / tiny drags; fire on pointerdown too.
+        try{ btn.addEventListener("pointerdown", fireChoice, { passive:false }); }catch(e){}
+        try{ btn.addEventListener("touchstart", fireChoice, { passive:false }); }catch(e){}
+        btn.addEventListener("mousedown", fireChoice);
+        btn.addEventListener("click", fireChoice);
+        layout.appendChild(btn);
+      }
+
+      stage.appendChild(node);
+      return startIndex + choices.length;
+    }
+
+
+
+    function findElByDataId(id){
+      try{
+        var target = String(id || '').trim();
+        if(!target) return null;
+        var nodes = document.querySelectorAll('.el');
+        for(var i=0;i<nodes.length;i++){
+          var v = String(nodes[i].getAttribute('data-el-id') || '');
+          if(v === target) return nodes[i];
+        }
+      }catch(e){}
+      return null;
+    }
+    function resolvePagerTargetId(elements, item){
+      var direct = String(item && item.pageTargetId || '').trim();
+      if(direct) return direct;
+      for(var i=0;i<elements.length;i++){
+        var it = elements[i] || {};
+        if(String(it.type || '').toLowerCase() === 'dialog') return String(it.id || '');
+      }
+      return '';
+    }
+
+    function syncPagerNode(pagerNode){
+      try{
+        if(!pagerNode) return;
+        var targetId = String(pagerNode.dataset.targetId || '').trim();
+        if(!targetId) return;
+        var dialogNode = findElByDataId(targetId);
+        var nav = pagerNode.querySelector('.pageNav');
+        if(!nav) return;
+        var prev = nav.querySelector('[data-page-prev]');
+        var next = nav.querySelector('[data-page-next]');
+        var counter = nav.querySelector('[data-page-counter]');
+        var paging = dialogNode && dialogNode.__dc_paging ? dialogNode.__dc_paging : null;
+        if(!paging || !paging.pages || paging.pages.length <= 1){
+          nav.style.display = 'none';
+          return;
+        }
+        nav.style.display = '';
+        var idx = Number(paging.pageIndex || 0) || 0;
+        if(prev) prev.disabled = idx <= 0;
+        if(next) next.disabled = idx >= paging.pages.length - 1;
+        if(counter) counter.textContent = String(idx + 1) + ' / ' + String(paging.pages.length);
+      }catch(e){}
+    }
+
+    function renderPager(stage, item, elements){
+      var node = makeElBox(item);
+      node.classList.add('pager');
+      var targetId = resolvePagerTargetId(elements, item);
+      node.dataset.targetId = String(targetId || '');
+
+      var wrap = document.createElement('div');
+      wrap.className = 'pagerWrap';
+
+      var nav = document.createElement('div');
+      nav.className = 'pageNav';
+      nav.style.position = 'relative';
+
+      var uiScale = node.__dc_uiScale || 1;
+      var btnW = Math.max(16, Number(item.pageBtnW != null ? item.pageBtnW : 44) * uiScale);
+      var btnH = Math.max(16, Number(item.pageBtnH != null ? item.pageBtnH : 34) * uiScale);
+      var btnGap = Math.max(0, Number(item.pageBtnGap != null ? item.pageBtnGap : 8) * uiScale);
+      nav.style.gap = String(Math.round(btnGap)) + 'px';
+
+      var prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'pageBtn';
+      prev.textContent = "\u25C0";
+      prev.style.width = String(Math.round(btnW)) + 'px';
+      prev.style.height = String(Math.round(btnH)) + 'px';
+      prev.setAttribute('data-page-prev','1');
+
+      var counter = document.createElement('div');
+      counter.className = 'pageCounter';
+      counter.setAttribute('data-page-counter','1');
+      counter.style.fontSize = String(Math.max(10, Math.round(12 * uiScale))) + 'px';
+
+      var next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'pageBtn';
+      next.textContent = "\u25B6";
+      next.style.width = String(Math.round(btnW)) + 'px';
+      next.style.height = String(Math.round(btnH)) + 'px';
+      next.setAttribute('data-page-next','1');
+
+      nav.appendChild(prev);
+      nav.appendChild(counter);
+      nav.appendChild(next);
+      wrap.appendChild(nav);
+      node.appendChild(wrap);
+      stage.appendChild(node);
+
+      var stop = function(ev){ try{ ev.stopPropagation(); }catch(e){} };
+var stopPagerEv = function(ev){
+        try{ if(ev){ ev.preventDefault(); ev.stopPropagation(); } }catch(e){}
+      };
+      try{ prev.addEventListener('pointerdown', stopPagerEv, { passive:false }); }catch(e){}
+      try{ next.addEventListener('pointerdown', stopPagerEv, { passive:false }); }catch(e){}
+      prev.addEventListener('mousedown', stopPagerEv);
+      next.addEventListener('mousedown', stopPagerEv);
+      prev.addEventListener('click', function(ev){
+        stop(ev);
+        var dialogNode = findElByDataId(targetId);
+        if(dialogNode && dialogNode.__dc_paging && dialogNode.__dc_paging.setPage){
+          dialogNode.__dc_paging.setPage(Number(dialogNode.__dc_paging.pageIndex || 0) - 1);
+          syncPagerNode(node);
+        }
+      });
+      next.addEventListener('click', function(ev){
+        stop(ev);
+        var dialogNode = findElByDataId(targetId);
+        if(dialogNode && dialogNode.__dc_paging && dialogNode.__dc_paging.setPage){
+          dialogNode.__dc_paging.setPage(Number(dialogNode.__dc_paging.pageIndex || 0) + 1);
+          syncPagerNode(node);
+        }
+      });
+
+      // initial sync after dialog paging is ready
+      (window.requestAnimationFrame || function(fn){ return setTimeout(fn,0); })(function(){ syncPagerNode(node); });
+    }
+    function fxList(fx, key){
+      if(!fx || typeof fx !== "object") return [];
+      const direct = fx[key];
+      if(Array.isArray(direct)) return direct;
+      if(direct && typeof direct === "object") return [direct];
+      if(Array.isArray(fx.items)) return fx.items.filter(item => String(item && (item.fxType || item.type) || "").toLowerCase() === key);
+      return [];
+    }
+    function fxImageList(fx){ return fxList(fx, "image"); }
+    function fxImageRuntimePath(fx){
+      if(!fx || typeof fx !== "object") return "";
+      const asset = fx.asset && typeof fx.asset === "object" ? fx.asset : null;
+      let path = String(fx.assetFilePath || fx.runtimePath || fx.url || "").trim();
+      if(!path && asset){
+        const sub = String(asset.subPath || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+        const file = String(asset.fileName || "").replace(/\\/g, "/").replace(/^\/+/, "");
+        path = sub && file ? (sub + "/" + file) : file;
+      }
+      return path.replace(/\\/g, "/").replace(/^\/+/, "");
+    }
+
+    function fxTargetMatches(item, fx){
+      const id = String(item && item.id || "");
+      const name = String(item && item.name || "");
+      const key = String(fx && (fx.targetElementKey || fx.guiTargetKey || "") || "").split(".")[0];
+      const targetId = String(fx && (fx.targetElementId || fx.guiImageElementId || fx.elementId || "") || "");
+      const targetName = String(fx && (fx.targetElementName || fx.guiImageElementName || "") || "");
+      return (key && key === id) || (targetId && targetId === id) || (targetName && targetName === name);
+    }
+
+    function applyTextFxToElements(elements){
+      const textFx = BIND && BIND.textFx;
+      const images = fxImageList(textFx);
+      const itemrenders = fxList(textFx, "itemrender");
+      if(!images.length && !itemrenders.length) return elements;
+      const out = elements.map((item) => item && typeof item === "object" ? Object.assign({}, item) : item);
+      for(let i=0;i<images.length;i++){
+        const fx = images[i] || {};
+        const path = fxImageRuntimePath(fx);
+        if(!path) continue;
+        let applied = false;
+        for(let j=0;j<out.length;j++){
+          const item = out[j] || {};
+          if(!fxTargetMatches(item, fx)) continue;
+          const type = String(item.type || "").toLowerCase();
+          if(type === "image") item.imagePath = path;
+          else if(type === "dialog") item.dialogImagePath = path;
+          else if(type === "itemrender") item.itemRenderImagePath = path;
+          else continue;
+          applied = true;
+        }
+        if(!applied){
+          for(let j=0;j<out.length;j++){
+            const item = out[j] || {};
+            if(String(item.type || "").toLowerCase() !== "image") continue;
+            item.imagePath = path;
+            break;
+          }
+        }
+      }
+      for(let k=0;k<itemrenders.length;k++){
+        const fx = itemrenders[k] || {};
+        for(let m=0;m<out.length;m++){
+          const item = out[m] || {};
+          if(String(item.type || "").toLowerCase() !== "itemrender") continue;
+          if(!fxTargetMatches(item, fx)) continue;
+          item.itemRenderId = String(fx.itemId || fx.itemRenderId || item.itemRenderId || "minecraft:diamond_sword");
+          if(fx.itemScale != null) item.itemRenderScale = Number(fx.itemScale) || item.itemRenderScale;
+          if(fx.itemRotation != null) item.itemRenderRotation = Number(fx.itemRotation) || 0;
+        }
+      }
+      return out;
+    }    function render(){
+      DCLOG("render()", { w: window.innerWidth, h: window.innerHeight, elements: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0, choices: (INIT.choice||INIT.choices||BIND.choice||BIND.choices||[]).length });
+      clearRuntimeTimers();
+      setScale();
+      setBackground();
+      const stage = document.getElementById("stage");
+      if(!stage) return;
+      stage.innerHTML = "";
+
+      const elements = applyTextFxToElements(Array.isArray(GUI.elements) ? GUI.elements.slice() : []);
+      HAS_PAGER = false;
+      for(let i=0;i<elements.length;i++){
+        const t = String((elements[i] && elements[i].type) || "").toLowerCase();
+        if(t === "pager"){ HAS_PAGER = true; break; }
+      }
+      for(let i=0;i<elements.length;i++){
+        if(elements[i] && typeof elements[i] === "object" && elements[i].__index == null) elements[i].__index = i;
+      }
+      elements.sort(byZThenIndex);
+
+      const allChoices = getChoices();
+      let cursor = 0;
+
+      for(let i=0;i<elements.length;i++){
+        const item = elements[i] || {};
+        const type = String(item.type || "").toLowerCase();
+
+        if(type === "dialog"){
+          renderDialog(stage, item);
+          continue;
+        }
+        if(type === "image"){
+          const path = String(item.imageAsset && item.imageAsset.runtimePath || item.imagePath || "").trim();
+          renderImage(stage, item, path);
+          continue;
+        }
+        if(type === "entity"){
+          renderEntity(stage, item);
+          continue;
+        }
+        if(type === "pager"){
+          renderPager(stage, item, elements);
+          continue;
+        }
+        if(type === "itemrender"){
+          renderItemRender(stage, item);
+          continue;
+        }
+        if(type === "choice"){
+          const cap = Math.max(1, Number(item.choiceCount || 1));
+          const slice = allChoices.slice(cursor, cursor + cap);
+          cursor = renderChoiceBox(stage, item, slice, cursor);
+          continue;
+        }
+        // unknown element type
+      }
+    }
+
+    function parseRuntimeUpdatePayload(raw){
+      if(typeof raw === "string"){
+        try{ return JSON.parse(raw); }catch(e){ return null; }
+      }
+      if(raw && raw.detail != null) return parseRuntimeUpdatePayload(raw.detail);
+      if(raw && raw.data != null && raw.source !== window) return parseRuntimeUpdatePayload(raw.data);
+      return raw && typeof raw === "object" ? raw : null;
+    }
+
+    function applyRuntimeUpdate(raw){
+      const data = parseRuntimeUpdatePayload(raw);
+      if(!data || String(data.__overlayName || "dc_gui_runtime") !== "dc_gui_runtime") return;
+      DCLOG("applyRuntimeUpdate", data);
+      INIT = Object.assign({}, INIT || {}, data || {});
+      if(data.gui) GUI = data.gui;
+      if(data.bindings) BIND = data.bindings;
+      else if(INIT.bindings) BIND = INIT.bindings;
+      render();
+    }
+
+    if(window.cnpc && typeof window.cnpc.onEvent === "function"){
+      window.cnpc.onEvent("dcDialogueUpdate", applyRuntimeUpdate);
+      window.cnpc.onEvent("message", function(data){
+        const payload = parseRuntimeUpdatePayload(data);
+        if(payload && payload.type === "dcDialogueUpdate") applyRuntimeUpdate(payload);
+      });
+    }
+    window.addEventListener("message", function(event){
+      const payload = parseRuntimeUpdatePayload(event);
+      if(payload && (payload.type === "dcDialogueUpdate" || payload.__event === "dcDialogueUpdate")) applyRuntimeUpdate(payload);
+    });
+
+    window.addEventListener("resize", () => { render(); });
+    render();
+  })();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

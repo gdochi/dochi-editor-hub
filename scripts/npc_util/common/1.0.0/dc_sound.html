@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<script>
+(function () {
+  function assetUrl(path) {
+    var raw = String(path || "").trim();
+    if (!raw) return "";
+    if (/^(?:https?|file|data|cnpc):\/\//i.test(raw)) return raw;
+    if (raw.charAt(0) === "/") raw = raw.substring(1);
+    return (window.cnpc && window.cnpc.assetUrl ? window.cnpc.assetUrl : "cnpc://") + raw;
+  }
+
+  function done() {
+    try {
+      if (window.cnpc && typeof window.cnpc.sendEvent === "function") {
+        window.cnpc.sendEvent("sound_done", {});
+      }
+    } catch (e) {}
+  }
+
+  var data = (window.cnpc && window.cnpc.initData) ? window.cnpc.initData : {};
+  var a = new Audio(assetUrl(data.soundPath || "sounds/type.ogg"));
+  a.volume = 1;
+  a.addEventListener("ended", done);
+  a.addEventListener("error", done);
+  a.play().catch(done);
+})();
+</script>
+</body>
+</html>

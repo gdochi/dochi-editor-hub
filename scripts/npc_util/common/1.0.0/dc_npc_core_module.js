@@ -1,20 +1,11 @@
 var NpcEventModule = NpcEventModule || {};
-var NpcEventModuleDebugEnabled = true;
-
-function debugSay(e, msg) {
-  if (!NpcEventModuleDebugEnabled) return;
-  try {
-    var npc = e && (e.npc || e.entity);
-    if (npc && typeof npc.say === "function") npc.say(String(msg || ""));
-  } catch (err) {}
-}
-
 (function (ns) {
-  var modules = {};
-  var handlers = {};
-  var timerIds = {};
-  var timerKeys = {};
-  var nextTimerId = 1000;
+  if (!ns || typeof ns !== "object") ns = {};
+  var modules = ns._modules || {};
+  var handlers = ns._handlers || {};
+  var timerIds = ns._timerIds || {};
+  var timerKeys = ns._timerKeys || {};
+  var nextTimerId = ns._nextTimerId || 1000;
 
   function addHandler(eventName, fn) {
     if (!eventName || typeof fn !== "function") return;
@@ -22,15 +13,42 @@ function debugSay(e, msg) {
     if (!handlers[key]) handlers[key] = [];
     handlers[key].push(fn);
   }
+  function removeHandler(eventName, fn) {
+    if (!eventName || typeof fn !== "function") return;
+    var key = String(eventName);
+    var list = handlers[key];
+    if (!list || !list.length) return;
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] !== fn) out.push(list[i]);
+    }
+    handlers[key] = out;
+  }
   function register(eventName, fn) {
     addHandler(eventName, fn);
   }
   function registerModule(name, mod) {
     if (!name || !mod) return;
-    modules[String(name)] = mod;
+    var key = String(name);
+    var prev = modules[key];
+    if (prev && prev._handlerRefs) {
+      for (var oldEvent in prev._handlerRefs) {
+        if (!prev._handlerRefs.hasOwnProperty(oldEvent)) continue;
+        var oldList = prev._handlerRefs[oldEvent] || [];
+        for (var i = 0; i < oldList.length; i++) {
+          removeHandler(oldEvent, oldList[i]);
+        }
+      }
+    }
+    modules[key] = mod;
     if (!mod.events) return;
+    mod._handlerRefs = {};
     for (var key in mod.events) {
-      if (mod.events.hasOwnProperty(key)) addHandler(key, mod.events[key]);
+      if (!mod.events.hasOwnProperty(key)) continue;
+      var fn = mod.events[key];
+      addHandler(key, fn);
+      if (!mod._handlerRefs[key]) mod._handlerRefs[key] = [];
+      mod._handlerRefs[key].push(fn);
     }
   }
   function emit(eventName, e) {
@@ -69,9 +87,7 @@ function debugSay(e, msg) {
     var id = e && e.id != null ? String(e.id) : "";
     var key = timerKeys[id];
     if (key) {
-
       emit("timer:" + key, e);
-      return;
     }
 
     emit("timer:" + id, e);
@@ -86,7 +102,20 @@ function debugSay(e, msg) {
   ns.dispatchTimer = dispatchTimer;
   ns._handlers = handlers;
   ns._modules = modules;
+
+  var pending = (typeof __DcNpcEventPendingModules !== "undefined" && __DcNpcEventPendingModules && __DcNpcEventPendingModules.length)
+    ? __DcNpcEventPendingModules
+    : [];
+  for (var pi = 0; pi < pending.length; pi++) {
+    try {
+      var item = pending[pi] || {};
+      registerModule(item.name, item.module);
+    } catch (errPending) {}
+  }
+  if (typeof __DcNpcEventPendingModules !== "undefined") __DcNpcEventPendingModules = [];
 })(NpcEventModule);
+
+
 
 function init(e) { NpcEventModule.emit("init", e); }
 function interact(e) { NpcEventModule.emit("interact", e); }

@@ -28,7 +28,24 @@ function cfg_chk_resolveFile(rawPath, baseDir) {
   if (txt.indexOf(':') !== -1 || txt.indexOf('/') === 0 || txt.indexOf('\\') === 0) {
     return new File(txt);
   }
-  return baseDir ? new File(baseDir, txt) : new File(txt);
+  var normalized = txt.replace(/\\/g, '/');
+  var startsCustomNpcs = normalized.indexOf('customnpcs/') === 0;
+  var withoutCustomRoot = startsCustomNpcs ? normalized.substring('customnpcs/'.length) : '';
+  if (baseDir) {
+    var based = new File(baseDir, txt);
+    if (based.exists()) return based;
+    if (withoutCustomRoot) {
+      var basedWithoutCustom = new File(baseDir, withoutCustomRoot);
+      if (basedWithoutCustom.exists()) return basedWithoutCustom;
+    }
+  }
+  var direct = new File(txt);
+  if (direct.exists()) return direct;
+  if (withoutCustomRoot) {
+    var directWithoutCustom = new File(withoutCustomRoot);
+    if (directWithoutCustom.exists()) return directWithoutCustom;
+  }
+  return baseDir ? new File(baseDir, txt) : direct;
 }
 
 function cfg_chk_readTextFile(file) {
@@ -39,6 +56,7 @@ function cfg_chk_readTextFile(file) {
 
 function cfg_chk_readJsonFile(file) {
   var raw = cfg_chk_readTextFile(file);
+  if (raw && raw.length > 0 && raw.charCodeAt(0) === 0xFEFF) raw = raw.substring(1);
   return { raw: raw, json: JSON.parse(raw) };
 }
 

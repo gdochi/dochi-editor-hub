@@ -8,22 +8,54 @@
   "entry": "dc_npc_core_module.js",
   "files": [
     {
-      "source": "dc_npc_core_module.js"
+      "source": "dc_npc_core_module.js",
+      "install_as": "dc_npc_core_module.js"
     },
     {
-      "source": "dc_util_common.js"
+      "source": "dc_cfg_checker.js",
+      "install_as": "dc_cfg_checker.js"
     },
     {
-      "source": "dc_cfg_checker.js"
+      "source": "dc_util_common.js",
+      "install_as": "dc_util_common.js"
     },
     {
-      "source": "dc_cond_checker.js"
+      "source": "dc_cond_checker.js",
+      "install_as": "dc_cond_checker.js"
     },
     {
-      "source": "dc_reward_checker.js"
+      "source": "dc_reward_checker.js",
+      "install_as": "dc_reward_checker.js"
     },
     {
-      "source": "dc_sequence_core.js"
+      "source": "dc_sequence_core.js",
+      "install_as": "dc_sequence_core.js"
+    },
+    {
+      "source": "dc_gecko_util.js",
+      "install_as": "dc_gecko_util.js"
+    },
+    {
+      "source": "dc_gui_runtime.js",
+      "install_as": "dc_gui_runtime.js"
+    },
+    {
+      "source": "dc_dialogue_util.js",
+      "install_as": "dc_dialogue_util.js"
+    },
+    {
+      "source": "dc_dialogue_trigger.js",
+      "install_as": "dc_dialogue_trigger.js"
+    },
+    {
+      "source": "dc_gui_runtime.html",
+      "type": "html",
+      "install_as": "dc_util/dc_gui_runtime.html"
+    },
+    {
+      "source": "dc_sound.html",
+      "type": "html",
+      "install_as": "dc_util/dc_sound.html"
     }
   ]
 }
