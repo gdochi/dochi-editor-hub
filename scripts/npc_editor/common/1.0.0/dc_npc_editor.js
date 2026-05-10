@@ -643,6 +643,9 @@ if(!npc){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"NPC is out
 style=String(data.scriptStyle||"general");
 lock=getNpcDochiLock(npc);
 if(data.styleOnly===true){
+npc=getNpcByUuid(e.player,String(npc.getUUID()))||npc;
+res=clearNpcScripts(npc,false);
+if(!res.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:res.error||"Script clear failed"});return;}
 setNpcScriptStyle(npc,style);
 if(style==="general"){
 setNpcDcSelection(npc,{});
@@ -680,6 +683,22 @@ function clearAllTabs(tabs){
 var out=[],i,t;
 for(i=0;i<tabs.length;i++){t=tabs[i]||{};out.push({tab:Number(t.tab||i+1),inlineScript:"",files:[]});}
 return out;
+}
+function clearNpcScripts(npc,scriptEnabled){
+var raw,existing,tabs,expectedState,newRaw,res;
+try{
+raw=getEntityNbtSafe(npc);
+existing=extractScriptTabsFromRaw(raw);
+tabs=clearAllTabs(existing.tabs);
+if(!tabs.length)tabs=[{tab:1,inlineScript:"",files:[]}];
+expectedState=buildScriptStateFromTabs(tabs,scriptEnabled===true);
+newRaw=replaceScriptsAndEnabled(raw,tabs,scriptEnabled===true);
+res=setEntityNbtSafe(npc,newRaw,expectedState);
+if(!res.ok)return res;
+return {ok:true,tabs:tabs};
+}catch(err){
+return {ok:false,error:String(err)};
+}
 }
 function getNpcScriptStyle(npc){
 return String(npc.getStoreddata().get(CFG.STYLE_KEY)||"general");
