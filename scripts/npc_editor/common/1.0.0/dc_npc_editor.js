@@ -10,10 +10,12 @@ MAX_RANGE:128,
 STYLE_KEY:"npc_browser_script_style",
 DC_SELECTION_KEY:"npc_browser_dc_selection",
 DOCHI_LOCK_KEY:"npc_browser_dochi_lock",
+DIALOGUE_JSON_PATH_KEY:"dc_dialogue_json_path",
 CACHE_MAP_KEY:"npc_browser_cache_map",
 CACHE_LIST_KEY:"npc_browser_cache_list",
 CACHE_RANGE_KEY:"npc_browser_scan_range",
 LOCALE_PREF_KEY:"npc_browser_locale_pref",
+PREVIEW_ENTITY_RENDER:true,
 DEBUG:false
 };
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
@@ -531,7 +533,7 @@ var list=toJsArray(getCachedNpcList(player));
 return buildNpcBrowserInitFromList(player,list,range);
 }
 function buildNpcBrowserInitFromList(player,list,range){
-var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,entityId,dochiLock,overlayEntities=[];
+var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,previewSlot,previewNbt,dochiLock,overlayEntities=[];
 for(i=0;i<list.length;i++){
 n=list[i];
 try{n=getNpcByUuid(player,String(n.getUUID()))||n;}catch(resolveErr){}
@@ -546,9 +548,19 @@ dist=distanceToPlayer(player,n);
 style=getNpcScriptStyle(n);
 dochiLock=getNpcDochiLock(n);
 if(dochiLock.locked)style="dcE";
-entityId=-1;
-entityId=Number(cnpcext.entityId(n));
-if(entityId>=0)overlayEntities.push({slot:i,entityId:entityId,rotation:180,followCursor:true,animate:true});
+previewSlot=-1;
+previewNbt="";
+if(CFG.PREVIEW_ENTITY_RENDER){
+try{
+previewNbt=buildNpcPreviewNbt(n);
+if(previewNbt){
+previewSlot=i;
+overlayEntities.push({slot:i,nbt:previewNbt,rotation:180,followCursor:true,animate:true});
+}
+}catch(previewErr){
+previewSlot=-1;
+}
+}
 if(faction&&!factionsMap[faction]){factionsMap[faction]=true;factions.push(faction);}
 npcs.push({
 uuid:String(n.getUUID()),
@@ -562,12 +574,19 @@ distanceText:formatDistance(dist),
 scriptStyle:style,
 dochiLocked:dochiLock.locked,
 dochiLock:dochiLock,
-previewSlot:(entityId>=0?i:-1),
-hasPreview:(entityId>=0)
+previewSlot:previewSlot,
+hasPreview:(previewSlot>=0)
 });
 }
 factions.sort();
 return {npcs:npcs,factions:factions,scanRange:range,overlayEntities:overlayEntities,admin:buildAdminBrowserState(player),locale:getPlayerLocale(player),localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales()};
+}
+function buildNpcPreviewNbt(npc){
+var raw=getEntityNbtSafe(npc),tabs=[{tab:1,inlineScript:"",files:[]}];
+raw=replaceScriptsAndEnabled(raw,tabs,false);
+raw=replacePrimitiveField(raw,"ShowName","0b");
+raw=replacePrimitiveField(raw,"ShowBossBar","0b");
+return raw;
 }
 function formatDistance(d){return (Math.round(d*10)/10)+"m";}
 function distanceToPlayer(player,npc){
@@ -625,36 +644,21 @@ pushBrowser(e.player,"npcActionResult",{ok:false,action:"delete",error:String(er
 }
 }
 function onNpcScriptInfo(e,data){
-var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw="",result,lock;
+var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),result;
 if(!npc){pushBrowser(e.player,"npcScriptData",{ok:false,uuid:String(data.uuid||""),error:"NPC is outside the current scan range. Refresh or move closer.",tabs:[],flatFiles:[],flatInline:[],scriptEnabled:true,scriptStyle:"general",dcSelection:{scriptPath:"",jsonPath:"",prefix:""},dochiLock:defaultDochiLock()});return;}
-raw=getEntityNbtSafe(npc);
-result=extractScriptTabsFromRaw(raw);
-lock=getNpcDochiLock(npc);
-result.scriptStyle=getNpcScriptStyle(npc);
-if(lock.locked)result.scriptStyle="dcE";
-result.dcSelection=getNpcDcSelection(npc);
-result.dochiLock=lock;
-result.uuid=String(npc.getUUID());
+result=buildNpcScriptDataPayload(npc);
 pushBrowser(e.player,"npcScriptData",result);
 }
 function onNpcScriptApply(e,data){
-var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw,existing,tabs,newRaw,style,scriptEnabled,res,expectedState,lock,validation;
+var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw,existing,tabs,style,scriptEnabled,res,expectedState,lock,validation,payload;
 if(!npc){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"NPC is outside the current scan range. Refresh or move closer."});return;}
 style=String(data.scriptStyle||"general");
 lock=getNpcDochiLock(npc);
 if(data.styleOnly===true){
-npc=getNpcByUuid(e.player,String(npc.getUUID()))||npc;
-res=clearNpcScripts(npc,false);
-if(!res.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:res.error||"Script clear failed"});return;}
-setNpcScriptStyle(npc,style);
-if(style==="general"){
-setNpcDcSelection(npc,{});
-setNpcDochiLock(npc,{locked:false});
-}else if(style==="dcE"){
-setNpcDochiLock(npc,buildDochiLock(getNpcDcSelection(npc)));
-}
-npc=getNpcByUuid(e.player,String(npc.getUUID()))||npc;
-pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
+payload=applyNpcModeOnly(e.player,npc,style);
+if(!payload.ok){pushBrowser(e.player,"npcScriptApplyResult",payload);return;}
+pushBrowser(e.player,"npcScriptApplyResult",payload);
+pushBrowser(e.player,"npcScriptData",payload);
 pushNpcList(e.player,getStoredScanRange(e.player));
 return;
 }
@@ -670,8 +674,7 @@ validation=(lock.locked&&data.confirmGeneralConvert===true)?{ok:true}:validateGe
 if(!validation.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:validation.error});return;}
 scriptEnabled=(data.scriptEnabled===true||data.scriptEnabled===false)?data.scriptEnabled:existing.scriptEnabled;
 expectedState=buildScriptStateFromTabs(tabs,scriptEnabled);
-newRaw=replaceScriptsAndEnabled(raw,tabs,scriptEnabled);
-res=setEntityNbtSafe(npc,newRaw,expectedState);
+res=setNpcScriptsDirect(npc,tabs,scriptEnabled,expectedState);
 if(!res.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:res.error||"Apply failed"});return;}
 setNpcScriptStyle(npc,style);
 setNpcDcSelection(npc,{});
@@ -679,26 +682,93 @@ setNpcDochiLock(npc,{locked:false});
 pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:defaultDochiLock()});
 pushNpcList(e.player,getStoredScanRange(e.player));
 }
+function buildNpcScriptDataPayload(npc){
+var raw=getEntityNbtSafe(npc),result=extractScriptTabsFromRaw(raw),lock=getNpcDochiLock(npc);
+result.scriptStyle=getNpcScriptStyle(npc);
+if(lock.locked)result.scriptStyle="dcE";
+result.dcSelection=getNpcDcSelection(npc);
+result.dochiLock=lock;
+result.uuid=String(npc.getUUID());
+return result;
+}
+function applyNpcModeOnly(player,npc,style){
+var uuid=String(npc.getUUID()),res,payload;
+try{
+npc=getNpcByUuid(player,uuid)||npc;
+res=clearNpcScripts(npc,false);
+if(!res.ok)return {ok:false,uuid:uuid,error:res.error||"Script clear failed",styleOnly:true};
+refreshNpcClient(npc);
+setNpcScriptStyle(npc,style);
+setNpcDcSelection(npc,{});
+setNpcDochiLock(npc,{locked:false});
+refreshNpcClient(npc);
+npc=getNpcByUuid(player,uuid)||npc;
+payload=buildNpcScriptDataPayload(npc);
+payload.ok=true;
+payload.styleOnly=true;
+payload.uuid=uuid;
+payload.scriptStyle=style;
+payload.dcSelection=getNpcDcSelection(npc);
+payload.dochiLock=getNpcDochiLock(npc);
+return payload;
+}catch(err){
+return {ok:false,uuid:uuid,error:String(err),styleOnly:true};
+}
+}
 function clearAllTabs(tabs){
 var out=[],i,t;
 for(i=0;i<tabs.length;i++){t=tabs[i]||{};out.push({tab:Number(t.tab||i+1),inlineScript:"",files:[]});}
 return out;
 }
 function clearNpcScripts(npc,scriptEnabled){
-var raw,existing,tabs,expectedState,newRaw,res;
+var tabs,expectedState,res;
 try{
-raw=getEntityNbtSafe(npc);
-existing=extractScriptTabsFromRaw(raw);
-tabs=clearAllTabs(existing.tabs);
-if(!tabs.length)tabs=[{tab:1,inlineScript:"",files:[]}];
+tabs=[{tab:1,inlineScript:"",files:[]}];
 expectedState=buildScriptStateFromTabs(tabs,scriptEnabled===true);
-newRaw=replaceScriptsAndEnabled(raw,tabs,scriptEnabled===true);
-res=setEntityNbtSafe(npc,newRaw,expectedState);
+res=setNpcScriptsDirect(npc,tabs,scriptEnabled===true,expectedState);
 if(!res.ok)return res;
-return {ok:true,tabs:tabs};
+refreshNpcClient(npc);
+return {ok:true,tabs:tabs,scriptEnabled:scriptEnabled===true};
 }catch(err){
 return {ok:false,error:String(err)};
 }
+}
+function refreshNpcClient(npc){
+try{if(npc&&typeof npc.updateClient==="function")npc.updateClient();}catch(err0){}
+}
+function setNpcScriptsDirect(npc,tabs,scriptEnabled,expectedState){
+var nbt,verify;
+try{
+nbt=npc.getEntityNbt();
+setNbtScriptEnabled(nbt,scriptEnabled===true);
+nbt.setList("Scripts",buildTabNbtObjects(tabs));
+npc.setEntityNbt(nbt);
+}catch(err){
+return {ok:false,error:"direct script write failed: "+String(err)};
+}
+refreshNpcClient(npc);
+verify=verifyEntityScriptWrite(npc,expectedState||buildScriptStateFromTabs(tabs,scriptEnabled===true));
+if(!verify.ok)return verify;
+return {ok:true};
+}
+function setNbtScriptEnabled(nbt,enabled){
+try{nbt.setByte("ScriptEnabled",enabled?1:0);return;}catch(err0){}
+try{nbt.setBoolean("ScriptEnabled",enabled===true);return;}catch(err1){}
+try{nbt.setInteger("ScriptEnabled",enabled?1:0);return;}catch(err2){}
+}
+function buildTabNbtObjects(tabs){
+var out=[],i,t;
+if(!Array.isArray(tabs)||!tabs.length)tabs=[{tab:1,inlineScript:"",files:[]}];
+for(i=0;i<tabs.length;i++){
+t=tabs[i]||{};
+out.push(API.stringToNbt(buildOneTabNbt(t)));
+}
+return out;
+}
+function buildOneTabNbt(t){
+var files=[],j,input=t&&t.files?t.files:[];
+for(j=0;j<input.length;j++)files.push('{Line:"'+escapeNbtString(input[j])+'"}');
+return '{Console:[],Script:"'+escapeNbtString((t&&t.inlineScript)||"")+'",ScriptList:['+files.join(",")+']}';
 }
 function getNpcScriptStyle(npc){
 return String(npc.getStoreddata().get(CFG.STYLE_KEY)||"general");
@@ -770,7 +840,7 @@ return parts[parts.length-1]||p;
 }
 function getDcEntrySpecs(){
 return [
-{id:"dc_dialogue_trigger",name:"Dialogue Trigger",path:"ds_npc_util/dc_dialogue_trigger.js",prefix:"dc_dialogue",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["dc_util/dc_gui_runtime.html"]}
+{id:"dc_dialogue_trigger",name:"Dialogue Trigger",path:"ds_npc_util/dc_dialogue_trigger.js",prefix:"dc_dialogue",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_reward_checker.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["dc_util/dc_gui_runtime.html"]}
 ];
 }
 function listDcInstallableScripts(){
@@ -851,15 +921,14 @@ return {ok:false,error:"Selected JSON file is not installed: "+sel.jsonPath};
 return {ok:true,selection:sel};
 }
 function applyDochiScriptToNpc(player,npc,data,raw,existing){
-var check=validateDcApplySelection(data.dcSelection||{}),selection,tabs,scriptEnabled,expectedState,newRaw,res,lock,files=[],i;
+var check=validateDcApplySelection(data.dcSelection||{}),selection,tabs,scriptEnabled,expectedState,res,lock,files=[],i;
 if(!check.ok){pushBrowser(player,"npcScriptApplyResult",{ok:false,error:check.error});return;}
 selection=check.selection;
 scriptEnabled=(data.scriptEnabled===true||data.scriptEnabled===false)?data.scriptEnabled:existing.scriptEnabled;
 for(i=0;i<selection.scriptPaths.length;i++)files.push(toDcScriptListPath(selection.scriptPaths[i]));
 tabs=[{tab:1,inlineScript:"",files:files}];
 expectedState=buildScriptStateFromTabs(tabs,scriptEnabled);
-newRaw=replaceScriptsAndEnabled(raw,tabs,scriptEnabled);
-res=setEntityNbtSafe(npc,newRaw,expectedState);
+res=setNpcScriptsDirect(npc,tabs,scriptEnabled,expectedState);
 if(!res.ok){pushBrowser(player,"npcScriptApplyResult",{ok:false,error:res.error||"Dochi apply failed"});return;}
 lock=buildDochiLock(selection);
 setNpcScriptStyle(npc,"dcE");
@@ -1519,12 +1588,11 @@ if(out.locked&&!out.mode)out.mode="dcE";
 return out;
 }
 function getNpcDochiLock(npc){
-var store=npc.getStoreddata(),raw=String(store.get(CFG.DOCHI_LOCK_KEY)||""),style,sel;
-if(raw)return normalizeDochiLock(JSON.parse(raw));
-style=String(store.get(CFG.STYLE_KEY)||"general");
-if(style==="dcE"){
-sel=getNpcDcSelection(npc);
-return normalizeDochiLock({locked:true,mode:"dcE",scriptPath:sel.scriptPath,scriptPaths:sel.scriptPaths,jsonPath:sel.jsonPath,prefix:sel.prefix});
+var store=npc.getStoreddata(),raw=String(store.get(CFG.DOCHI_LOCK_KEY)||""),state;
+if(raw){
+state=normalizeDochiLock(JSON.parse(raw));
+if(state.locked&&!state.scriptPath&&!state.scriptPaths.length)return defaultDochiLock();
+return state;
 }
 return defaultDochiLock();
 }
@@ -1539,9 +1607,16 @@ if(!raw)return {scriptPath:"",jsonPath:"",prefix:""};
 return JSON.parse(raw);
 }
 function setNpcDcSelection(npc,selection){
+var store=npc.getStoreddata();
 var sel=normalizeDcSelection(selection||{});
-if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){clearStoredDataKey(npc.getStoreddata(),CFG.DC_SELECTION_KEY);return;}
-npc.getStoreddata().put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
+if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){
+clearStoredDataKey(store,CFG.DC_SELECTION_KEY);
+clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
+return;
+}
+store.put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
+if(sel.prefix==="dc_dialogue"&&sel.jsonPath)store.put(CFG.DIALOGUE_JSON_PATH_KEY,String(sel.jsonPath||""));
+else clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
 }
 function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");

@@ -1,11 +1,4 @@
-// Simple dialogue trigger for dc_npc_core_module.js.
-// ScriptList order:
-// 1) dc_lib/ds_npc_util/dc_npc_core_module.js
-// 2) dc_lib/ds_npc_util/dc_cfg_checker.js
-// 3) dc_lib/ds_npc_util/dc_util_common.js
-// 4) dc_lib/ds_npc_util/dc_gui_runtime.js
-// 5) dc_lib/ds_npc_util/dc_dialogue_util.js
-// 6) dc_lib/ds_npc_util/dc_dialogue_trigger.js
+
 
 var DcDialogueTriggerConfig = {
   enabled: true,
@@ -14,6 +7,64 @@ var DcDialogueTriggerConfig = {
   htmlPath: "html/dc_util/dc_gui_runtime.html"
 };
 
+var DC_DIALOGUE_TRIGGER_DIRECT_PATH_KEY = "dc_dialogue_json_path";
+var DC_DIALOGUE_TRIGGER_SELECTION_KEY = "npc_browser_dc_selection";
+var DC_DIALOGUE_TRIGGER_LOCK_KEY = "npc_browser_dochi_lock";
+
+function dc_dialogue_trigger_cleanPath(path){
+  path = String(path || "").replace(/\\/g, "/").replace(/^\s+|\s+$/g, "");
+  while(path.charAt(0) === "/") path = path.substring(1);
+  return path.replace(/\/+/g, "/");
+}
+
+function dc_dialogue_trigger_readStore(store, key){
+  try{
+    if(!store || !key) return "";
+    var value = store.get(String(key));
+    if(value == null) return "";
+    return String(value);
+  }catch(err){
+    return "";
+  }
+}
+
+function dc_dialogue_trigger_readSelectionPath(raw){
+  var obj, prefix, path;
+  try{
+    if(!raw) return "";
+    obj = JSON.parse(String(raw));
+    prefix = String(obj.prefix || "");
+    if(prefix && prefix !== "dc_dialogue") return "";
+    path = dc_dialogue_trigger_cleanPath(obj.jsonPath || "");
+    return path;
+  }catch(err){
+    return "";
+  }
+}
+
+function dc_dialogue_trigger_getStoredDialoguePath(npc){
+  var store, path;
+  try{
+    if(!npc || typeof npc.getStoreddata !== "function") return "";
+    store = npc.getStoreddata();
+  }catch(err0){
+    return "";
+  }
+  path = dc_dialogue_trigger_cleanPath(dc_dialogue_trigger_readStore(store, DC_DIALOGUE_TRIGGER_DIRECT_PATH_KEY));
+  if(path) return path;
+  path = dc_dialogue_trigger_readSelectionPath(dc_dialogue_trigger_readStore(store, DC_DIALOGUE_TRIGGER_SELECTION_KEY));
+  if(path) return path;
+  path = dc_dialogue_trigger_readSelectionPath(dc_dialogue_trigger_readStore(store, DC_DIALOGUE_TRIGGER_LOCK_KEY));
+  if(path) return path;
+  return "";
+}
+
+function dc_dialogue_trigger_getDialoguePath(npc){
+  var storedPath = dc_dialogue_trigger_getStoredDialoguePath(npc);
+  if(storedPath) return storedPath;
+  return dc_dialogue_trigger_cleanPath(DcDialogueTriggerConfig.dialogueJsonPath || "");
+}
+
 function dc_dialogue_trigger_interact(e){
   if(!DcDialogueTriggerConfig.enabled) return;
   if(!e || !e.player || !e.npc) return;
@@ -21,7 +72,7 @@ function dc_dialogue_trigger_interact(e){
     throw new Error("dc_dialogue_open is not loaded.");
   }
 
-  var dialogueJsonPath = String(DcDialogueTriggerConfig.dialogueJsonPath || "").trim();
+  var dialogueJsonPath = dc_dialogue_trigger_getDialoguePath(e.npc);
   if(!dialogueJsonPath){
     throw new Error("dialogueJsonPath is empty.");
   }

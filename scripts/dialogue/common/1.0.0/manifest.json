@@ -37,9 +37,15 @@
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "path": "dc_lib/ds_npc_util/dc_reward_checker.js",
           "required": true,
           "load_order": 5
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 6
         },
         {
           "type": "html",

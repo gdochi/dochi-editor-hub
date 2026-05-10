@@ -1,11 +1,12 @@
 ﻿// Dialogue util for dc_gui_runtime.html
 // - Loads dialogue JSON ({node:{text,choice}})
 // - Opens html GUI via openDcGuiRuntime()
-// - Handles htmlGuiEvent("choice") and executes actions (goto/close/command/store/advancement)
+// - Handles htmlGuiEvent("choice"), dialogue navigation, and delegates reward/actions.
 //
 // Requires these loaded before:
 // - dc_lib/ds_npc_util/dc_cfg_checker.js   (cfg_chk_*)
 // - dc_lib/ds_npc_util/dc_gui_runtime.js   (openDcGuiRuntime)
+// - dc_lib/ds_npc_util/dc_reward_checker.js (rew_chk_applyAction)
 // - dc_lib/ds_npc_util/dc_gecko_util.js  (DcGeckoUtilModule, optional NPC/Gecko FX)
 
 var DcDialogueUtilModule = (function(){
@@ -493,97 +494,13 @@ var DcDialogueUtilModule = (function(){
     return true;
   }
 
-  function applyStore(player, store){
-    if(!player || !store) return;
-    var key = String(store.key || "");
-    if(!key) return;
-    var data = player.getStoreddata();
-    var op = String(store.op || store.storeOp || "set").toLowerCase();
-    if(op === "delete" || op === "remove"){
-      try{ data.remove(key); }catch(e0){}
-      return;
+  function runRewardAction(player, npc, eventObj, action){
+    if(typeof rew_chk_applyAction !== "function"){
+      throw new Error("dc_reward_checker.js must be loaded before dc_dialogue_util.js");
     }
-    if(op === "add" || op === "subtract"){
-      var cur = 0;
-      try{ cur = parseFloat(String(data.get(key) || "0")); }catch(e1){ cur = 0; }
-      if(isNaN(cur)) cur = 0;
-      var delta = parseFloat(String(store.value != null ? store.value : "0"));
-      if(isNaN(delta)) delta = 0;
-      data.put(key, String(op === "subtract" ? cur - delta : cur + delta));
-      return;
-    }
-    data.put(key, String(store.value != null ? store.value : ""));
+    return rew_chk_applyAction({ player: player, npc: npc, event: eventObj }, action);
   }
-
-  function applyTag(player, tag){
-    if(!player || !tag) return;
-    var key = String(tag.key || tag.tag || "");
-    if(!key) return;
-    var op = String(tag.op || "add").toLowerCase();
-    try{
-      if(op === "delete" || op === "remove"){
-        if(typeof player.removeTag === "function") player.removeTag(key);
-      }else{
-        if(typeof player.addTag === "function") player.addTag(key);
-      }
-    }catch(e){}
-  }
-
-  function applyAdvancement(player, adv){
-    if(!player || !adv) return;
-    var id = String(adv.id || adv.advancement || "");
-    if(!id) return;
-    if(adv.grant === true || adv.value === true){
-      if(typeof player.giveAdvancement === "function") player.giveAdvancement(id);
-    }
-  }
-
-  function playerName(player){
-    try{ if(player && typeof player.getName === "function") return String(player.getName()); }catch(e0){}
-    try{ return String(player.name || ""); }catch(e1){}
-    return "";
-  }
-
-  function execNpcCommand(npc, command){
-    if(!npc || !command) return false;
-    try{
-      if(typeof npc.executeCommand === "function"){
-        npc.executeCommand(String(command));
-        return true;
-      }
-    }catch(e){}
-    return false;
-  }
-
-  function applyFtbTask(player, npc, task){
-    if(!task) return;
-    var quest = String(task.quest || "");
-    if(!quest) return;
-    var name = playerName(player);
-    var taskIndex = Number(task.task || 0);
-    var suffix = taskIndex > 0 ? (" " + taskIndex) : "";
-    execNpcCommand(npc, "ftbquests change_progress " + name + " complete " + quest + suffix);
-  }
-
-  function applyFtbComplete(player, npc, complete){
-    if(!complete) return;
-    var quest = String(complete.quest || "");
-    if(!quest) return;
-    execNpcCommand(npc, "ftbquests change_progress " + playerName(player) + " complete " + quest);
-  }
-
-  function applyCobbleDollar(player, npc, money){
-    if(!money) return;
-    var amount = Number(money.amount || 0);
-    if(!amount) return;
-    var op = String(money.op || money.moneyOp || "add").toLowerCase();
-    var cmdOp = "give";
-    if(op === "take" || op === "pay" || op === "remove" || op === "subtract") cmdOp = "pay";
-    else if(op === "set") cmdOp = "set";
-    var name = playerName(player);
-    execNpcCommand(npc, "cobbledollars " + cmdOp + " " + name + " " + amount);
-  }
-  function applyChoiceNpcFx(eventObj, player, npc, choiceFx){
+  function runChoiceNpcFx(eventObj, player, npc, choiceFx){
     if(!choiceFx || typeof choiceFx !== "object") return false;
     var list = [];
     if(Array.isArray(choiceFx.npc)) list = choiceFx.npc;
@@ -628,23 +545,11 @@ var DcDialogueUtilModule = (function(){
     var choiceFx = null;
     try{ var dataObjFx = payload ? payload.data : null; if(typeof dataObjFx === "string") dataObjFx = JSON.parse(String(dataObjFx)); choiceFx = dataObjFx && dataObjFx.fx && typeof dataObjFx.fx === "object" ? dataObjFx.fx : null; }catch(eFx){ choiceFx = null; }
 
-    applyChoiceNpcFx(eventObj, player, npc, choiceFx);
+    runChoiceNpcFx(eventObj, player, npc, choiceFx);
 
     for(var i=0;i<actions.length;i++){
       var a = actions[i] || {};
-      if(a.store) applyStore(player, a.store);
-      if(a.tag) applyTag(player, a.tag);
-      if(a.advancement) applyAdvancement(player, a.advancement);
-      if(a.ftb_task) applyFtbTask(player, npc, a.ftb_task);
-      if(a.ftb_complete) applyFtbComplete(player, npc, a.ftb_complete);
-      if(a.cobbledollar) applyCobbleDollar(player, npc, a.cobbledollar);
-
-      if(a.command){
-        var cmd = String(a.command);
-        var name = playerName(player);
-        if(name) cmd = cmd.split("@player").join(name).split("{player}").join(name);
-        execNpcCommand(npc, cmd);
-      }
+      runRewardAction(player, npc, eventObj, a);
 
       if(a.close === true){
         closeHtmlGui(player);
@@ -732,6 +637,3 @@ var DcDialogueUtilModule = (function(){
 
 function dc_dialogue_open(e, opts){ return DcDialogueUtilModule.open(e, null, opts || {}); }
 function dc_dialogue_handleHtmlEvent(e){ return DcDialogueUtilModule.handleHtmlEvent(e); }
-
-
-

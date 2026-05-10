@@ -306,9 +306,24 @@ function collectMainScripts(manifests) {
 }
 
 function detectUtilityDependencies(mainScripts, utilityIndex) {
+  const utilityByScript = {}
+  utilityIndex.forEach((util) => {
+    utilityByScript[util.script] = util
+  })
+
   mainScripts.forEach((main) => {
     const utilityMap = {}
     const htmlMap = {}
+
+    function addUtility(util, dep) {
+      if (!util || utilityMap[util.script]) return
+      utilityMap[util.script] = {
+        script: util.script,
+        path: util.path,
+        required: dep ? dep.required !== false : true,
+        load_order: dep && dep.load_order != null ? dep.load_order : util.default_order
+      }
+    }
 
     main.versions.forEach((version) => {
       ;(version.dependencies || []).forEach((dep) => {
@@ -323,6 +338,11 @@ function detectUtilityDependencies(mainScripts, utilityIndex) {
         }
       })
 
+      ;(version.dependencies || []).forEach((dep) => {
+        if (dep.type !== "script") return
+        addUtility(utilityByScript[baseName(dep.path)], dep)
+      })
+
       const filePath = path.join(rootDir, version.source_path)
       if (!fs.existsSync(filePath)) return
       const text = readText(filePath)
@@ -335,15 +355,7 @@ function detectUtilityDependencies(mainScripts, utilityIndex) {
         })
         if (!matched.length) return
 
-        if (!utilityMap[util.script]) {
-          const manifestDep = findManifestUtilityDep(main, util.script)
-          utilityMap[util.script] = {
-            script: util.script,
-            path: util.path,
-            required: manifestDep ? manifestDep.required !== false : true,
-            load_order: manifestDep && manifestDep.load_order != null ? manifestDep.load_order : util.default_order
-          }
-        }
+        addUtility(util, findManifestUtilityDep(main, util.script))
       })
     })
 

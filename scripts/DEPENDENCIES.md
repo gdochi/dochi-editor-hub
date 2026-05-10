@@ -1,12 +1,12 @@
 # Dochi Script Dependencies
 
-- Generated: `2026-05-10T07:18:55.670Z`
+- Generated: `2026-05-10T14:38:36.765Z`
 - Utility root: `npc_util/common/1.0.0`
 - Main scripts: `6`
 
 | Main Script | Script Dependencies | HTML Dependencies |
 |---|---|---|
-| `dc_dialogue_trigger.js` | `dc_npc_core_module.js`<br>`dc_dialogue_util.js` | `html/dc_util/dc_gui_runtime.html` |
+| `dc_dialogue_trigger.js` | `dc_npc_core_module.js`<br>`dc_cfg_checker.js`<br>`dc_util_common.js`<br>`dc_gui_runtime.js`<br>`dc_reward_checker.js`<br>`dc_dialogue_util.js` | `html/dc_util/dc_gui_runtime.html` |
 | `dc_item_editor.js` | - | - |
 | `dc_npc_editor.js` | - | `html/dc_npc_editor.html` |
 | `dc_story_scroll.js` | - | - |
