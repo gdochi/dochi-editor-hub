@@ -209,9 +209,9 @@ function normalizeFileItem(v){if(v&&v.path!=null)return v;return {path:String(v|
 function defaultDochiLock(){return {locked:false,mode:"general",scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};}
 function isDceNpc(npc){var lock=normalizeDochiLock((npc&&npc.dochiLock)||{locked:!!(npc&&npc.dochiLocked)});return lock.locked||String((npc&&npc.scriptStyle)||"general")==="dcE";}
 function requestGeneralScriptMode(){
-var lock=normalizeDochiLock(APP_STATE.script.data.dochiLock);
 var npc=getSelectedNpc();
-if(lock.locked||isDceNpc(npc)){
+if(!npc){setStatus("No NPC selected.","status-err");return;}
+if(isDceNpc(npc)){
 showConfirm(
 tr("npc_editor.general_convert_confirm","Adding other scripts may cause errors. Please be careful.\n\nConvert this NPC to a regular script NPC?"),
 tr("npc_editor.warning","Warning"),
@@ -219,21 +219,21 @@ convertSelectedNpcToGeneralMode
 );
 return;
 }
-setActiveView("script");
-setPendingStyle("general",false);
+sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:"general",styleOnly:true});
+setStatus("Sent general mode request.","status-warn");
 }
 function convertSelectedNpcToGeneralMode(){
 var npc=getSelectedNpc();
 if(!npc){setStatus("No NPC selected.","status-err");return;}
-APP_STATE.script.generalConvertConfirmed=true;
-APP_STATE.script.pendingStyle="general";
-APP_STATE.script.pendingUuid=APP_STATE.selectedUuid;
-APP_STATE.script.data.scriptStyle="general";
-APP_STATE.script.data.dochiLock=defaultDochiLock();
 sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:"general",confirmGeneralConvert:true,styleOnly:true});
-setActiveView("script");
-updateStyleUi();
 setStatus("Sent general mode conversion request.","status-warn");
+}
+function setSelectedNpcDceMode(){
+var npc=getSelectedNpc();
+if(!npc){setStatus("No NPC selected.","status-err");return;}
+if(isDceNpc(npc)){setStatus("NPC is already in DCE mode.","status-ok");return;}
+sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:"dcE",styleOnly:true});
+setStatus("Sent DCE mode request.","status-warn");
 }
 function normalizeDochiLock(lock){var paths=[],raw;lock=lock||{};raw=Array.isArray(lock.scriptPaths)?lock.scriptPaths:[];raw.forEach(function(v){v=String(v||"");if(v)paths.push(v);});if(!paths.length&&lock.scriptPath)paths.push(String(lock.scriptPath));return {locked:lock.locked===true,mode:String(lock.mode||"general"),scriptPath:String(lock.scriptPath||""),scriptPaths:paths,jsonPath:String(lock.jsonPath||""),prefix:String(lock.prefix||"")};}
 function init(){
@@ -284,9 +284,8 @@ byId("scriptTabBtn").onclick=requestGeneralScriptMode;
 if(byId("topbarDceBtn")){
 byId("topbarDceBtn").onclick=function(){
 if(this.disabled)return;
-showConfirm("dcE mode locks the regular script list and switches this editor into DC pairing mode.\n\nMove to dcE mode?","Warning",function(){
-setActiveView("script");
-setPendingStyle("dcE");
+showConfirm("Set the selected NPC to DCE script mode?\n\nThis only changes the NPC mode.","Warning",function(){
+setSelectedNpcDceMode();
 });
 };
 }
@@ -299,8 +298,7 @@ if(e.target===byId("noticeModal"))hideNotice();
 if(byId("confirmYesBtn")){
 byId("confirmYesBtn").onclick=function(){
 hideConfirm();
-setActiveView("script");
-setPendingStyle("dcE");
+setSelectedNpcDceMode();
 };
 }
 if(byId("confirmNoBtn"))byId("confirmNoBtn").onclick=hideConfirm;
@@ -413,14 +411,14 @@ scriptBtn.id="scriptTabBtn";
 scriptBtn.className="tab-btn";
 scriptBtn.textContent="General";
 }
-scriptBtn.title="Open the script workspace and edit the current NPC script.";
+scriptBtn.title="Set the selected NPC to General script mode.";
 box.appendChild(scriptBtn);
 if(!byId("topbarDceBtn")){
 dce=document.createElement("button");
 dce.type="button";
 dce.id="topbarDceBtn";
 dce.className="secondary script-utility-btn";
-dce.title="Switch into dcE mode for dc_lib and JSON pairing.";
+dce.title="Set the selected NPC to DCE script mode.";
 dce.textContent="DCE";
 box.appendChild(dce);
 }
@@ -881,14 +879,15 @@ updateTopbarModeButtons();
 function updateTopbarModeButtons(){
 var dceBtn=byId("topbarDceBtn");
 var scriptBtn=byId("scriptTabBtn");
-var lock=normalizeDochiLock(APP_STATE.script.data.dochiLock);
-var mode=String(APP_STATE.script.pendingUuid===APP_STATE.selectedUuid?APP_STATE.script.pendingStyle:modeFromNpc(getSelectedNpc())||APP_STATE.script.data.scriptStyle||"general");
-var dceActive=APP_STATE.activeView==="script"&&(lock.locked||mode==="dcE");
-var selectedDce=isDceNpc(getSelectedNpc());
-if(scriptBtn)scriptBtn.classList.toggle("active",APP_STATE.activeView==="script"&&!dceActive);
+var npc=getSelectedNpc();
+var mode=modeFromNpc(npc);
+if(scriptBtn){
+scriptBtn.classList.toggle("active",mode==="general");
+scriptBtn.disabled=!APP_STATE.admin.canEdit||!npc||mode==="general";
+}
 if(dceBtn){
-dceBtn.classList.toggle("active",dceActive);
-dceBtn.disabled=!APP_STATE.admin.canEdit||selectedDce||dceActive;
+dceBtn.classList.toggle("active",mode==="dcE");
+dceBtn.disabled=!APP_STATE.admin.canEdit||!npc||mode==="dcE";
 }
 }
 function addFileToSelectedTab(path){
@@ -1010,10 +1009,4 @@ function appendOption(select, value, label){
 </script>
 </body>
 </html>
-
-
-
-
-
-
 

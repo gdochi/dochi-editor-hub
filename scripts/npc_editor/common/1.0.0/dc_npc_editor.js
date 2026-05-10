@@ -609,7 +609,7 @@ var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw,existing,tabs,n
 if(!npc){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"NPC is outside the current scan range. Refresh or move closer."});return;}
 style=String(data.scriptStyle||"general");
 lock=getNpcDochiLock(npc);
-if(style!=="dcE"&&data.styleOnly===true){
+if(data.styleOnly===true){
 if(lock.locked&&data.confirmGeneralConvert!==true){
 pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"This NPC is locked to Dochi script mode. Use dcE mode to update it."});
 return;
@@ -618,6 +618,8 @@ setNpcScriptStyle(npc,style);
 if(style==="general"){
 setNpcDcSelection(npc,{});
 setNpcDochiLock(npc,{locked:false});
+}else if(style==="dcE"){
+setNpcDochiLock(npc,buildDochiLock(getNpcDcSelection(npc)));
 }
 pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
 pushNpcList(e.player,getStoredScanRange(e.player));
@@ -654,6 +656,10 @@ return String(npc.getStoreddata().get(CFG.STYLE_KEY)||"general");
 }
 function setNpcScriptStyle(npc,style){
 npc.getStoreddata().put(CFG.STYLE_KEY,String(style||"general"));
+}
+function clearStoredDataKey(store,key){
+try{store.put(String(key),"");}catch(err){}
+try{store.remove(String(key));}catch(err2){}
 }
 
 function normalizeRelPath(path){
@@ -1475,7 +1481,7 @@ return defaultDochiLock();
 }
 function setNpcDochiLock(npc,lock){
 var store=npc.getStoreddata(),state=normalizeDochiLock(lock);
-if(!state.locked){store.remove(CFG.DOCHI_LOCK_KEY);return;}
+if(!state.locked){clearStoredDataKey(store,CFG.DOCHI_LOCK_KEY);return;}
 store.put(CFG.DOCHI_LOCK_KEY,JSON.stringify(state));
 }
 function getNpcDcSelection(npc){
@@ -1485,7 +1491,7 @@ return JSON.parse(raw);
 }
 function setNpcDcSelection(npc,selection){
 var sel=normalizeDcSelection(selection||{});
-if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){npc.getStoreddata().remove(CFG.DC_SELECTION_KEY);return;}
+if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){clearStoredDataKey(npc.getStoreddata(),CFG.DC_SELECTION_KEY);return;}
 npc.getStoreddata().put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
 }
 function onNpcDcJsonFileList(e,data){
