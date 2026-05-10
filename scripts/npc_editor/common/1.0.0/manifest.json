@@ -29,10 +29,16 @@
           "note": "Scans installed ECMAScript and dc_lib scripts."
         },
         {
-          "type": "directory",
-          "path": "customnpcs/dc_admins/",
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_admins/",
           "required": true,
           "note": "Stores and reads NPC editor admin access data."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_lang/npc_editor/",
+          "required": true,
+          "note": "NPC editor language packs loaded by the HTML UI."
         }
       ]
     },
@@ -40,6 +46,36 @@
       "source": "dc_npc_editor.html",
       "install_as": "dc_npc_editor.html",
       "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/npc_editor/en_us.json",
+      "install_as": "dc_data/dc_lang/npc_editor/en_us.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/npc_editor/ko_kr.json",
+      "install_as": "dc_data/dc_lang/npc_editor/ko_kr.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/npc_editor/ja_jp.json",
+      "install_as": "dc_data/dc_lang/npc_editor/ja_jp.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/npc_editor/zh_cn.json",
+      "install_as": "dc_data/dc_lang/npc_editor/zh_cn.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/npc_editor/ru_ru.json",
+      "install_as": "dc_data/dc_lang/npc_editor/ru_ru.json",
+      "type": "json",
       "dependencies": []
     }
   ]
