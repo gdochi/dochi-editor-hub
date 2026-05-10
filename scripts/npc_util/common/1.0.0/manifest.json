@@ -9,53 +9,176 @@
   "files": [
     {
       "source": "dc_npc_core_module.js",
-      "install_as": "dc_npc_core_module.js"
+      "install_as": "dc_npc_core_module.js",
+      "dependencies": []
     },
     {
       "source": "dc_cfg_checker.js",
-      "install_as": "dc_cfg_checker.js"
+      "install_as": "dc_cfg_checker.js",
+      "dependencies": []
     },
     {
       "source": "dc_util_common.js",
-      "install_as": "dc_util_common.js"
+      "install_as": "dc_util_common.js",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_sound.html",
+          "required": false,
+          "note": "Required only for util_sound html/overlay mode."
+        }
+      ]
     },
     {
       "source": "dc_cond_checker.js",
-      "install_as": "dc_cond_checker.js"
+      "install_as": "dc_cond_checker.js",
+      "dependencies": []
     },
     {
       "source": "dc_reward_checker.js",
-      "install_as": "dc_reward_checker.js"
+      "install_as": "dc_reward_checker.js",
+      "dependencies": []
     },
     {
       "source": "dc_sequence_core.js",
-      "install_as": "dc_sequence_core.js"
+      "install_as": "dc_sequence_core.js",
+      "dependencies": []
     },
     {
       "source": "dc_gecko_util.js",
-      "install_as": "dc_gecko_util.js"
+      "install_as": "dc_gecko_util.js",
+      "dependencies": [
+        {
+          "type": "mod",
+          "id": "CNPC-Gecko",
+          "required": false,
+          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
+        }
+      ]
     },
     {
       "source": "dc_gui_runtime.js",
-      "install_as": "dc_gui_runtime.js"
+      "install_as": "dc_gui_runtime.js",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for HTML GUI and browser bridge calls."
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        }
+      ]
     },
     {
       "source": "dc_dialogue_util.js",
-      "install_as": "dc_dialogue_util.js"
+      "install_as": "dc_dialogue_util.js",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gecko_util.js",
+          "required": false,
+          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
+          "required": true,
+          "note": "Default GUI template when guiJsonPath is empty."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": true,
+          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
     },
     {
       "source": "dc_dialogue_trigger.js",
-      "install_as": "dc_dialogue_trigger.js"
+      "install_as": "dc_dialogue_trigger.js",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
+          "required": true,
+          "load_order": 1
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": true,
+          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
     },
     {
       "source": "dc_gui_runtime.html",
+      "install_as": "dc_util/dc_gui_runtime.html",
       "type": "html",
-      "install_as": "dc_util/dc_gui_runtime.html"
+      "dependencies": []
     },
     {
       "source": "dc_sound.html",
+      "install_as": "dc_util/dc_sound.html",
       "type": "html",
-      "install_as": "dc_util/dc_sound.html"
+      "dependencies": []
     }
   ]
 }

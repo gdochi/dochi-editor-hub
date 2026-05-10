@@ -8,23 +8,6 @@ var DcGuiRuntimeModule = (function () {
   var DEFAULT_HTML = "html/dc_util/dc_gui_runtime.html";
   var DEFAULT_ENTITY_SLOT_BASE = 0;
 
-  function dbgEnabled(options){
-    return options && (options.debug === true || String(options.debug || "").trim() === "1");
-  }
-
-  function log(ctx, options, msg, err){
-    if(!dbgEnabled(options)) return;
-    var line = "[dc_gui_runtime] " + String(msg) + (err != null ? (" | " + String(err)) : "");
-    try{ if(ctx && ctx.npc && typeof ctx.npc.say === "function") ctx.npc.say(line); }catch(e0){}
-  }
-
-  function requireFn(ctx, options, name){
-    if(typeof this[name] === "function") return true;
-    if(typeof globalThis !== "undefined" && typeof globalThis[name] === "function") return true;
-    log(ctx, options, "Missing dependency function: " + name);
-    return false;
-  }
-
   function getContext(target, maybeNpc, maybeOpts) {
     if (target && target.player && target.npc) {
       var opts = null;
@@ -58,23 +41,21 @@ function normalizeEntityTargetType(value) {
 
   function readGuiJson(ctx, options, rawPath){
     if(typeof cfg_chk_resolveFile !== "function" || typeof cfg_chk_readJsonFile !== "function"){
-      log(ctx, options, "cfg_chk_* helpers not loaded (dc_cfg_checker.js)");
       return null;
     }
 
     var file = null;
     try{ file = cfg_chk_resolveFile(rawPath, null); }catch(err0){ file = null; }
-    if(!file){ log(ctx, options, "Invalid guiJsonPath", rawPath); return null; }
+    if(!file) return null;
 
     var exists = false;
     try{ exists = file.exists(); }catch(err1){ exists = false; }
-    if(!exists){ log(ctx, options, "GUI JSON not found", String(file.getAbsolutePath ? file.getAbsolutePath() : rawPath)); return null; }
+    if(!exists) return null;
 
     try{
       var payload = cfg_chk_readJsonFile(file);
       return payload && payload.json ? payload.json : null;
     }catch(err2){
-      log(ctx, options, "Failed to read/parse GUI JSON", err2);
       return null;
     }
   }
@@ -84,15 +65,6 @@ function normalizeEntityTargetType(value) {
       var model = world.createEntity("customnpcs:customnpc");
       model.setEntityNbt(npc.getEntityNbt());
       return model;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function buildPlayerModel(world, player) {
-    try {
-      // Use the actual player entity (not a skin-mimic model).
-      return player;
     } catch (err) {
       return null;
     }
@@ -164,6 +136,25 @@ function normalizeEntityTargetType(value) {
     return path.replace(/\\/g, "/").replace(/^\/+/, "");
   }
 
+  function readFxImageCrop(fx) {
+    if (!fx || typeof fx !== "object") return { enabled:false, x:0, y:0, w:0, h:0, sourceW:0, sourceH:0 };
+    var direct = fx.imageCrop && typeof fx.imageCrop === "object" ? fx.imageCrop : (fx.crop && typeof fx.crop === "object" ? fx.crop : null);
+    var raw = direct || fx;
+    var enabled = direct ? raw.enabled !== false : (fx.cropEnabled === true || String(fx.cropEnabled || "").toLowerCase() === "true");
+    var w = Number(raw.w != null ? raw.w : (raw.cropW != null ? raw.cropW : raw.width)) || 0;
+    var h = Number(raw.h != null ? raw.h : (raw.cropH != null ? raw.cropH : raw.height)) || 0;
+    if (!enabled || w <= 0 || h <= 0) return { enabled:false, x:0, y:0, w:0, h:0, sourceW:0, sourceH:0 };
+    return {
+      enabled:true,
+      x:Number(raw.x != null ? raw.x : raw.cropX) || 0,
+      y:Number(raw.y != null ? raw.y : raw.cropY) || 0,
+      w:w,
+      h:h,
+      sourceW:Number(raw.sourceW || raw.sourceWidth || 0) || 0,
+      sourceH:Number(raw.sourceH || raw.sourceHeight || 0) || 0
+    };
+  }
+
   function applyBindingFxToGui(gui, bindings) {
     if (!gui || typeof gui !== "object") return gui;
     var fx = bindings && bindings.textFx && typeof bindings.textFx === "object" ? bindings.textFx : null;
@@ -180,35 +171,20 @@ function normalizeEntityTargetType(value) {
         var t = String(imgEl.type || "").toLowerCase();
         if (t === "image") imgEl.imagePath = imgPath;
         else if (t === "dialog") imgEl.dialogImagePath = imgPath;
-        else if (t === "itemrender") imgEl.itemRenderImagePath = imgPath;
-      }
-    }
-    var itemrenders = fxList(fx, "itemrender");
-    for (var k = 0; k < itemrenders.length; k++) {
-      var itemFx = itemrenders[k] || {};
-      for (var m = 0; m < elements.length; m++) {
-        var itemEl = elements[m] || {};
-        if (String(itemEl.type || "").toLowerCase() !== "itemrender") continue;
-        if (!fxTargetMatchesElement(itemEl, itemFx)) continue;
-        itemEl.itemRenderId = String(itemFx.itemId || itemFx.itemRenderId || itemEl.itemRenderId || "minecraft:diamond_sword");
-        if (itemFx.itemScale != null) itemEl.itemRenderScale = Number(itemFx.itemScale) || itemEl.itemRenderScale;
-        if (itemFx.itemRotation != null) itemEl.itemRenderRotation = Number(itemFx.itemRotation) || 0;
-      }
-    }
-    var npcs = fxList(fx, "npc");
-    for (var n = 0; n < npcs.length; n++) {
-      var npcFx = npcs[n] || {};
-      for (var p = 0; p < elements.length; p++) {
-        var npcEl = elements[p] || {};
-        if (String(npcEl.type || "").toLowerCase() !== "entity") continue;
-        if (String(npcEl.entityTargetType || "npc").toLowerCase() !== "npc") continue;
-        if (!fxTargetMatchesElement(npcEl, npcFx)) continue;
-        npcEl.entitySkinTexture = String(npcFx.skinTexture || "").trim();
-        npcEl.entityGeckoModel = String(npcFx.geckoModel || "");
-        npcEl.entityGeckoTexture = String(npcFx.geckoTexture || "");
-        npcEl.entityGeckoAnimationFile = String(npcFx.geckoAnimationFile || "");
-        npcEl.entityGeckoAnimation = String(npcFx.geckoAnimation || "");
-        npcEl.entityGeckoPlayMode = String(npcFx.geckoPlayMode || "thenPlay");
+
+        var cropObj = readFxImageCrop(imgFx);
+        if (t === "image") {
+          imgEl.imageCrop = cropObj;
+          if (imgFx.imageScale != null) imgEl.imageScale = Number(imgFx.imageScale) || imgEl.imageScale;
+          if (imgFx.imageInsetX != null) imgEl.imageInsetX = Number(imgFx.imageInsetX) || 0;
+          if (imgFx.imageOffsetX != null) imgEl.imageOffsetX = Number(imgFx.imageOffsetX) || 0;
+          if (imgFx.imageOffsetY != null) imgEl.imageOffsetY = Number(imgFx.imageOffsetY) || 0;
+        } else if (t === "dialog") {
+          imgEl.dialogImageCrop = cropObj;
+          if (imgFx.imageScale != null) imgEl.dialogImageScale = Number(imgFx.imageScale) || imgEl.dialogImageScale;
+          if (imgFx.imageOffsetX != null) imgEl.dialogImageOffsetX = Number(imgFx.imageOffsetX) || 0;
+          if (imgFx.imageOffsetY != null) imgEl.dialogImageOffsetY = Number(imgFx.imageOffsetY) || 0;
+        }
       }
     }
     return gui;
@@ -248,7 +224,6 @@ function normalizeEntityTargetType(value) {
     var world = null;
     try { world = ctx.npc && ctx.npc.getWorld ? ctx.npc.getWorld() : (ctx.player && ctx.player.world ? ctx.player.world : null); } catch (err0) { world = null; }
     if (!world) {
-      log(ctx, options, "No world detected in context");
       return { entitySlots: {}, overlayEntities: [] };
     }
 
@@ -291,10 +266,9 @@ function normalizeEntityTargetType(value) {
       if (targetType === "player") {
         var playerEntity = null;
         try { playerEntity = (ctx.player && typeof ctx.player.getMCEntity === "function") ? ctx.player.getMCEntity() : null; } catch (errP) { playerEntity = null; }
-        // Prefer wrapper first (matches docs usage), then MC entity.
         entityId = entityIdSafe(ctx.player) || entityIdSafe(playerEntity);
         useEntityId = !!entityId;
-        if (!useEntityId) model = buildPlayerModel(world, ctx.player);
+        if (!useEntityId) model = ctx.player;
       } else if (targetType === "id") {
         model = buildEntityById(world, targetId);
       } else {
@@ -304,7 +278,6 @@ function normalizeEntityTargetType(value) {
       var nbt = null;
       if (!useEntityId) {
         if (!model) {
-          log(ctx, options, "Entity model build failed", targetType + (targetType === "id" ? (":" + targetId) : ""));
           continue;
         }
 
@@ -312,13 +285,8 @@ function normalizeEntityTargetType(value) {
         applyGeckoConfigToModel(model, el);
         nbt = entityNbtSafe(model);
         if (!nbt) {
-          log(ctx, options, "cnpcext.entityNbt returned empty", label);
           continue;
         }
-      }
-
-      if (targetType === "player") {
-        log(ctx, options, "player overlay target", (useEntityId ? ("entityId=" + entityId) : ("nbt=" + (nbt ? ("" + nbt.length) : "0"))));
       }
 
             var rot = 180;
@@ -365,36 +333,19 @@ function normalizeEntityTargetType(value) {
       if (String(item.type || "").toLowerCase() === "image") {
         if (item.imageInsetX == null) item.imageInsetX = 0;
         if (item.imageScale == null) item.imageScale = 100;
+        if (item.imageOffsetX == null) item.imageOffsetX = 0;
+        if (item.imageOffsetY == null) item.imageOffsetY = 0;
+      }
+      if (String(item.type || "").toLowerCase() === "dialog") {
+        if (item.dialogImageScale == null) item.dialogImageScale = 100;
+        if (item.dialogImageOffsetX == null) item.dialogImageOffsetX = 0;
+        if (item.dialogImageOffsetY == null) item.dialogImageOffsetY = 0;
       }
     }
     return gui;
   }
-
-
-  function buildOverlayItems(gui) {
-    var elements = Array.isArray(gui && gui.elements) ? gui.elements : [];
-    var sorted = sortElementsForRuntime(elements);
-    var itemSlots = {};
-    var overlayItems = [];
-    var slotCursor = 0;
-    for (var i = 0; i < sorted.length; i++) {
-      var el = sorted[i] || {};
-      if (String(el.type || "").toLowerCase() !== "itemrender") continue;
-      var slot = slotCursor;
-      slotCursor += 1;
-      var id = String(el.id || "");
-      var label = String(el.itemLabel || el.name || id || ("item_render_" + i));
-      var itemId = String(el.itemRenderId || el.itemId || "minecraft:diamond_sword").trim() || "minecraft:diamond_sword";
-      var count = Number(el.itemRenderCount || el.itemCount || 1) || 1;
-      if (id) itemSlots[id] = slot;
-      if (label) itemSlots[label] = slot;
-      overlayItems.push({ slot: slot, item: itemId, count: count });
-    }
-    return { itemSlots: itemSlots, overlayItems: overlayItems };
-  }
   function buildInitData(ctx, guiJson, options) {
     if(typeof cfg_chk_deepCopy !== "function"){
-      log(ctx, options, "cfg_chk_deepCopy not loaded (dc_cfg_checker.js)");
       return null;
     }
 
@@ -420,18 +371,14 @@ function normalizeEntityTargetType(value) {
 
     gui = applyBindingFxToGui(gui, bindings);
     var overlay = buildOverlayEntities(ctx, gui, options);
-    var itemOverlay = buildOverlayItems(gui);
     return {
       __overlayName: OVERLAY_NAME,
-      debug: dbgEnabled(options),
       sessionId: String((options && options.sessionId) || ""),
       speaker: speakerName,
       gui: gui,
       bindings: bindings,
       entitySlots: overlay.entitySlots,
-      overlayEntities: overlay.overlayEntities,
-      itemSlots: itemOverlay.itemSlots,
-      overlayItems: itemOverlay.overlayItems
+      overlayEntities: overlay.overlayEntities
     };
   }
 
@@ -440,26 +387,19 @@ function normalizeEntityTargetType(value) {
     if (!ctx || !ctx.player || !ctx.npc) return null;
     var options = ctx.opts || {};
 
-    log(ctx, options, "open() start");
-
     var guiPath = String(options.guiJsonPath || options.templatePath || "").trim();
-    if (!guiPath) { log(ctx, options, "missing guiJsonPath"); return null; }
+    if (!guiPath) return null;
 
     var guiJson = readGuiJson(ctx, options, guiPath);
-    if (!guiJson) { log(ctx, options, "GUI JSON load failed", guiPath); return null; }
+    if (!guiJson) return null;
 
     var initData = buildInitData(ctx, guiJson, options);
-    if(!initData){ log(ctx, options, "buildInitData failed"); return null; }
+    if(!initData) return null;
 
     var htmlPath = String(options.htmlPath || DEFAULT_HTML).trim() || DEFAULT_HTML;
-    log(ctx, options, "htmlPath=" + htmlPath);
-    try{ log(ctx, options, "elements=" + (initData.gui && initData.gui.elements ? initData.gui.elements.length : 0)); }catch(err0){}
-    try{ log(ctx, options, "entitySlots=" + (initData.entitySlots ? Object.keys(initData.entitySlots).join(",") : "")); }catch(err1){}
-    try{ log(ctx, options, "overlayEntities=" + (initData.overlayEntities ? initData.overlayEntities.length : 0)); }catch(err2){}
 
     try {
       if (typeof cnpcext === "undefined" || !cnpcext || typeof cnpcext.openHtmlGui !== "function") {
-        log(ctx, options, "cnpcext.openHtmlGui unavailable");
         return null;
       }
       try{
@@ -478,24 +418,19 @@ function normalizeEntityTargetType(value) {
       if (ctx && ctx.event) {
         try {
           var h0 = cnpcext.openHtmlGui(ctx.event, htmlPath, 0, 0, JSON.stringify(initData));
-          log(ctx, options, "openHtmlGui(handle,event)=" + String(h0));
           if (h0 != null) return h0;
         } catch (eOpen0) {
-          log(ctx, options, "openHtmlGui(event) threw", eOpen0);
         }
+        return null;
       }
 
-      // Fallback: open with player
       try{
         var handle = cnpcext.openHtmlGui(ctx.player, htmlPath, 0, 0, JSON.stringify(initData));
-        log(ctx, options, "openHtmlGui(handle,player)=" + String(handle));
         return handle;
       }catch(eOpen1){
-        log(ctx, options, "openHtmlGui(player) threw", eOpen1);
         return null;
       }
     } catch (err) {
-      log(ctx, options, "openHtmlGui threw", err);
       return null;
     }
   }

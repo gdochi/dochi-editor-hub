@@ -5,15 +5,25 @@
   "editor": "soullikemob",
   "mc_version": "forge_1_20_1",
   "description": "Soullikemob package sample for Forge 1.20.1",
-  "entry": "soullikemob.js",
+  "entry": "dc_soullikemob.js",
   "files": [
     {
-      "source": "soullikemob_1.0.2.js",
-      "install_as": "soullikemob.js"
+      "source": "dc_soullikemob.js",
+      "install_as": "dc_soullikemob.js",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_soullikemob.html",
+          "required": true,
+          "note": "DOM mount target is supplied by dc_soullikemob.html."
+        }
+      ]
     },
     {
-      "source": "soullikemob_1.0.2.html",
-      "install_as": "soullikemob.html"
+      "source": "dc_soullikemob.html",
+      "install_as": "dc_soullikemob.html",
+      "type": "html",
+      "dependencies": []
     }
   ]
 }

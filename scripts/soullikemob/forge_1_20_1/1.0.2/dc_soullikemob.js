@@ -1,6 +1,6 @@
 // @package soullikemob
 // @version 1.0.0
-// @file soullikemob.js
+// @file dc_soullikemob.js
 
 window.DochiTrainerPackage = {
   package: "soullikemob",

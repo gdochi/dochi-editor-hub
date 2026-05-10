@@ -1,0 +1,29 @@
+{
+  "id": "scroll_dialogue/common/1.0.0",
+  "package": "scroll_dialogue",
+  "version": "1.0.0",
+  "editor": "scroll_dialogue",
+  "mc_version": "common",
+  "description": "Scroll dialogue CustomNPCs GUI script",
+  "entry": "dc_story_scroll.js",
+  "files": [
+    {
+      "source": "dc_story_scroll.js",
+      "install_as": "dc_story_scroll.js",
+      "dependencies": [
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/npc_dialogue/",
+          "required": true,
+          "note": "Reads <npc_name>.json from this directory."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/JSON/npc_dialogue/<npc_name>.json",
+          "required": true,
+          "note": "Runtime dialogue file name is derived from the NPC name."
+        }
+      ]
+    }
+  ]
+}

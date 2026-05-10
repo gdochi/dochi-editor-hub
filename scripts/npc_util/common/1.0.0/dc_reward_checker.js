@@ -25,42 +25,26 @@ function rew_chk_pickList(list, mode) {
 function rew_chk_applyFaction(player, key, value) {
   var pts = rew_chk_toInt(value, 0);
   if (!key) return rew_chk_result(false, 'FACTION key missing');
-  try {
-    player.addFactionPoints(key, pts);
-    return rew_chk_result(true, 'FACTION ' + key + ' +' + pts);
-  } catch (e) {
-    return rew_chk_result(false, 'FACTION failed ' + key);
-  }
+  player.addFactionPoints(key, pts);
+  return rew_chk_result(true, 'FACTION ' + key + ' +' + pts);
 }
 
 function rew_chk_applyItem(player, key, value) {
   var cnt = Math.max(1, rew_chk_toInt(value, 1));
   if (!key) return rew_chk_result(false, 'ITEM key missing');
-  try {
-    player.giveItem(player.getWorld().createItem(key, cnt));
-    return rew_chk_result(true, 'ITEM ' + key + ' x' + cnt);
-  } catch (e) {
-    return rew_chk_result(false, 'ITEM failed ' + key);
-  }
+  player.giveItem(player.getWorld().createItem(key, cnt));
+  return rew_chk_result(true, 'ITEM ' + key + ' x' + cnt);
 }
 
 function rew_chk_applyCommand(npc, player, command) {
   var cmd = rew_chk_toText(command).replace('@player', player.getName()).replace('@npc', npc.getUUID());
   if (!cmd) return rew_chk_result(false, 'COMMAND empty');
-  try {
-    npc.executeCommand(cmd);
-    return rew_chk_result(true, 'COMMAND ' + cmd);
-  } catch (e) {
-    return rew_chk_result(false, 'COMMAND failed');
-  }
+  npc.executeCommand(cmd);
+  return rew_chk_result(true, 'COMMAND ' + cmd);
 }
 
 function rew_chk_applyAdvancement(npc, player, key) {
   if (!key) return rew_chk_result(false, 'ADV key missing');
-  try {
-    npc.executeCommand('advancement grant ' + player.getName() + ' only ' + key);
-    return rew_chk_result(true, 'ADV ' + key);
-  } catch (e) {
-    return rew_chk_result(false, 'ADV failed ' + key);
-  }
+  npc.executeCommand('advancement grant ' + player.getName() + ' only ' + key);
+  return rew_chk_result(true, 'ADV ' + key);
 }

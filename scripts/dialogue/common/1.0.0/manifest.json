@@ -4,16 +4,55 @@
   "version": "1.0.0",
   "editor": "dialogue",
   "mc_version": "common",
-  "description": "Dialogue package sample shared for Forge and Fabric",
-  "entry": "dialogue.js",
+  "description": "Dialogue trigger package shared for Forge and Fabric",
+  "entry": "dc_dialogue_trigger.js",
   "files": [
     {
-      "source": "dialogue_1.0.0.js",
-      "install_as": "dialogue.js"
-    },
-    {
-      "source": "dialogue_1.0.0.html",
-      "install_as": "dialogue.html"
+      "source": "dc_dialogue_trigger.js",
+      "install_as": "dc_dialogue_trigger.js",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
+          "required": true,
+          "load_order": 1
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": true,
+          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
     }
   ]
 }

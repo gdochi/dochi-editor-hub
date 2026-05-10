@@ -63,11 +63,7 @@ function cond_item(n, p, op, key, val) {
 
   if (!key) return cond_chk_result(false, 'ITEM key missing');
   var has = 0;
-  try {
-    has = p.getInventory().count(p.getWorld().createItem(key, 1), true, true);
-  } catch (e) {
-    return cond_chk_result(false, 'ITEM invalid id ' + key);
-  }
+  has = p.getInventory().count(p.getWorld().createItem(key, 1), true, true);
   var normalized = cond_chk_normalizeOp('item', op);
   if (normalized === '>=') {
     var need = parseInt(String(val != null ? val : '0'), 10);
@@ -88,19 +84,13 @@ function cond_stored(n, p, op, key, val) {
 
 function cond_tag(n, p, op, key) {
   if (!key) return cond_chk_result(false, 'TAG key missing');
-  var ok = false;
-  try {
-    ok = p.hasTag(key);
-  } catch (e) {}
+  var ok = p.hasTag(key);
   return cond_chk_comparePresence(ok, op, 'TAG ' + key);
 }
 
 function cond_faction(n, p, op, key, val) {
   if (!key) return cond_chk_result(false, 'FACTION key missing');
-  var pts = 0;
-  try {
-    pts = p.getFactionPoints(key);
-  } catch (e) {}
+  var pts = p.getFactionPoints(key);
   var t = parseInt(String(val != null ? val : '0'), 10);
   if (isNaN(t)) t = 0;
   return cond_chk_compareNumber(pts, t, op);
@@ -108,10 +98,7 @@ function cond_faction(n, p, op, key, val) {
 
 function cond_adv(n, p, op, key) {
   if (!key) return cond_chk_result(false, 'ADV key missing');
-  var has = false;
-  try {
-    has = p.hasAdvancement(key);
-  } catch (e) {}
+  var has = p.hasAdvancement(key);
   var normalized = op === 'not' ? 'not' : 'done';
   return cond_chk_comparePresence(has, normalized, 'ADV ' + key);
 }

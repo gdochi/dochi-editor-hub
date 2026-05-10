@@ -1,6 +1,6 @@
 // @package trainer
 // @version 1.0.0
-// @file trainer.js
+// @file dc_trainer.js
 
 window.DochiTrainerPackage = {
   package: "trainer",

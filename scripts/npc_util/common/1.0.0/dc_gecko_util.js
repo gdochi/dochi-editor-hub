@@ -9,20 +9,17 @@ var DcGeckoUtilModule = (function(){
   function callString(target, name, value){
     var v = text(value);
     if(!target || !v) return false;
-    try{
-      if(typeof target[name] === "function"){
-        target[name](v);
-        return true;
-      }
-    }catch(e){}
+    if(typeof target[name] === "function"){
+      target[name](v);
+      return true;
+    }
     return false;
   }
 
   function npcDisplay(npc){
     if(!npc) return null;
-    try{ if(typeof npc.getDisplay === "function") return npc.getDisplay(); }catch(e0){}
-    try{ return npc.display || null; }catch(e1){}
-    return null;
+    if(typeof npc.getDisplay === "function") return npc.getDisplay();
+    return npc.display || null;
   }
 
   function applyNpcSkin(npc, skinTexture){
@@ -44,8 +41,8 @@ var DcGeckoUtilModule = (function(){
   }
 
   function getApi(eventObj){
-    try{ if(eventObj && eventObj.API && typeof eventObj.API.createAnimBuilder === "function") return eventObj.API; }catch(e0){}
-    try{ if(typeof API !== "undefined" && API && typeof API.createAnimBuilder === "function") return API; }catch(e1){}
+    if(eventObj && eventObj.API && typeof eventObj.API.createAnimBuilder === "function") return eventObj.API;
+    if(typeof API !== "undefined" && API && typeof API.createAnimBuilder === "function") return API;
     return null;
   }
 
@@ -53,12 +50,10 @@ var DcGeckoUtilModule = (function(){
     var anim = text(animation);
     if(!builder || !anim) return false;
     var m = text(mode) || "thenPlay";
-    try{ if(typeof builder[m] === "function"){ builder[m](anim); return true; } }catch(e0){}
-    try{
-      if(m === "thenLoop" && typeof builder.loop === "function"){ builder.loop(anim); return true; }
-      if(m === "thenPlayAndHold" && typeof builder.playAndHold === "function"){ builder.playAndHold(anim); return true; }
-      if(typeof builder.playOnce === "function"){ builder.playOnce(anim); return true; }
-    }catch(e1){}
+    if(typeof builder[m] === "function"){ builder[m](anim); return true; }
+    if(m === "thenLoop" && typeof builder.loop === "function"){ builder.loop(anim); return true; }
+    if(m === "thenPlayAndHold" && typeof builder.playAndHold === "function"){ builder.playAndHold(anim); return true; }
+    if(typeof builder.playOnce === "function"){ builder.playOnce(anim); return true; }
     return false;
   }
 
@@ -68,18 +63,16 @@ var DcGeckoUtilModule = (function(){
     if(!animation) return false;
     var api = getApi(eventObj);
     if(!api) return false;
-    try{
-      var builder = api.createAnimBuilder();
-      if(!addAnimation(builder, cfg.geckoPlayMode, animation)) return false;
-      if(player && typeof npc.syncAnimationsFor === "function"){
-        npc.syncAnimationsFor(player, builder);
-        return true;
-      }
-      if(typeof npc.syncAnimationsForAll === "function"){
-        npc.syncAnimationsForAll(builder);
-        return true;
-      }
-    }catch(e){}
+    var builder = api.createAnimBuilder();
+    if(!addAnimation(builder, cfg.geckoPlayMode, animation)) return false;
+    if(player && typeof npc.syncAnimationsFor === "function"){
+      npc.syncAnimationsFor(player, builder);
+      return true;
+    }
+    if(typeof npc.syncAnimationsForAll === "function"){
+      npc.syncAnimationsForAll(builder);
+      return true;
+    }
     return false;
   }
 

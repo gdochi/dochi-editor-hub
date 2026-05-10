@@ -27,9 +27,7 @@ var DcDialogueUtilModule = (function(){
     LAST_RESULT: "dc_dialogue_last_result"
   };
 
-  function temp(player){
-    return player && typeof player.getTempdata === "function" ? player.getTempdata() : null;
-  }
+  function temp(player){return player && typeof player.getTempdata === "function" ? player.getTempdata() : null;}
 
   function debugLog(npc, enabled, msg){
     if(enabled !== true) return;
@@ -245,6 +243,38 @@ var DcDialogueUtilModule = (function(){
     return out;
   }
 
+  function evalOneCondition(player, npc, cond){
+    if(!cond || typeof cond !== "object") return true;
+    var type = String(cond.type || "stored").toLowerCase();
+    var op = String(cond.op || "==").toLowerCase();
+    var key = String(cond.key || cond.id || "");
+    var val = cond.value;
+    if(type === "tag" && op === "hasn't") op = "not";
+    if(type === "item" && op === "hasn't") op = "not";
+    if(type === "stored" && typeof cond_stored === "function") return !!cond_stored(npc, player, op, key, val).pass;
+    if(type === "tag" && typeof cond_tag === "function") return !!cond_tag(npc, player, op, key, val).pass;
+    if(type === "item" && typeof cond_item === "function") return !!cond_item(npc, player, op, key, val).pass;
+    if(type === "adv" && typeof cond_adv === "function") return !!cond_adv(npc, player, op, key, val).pass;
+    if(type === "faction" && typeof cond_faction === "function") return !!cond_faction(npc, player, op, key, val).pass;
+    if(type === "ftb" && typeof cond_ftb === "function") return !!cond_ftb(npc, player, op, key, val).pass;
+    if(type === "cobblemon_party" && typeof cond_cobblemon_party === "function") return !!cond_cobblemon_party(npc, player, op, key, val).pass;
+    if(type === "cobbledollar" && typeof cond_cobbledollar === "function") return !!cond_cobbledollar(npc, player, op, key, val).pass;
+    return false;
+  }
+
+  function evalConditions(player, npc, owner){
+    if(!owner || typeof owner !== "object") return true;
+    var list = Array.isArray(owner.conditions) ? owner.conditions : [];
+    if(!list.length) return true;
+    var mode = String(owner.conditionMode || owner.mode || "and").toLowerCase() === "or" ? "or" : "and";
+    if(mode === "or"){
+      for(var i=0;i<list.length;i++){ if(evalOneCondition(player, npc, list[i])) return true; }
+      return false;
+    }
+    for(var j=0;j<list.length;j++){ if(!evalOneCondition(player, npc, list[j])) return false; }
+    return true;
+  }
+
   function componentString(comp){
     if(comp == null) return "";
     try{ if(typeof comp.getString === "function") return String(comp.getString()); }catch(e0){}
@@ -266,12 +296,9 @@ var DcDialogueUtilModule = (function(){
     }
     return key;
   }
-
-  function maybeTranslate(value, enabled){
-    return enabled === true ? translateKey(value) : String(value || "");
-  }
-
-  function buildBindings(raw){
+  function maybeTranslate(value, enabled){return enabled === true ? translateKey(value) : String(value || "");}
+  
+  function buildBindings(raw, player, npc){
     var node = unwrapNode(raw);
     var out = { text: [], choice: [], textFx: null };
     if(node){
@@ -284,11 +311,12 @@ var DcDialogueUtilModule = (function(){
     var choices = node && Array.isArray(node.choice) ? node.choice : (node && Array.isArray(node.choices) ? node.choices : []);
     for(var j=0;j<choices.length;j++){
       var ch = choices[j] || {};
+      if(!evalConditions(player, npc, ch)) continue;
       var labelIsKey = ch.labelTranslationKey === true || ch.labelIsTranslationKey === true;
       out.choice.push({
         label: maybeTranslate(ch.label, labelIsKey),
         role: String(ch.role || ""),
-        data: { actions: normalizeActions(ch.actions), fx: (ch.fx && typeof ch.fx === "object") ? ch.fx : null }
+        data: { actions: normalizeActions(ch.actions), fx: (ch.fx && typeof ch.fx === "object") ? ch.fx : null, conditions: Array.isArray(ch.conditions) ? ch.conditions : [] }
       });
     }
     return out;
@@ -301,7 +329,7 @@ var DcDialogueUtilModule = (function(){
     var base = bindings.textFx && typeof bindings.textFx === "object" ? bindings.textFx : {};
     var out = {};
     for (var k in base) { if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k]; }
-    var keys = ["sound", "image", "itemrender", "npc"];
+    var keys = ["sound", "image", "npc"];
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
       var a = [];
@@ -323,31 +351,6 @@ var DcDialogueUtilModule = (function(){
     return bindings;
   }
 
-  function fxHasNpc(fx) {
-    if (!fx || typeof fx !== "object") return false;
-    if (Array.isArray(fx.npc) && fx.npc.length) return true;
-    if (fx.npc && typeof fx.npc === "object") return true;
-    if (Array.isArray(fx.items)) {
-      for (var i = 0; i < fx.items.length; i++) {
-        var item = fx.items[i] || {};
-        if (String(item.fxType || item.type || "").toLowerCase() === "npc") return true;
-      }
-    }
-    return false;
-  }
-
-  function fxHasItemRender(fx) {
-    if (!fx || typeof fx !== "object") return false;
-    if (Array.isArray(fx.itemrender) && fx.itemrender.length) return true;
-    if (fx.itemrender && typeof fx.itemrender === "object") return true;
-    if (Array.isArray(fx.items)) {
-      for (var i = 0; i < fx.items.length; i++) {
-        var item = fx.items[i] || {};
-        if (String(item.fxType || item.type || "").toLowerCase() === "itemrender") return true;
-      }
-    }
-    return false;
-  }
   function setActive(player, cfgObj){
     var td = temp(player);
     if(!td) return;
@@ -407,6 +410,11 @@ var DcDialogueUtilModule = (function(){
       debugLog(npc, debug, "dialogue JSON read failed.");
       return null;
     }
+    var nodeForCondition = unwrapNode(raw);
+    if(!evalConditions(player, npc, nodeForCondition)){
+      debugLog(npc, debug, "start/open conditions failed.");
+      return null;
+    }
 
     var guiJsonPath = getPayloadGuiPath(raw, opts.guiJsonPath);
     debugLog(npc, debug, "resolved guiJsonPath=" + guiJsonPath);
@@ -417,7 +425,7 @@ var DcDialogueUtilModule = (function(){
       htmlPath: String(opts.htmlPath || "html/dc_util/dc_gui_runtime.html"),
       sessionId: sessionId,
       debug: opts.debug === true,
-      bindings: mergeChoiceFxIntoBindings(buildBindings(raw), opts.pendingFx)
+      bindings: mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), opts.pendingFx)
     };
 
     closeHtmlGui(player);
@@ -440,16 +448,36 @@ var DcDialogueUtilModule = (function(){
     return handle;
   }
 
-  function updateOpenDialogue(player, active, raw, nextRel, pendingFx){
+  function updateOpenDialogue(player, npc, active, raw, nextRel, pendingFx){
     if(!player || !active || !raw) return false;
     var sessionId = String(active.sessionId || "");
+    var mergedBindings = mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), pendingFx);
     var payload = {
       __overlayName: OVERLAY_NAME,
       type: "dcDialogueUpdate",
       sessionId: sessionId,
       dialogueJsonPath: String(nextRel || ""),
-      bindings: mergeChoiceFxIntoBindings(buildBindings(raw), pendingFx)
+      bindings: mergedBindings
     };
+    try{
+      if(typeof DcGuiRuntimeModule !== "undefined" && DcGuiRuntimeModule && typeof DcGuiRuntimeModule.buildInitData === "function"){
+        var guiJson = readJson(String(active.guiJsonPath || ""));
+        if(guiJson){
+          var runtimeData = DcGuiRuntimeModule.buildInitData({ player:player, npc:npc }, guiJson, {
+            sessionId: sessionId,
+            debug: false,
+            bindings: mergedBindings
+          });
+          if(runtimeData && typeof runtimeData === "object"){
+            for(var key in runtimeData){
+              if(Object.prototype.hasOwnProperty.call(runtimeData, key)) payload[key] = runtimeData[key];
+            }
+            payload.type = "dcDialogueUpdate";
+            payload.dialogueJsonPath = String(nextRel || "");
+          }
+        }
+      }
+    }catch(eBuildUpdate){}
     var ok = sendToBrowser(player, "dcDialogueUpdate", payload);
     if(!ok) return false;
     setActive(player, {
@@ -646,19 +674,12 @@ var DcDialogueUtilModule = (function(){
         }
         var nextRel = resolveNextDialogueRel(active, a, g);
         var nextRaw = readJson(normalizeDialoguePath(nextRel));
-        if(nextRaw && !fxHasNpc(choiceFx) && !fxHasItemRender(choiceFx) && updateOpenDialogue(player, active, nextRaw, nextRel, choiceFx)){
+        if(nextRaw && updateOpenDialogue(player, npc, active, nextRaw, nextRel, choiceFx)){
           return { done:false, reason:"goto", goto:g, next: nextRel, updated:true };
         }
-        open(player, npc, {
-          dialogueJsonPath: nextRel,
-          guiJsonPath: String(active.guiJsonPath || ""),
-          htmlPath: "html/dc_util/dc_gui_runtime.html",
-          sessionId: "",
-          mode: String(active.mode || "generic"),
-          returnGoto: returnGoto,
-          pendingFx: choiceFx
-        });
-        return { done:false, reason:"goto", goto:g, next: nextRel };
+        var resGotoFail = { done:false, reason:"goto_update_failed", goto:g, next:nextRel };
+        setLastResult(player, resGotoFail);
+        return resGotoFail;
       }
     }
 
@@ -711,7 +732,6 @@ var DcDialogueUtilModule = (function(){
 
 function dc_dialogue_open(e, opts){ return DcDialogueUtilModule.open(e, null, opts || {}); }
 function dc_dialogue_handleHtmlEvent(e){ return DcDialogueUtilModule.handleHtmlEvent(e); }
-
 
 
 

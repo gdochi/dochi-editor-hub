@@ -55,8 +55,6 @@
 
     .mediaImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:contain}
     .entitySlot{position:absolute;left:50%;bottom:0;transform:translateX(-50%)}
-    .itemRenderSlot{position:absolute;display:block;color:rgba(238,242,255,.92);font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.55);overflow:visible}
-    .itemRenderSlot .itemRenderFallback{max-width:90%;padding:6px 8px;border-radius:8px;background:rgba(8,12,20,.55);border:1px solid rgba(255,255,255,.12);font-size:13px;line-height:1.2;word-break:break-word}
 
     .dialogIndicator{
       position:absolute;
@@ -240,8 +238,10 @@
         const scale = Math.max(0.01, Number(opts.scale || 100) / 100);
         const offsetX = Number(opts.offsetX || 0);
         const offsetY = Number(opts.offsetY || 0);
-        const bw = Math.max(1, (box.width || node.clientWidth || sourceW || 1) - insetX * 2);
-        const bh = Math.max(1, box.height || node.clientHeight || sourceH || 1);
+        const rawW = node.clientWidth || node.offsetWidth || box.width || sourceW || 1;
+        const rawH = node.clientHeight || node.offsetHeight || box.height || sourceH || 1;
+        const bw = Math.max(1, rawW - insetX * 2);
+        const bh = Math.max(1, rawH);
         const baseW = crop ? Math.max(1, crop.w) : Math.max(1, sourceW || bw);
         const baseH = crop ? Math.max(1, crop.h) : Math.max(1, sourceH || bh);
         const s = Math.min(bw / baseW, bh / baseH) * scale;
@@ -667,6 +667,19 @@ prev.addEventListener('click', function(ev){
       indicator.textContent = indicatorShape.text;
       indicator.style.setProperty("--cursor-speed", String(blink) + 's');
 
+      const dialogImagePath = String(item.dialogImagePath || item.dialogImageAsset && item.dialogImageAsset.runtimePath || "").trim();
+      if(dialogImagePath){
+        const media = document.createElement("div");
+        media.className = "mediaImg";
+        applyCropBackground(media, dialogImagePath, readImageCrop(item, "dialogImage"), {
+          scale:item.dialogImageScale || 100,
+          insetX:0,
+          offsetX:item.dialogImageOffsetX || 0,
+          offsetY:item.dialogImageOffsetY || 0
+        });
+        node.appendChild(media);
+      }
+
       if(speakerNode) overlay.appendChild(speakerNode);
       overlay.appendChild(lines);
       node.appendChild(overlay);
@@ -708,66 +721,6 @@ prev.addEventListener('click', function(ev){
       node.appendChild(el);
       stage.appendChild(node);
     }
-    function buildItemSlotMapFromGui(){
-      const out = {};
-      const elements = Array.isArray(GUI && GUI.elements) ? GUI.elements.slice() : [];
-      for(let i=0;i<elements.length;i++){
-        if(elements[i] && typeof elements[i] === "object" && elements[i].__index == null) elements[i].__index = i;
-      }
-      elements.sort(byZThenIndex);
-      let slot = 0;
-      for(let i=0;i<elements.length;i++){
-        const el = elements[i] || {};
-        if(String(el.type || "").toLowerCase() !== "itemrender") continue;
-        const id = String(el.id || "");
-        const label = String(el.itemLabel || el.name || id || "");
-        if(id) out[id] = slot;
-        if(label) out[label] = slot;
-        slot += 1;
-      }
-      return out;
-    }
-
-    function resolveItemRenderSlot(item){
-      const id = String(item && item.id || "");
-      const label = String(item && (item.itemLabel || item.name || id) || "");
-      const fromInit = INIT && INIT.itemSlots ? INIT.itemSlots : {};
-      if(id && fromInit[id] != null) return fromInit[id];
-      if(label && fromInit[label] != null) return fromInit[label];
-      const computed = buildItemSlotMapFromGui();
-      if(id && computed[id] != null) return computed[id];
-      if(label && computed[label] != null) return computed[label];
-      return null;
-    }
-    function renderItemRender(stage, item){
-      const node = makeElBox(item);
-      const slot = document.createElement("div");
-      slot.className = "itemRenderSlot";
-      const slotId = resolveItemRenderSlot(item);
-      const scale = Math.max(0.1, Number(item.itemRenderScale || 100) / 100);
-      const size = Math.max(16, Math.round(32 * scale));
-      slot.style.width = `${size}px`;
-      slot.style.height = `${size}px`;
-      slot.style.left = `calc(50% - ${Math.round(size / 2)}px)`;
-      slot.style.top = `calc(50% - ${Math.round(size / 2)}px)`;
-      if(slotId != null){
-        slot.setAttribute("data-mc-slot", String(slotId));
-        slot.setAttribute("data-mc-scale", String(scale));
-      }else{
-        slot.style.display = "none";
-        DCWARN("item slot missing", { id:String(item.id || ""), name:String(item.name || ""), itemSlots:INIT && INIT.itemSlots ? Object.keys(INIT.itemSlots) : [] });
-      }
-      const bgPath = String(item.itemRenderImageAsset && item.itemRenderImageAsset.runtimePath || item.itemRenderImagePath || "").trim();
-      if(bgPath){
-        const bg = document.createElement("div");
-        bg.className = "mediaImg";
-        applyCropBackground(bg, bgPath, readImageCrop(item, "itemRenderImage"), { scale:item.itemRenderImageScale || 100, insetX:0, offsetX:item.itemRenderImageOffsetX || 0, offsetY:item.itemRenderImageOffsetY || 0 });
-        node.appendChild(bg);
-      }
-      node.appendChild(slot);
-      stage.appendChild(node);
-    }
-
     function renderChoiceBox(stage, item, choices, startIndex){
       const node = makeElBox(item);
       const box = document.createElement("div");
@@ -1047,46 +1000,58 @@ var stopPagerEv = function(ev){
     function applyTextFxToElements(elements){
       const textFx = BIND && BIND.textFx;
       const images = fxImageList(textFx);
-      const itemrenders = fxList(textFx, "itemrender");
-      if(!images.length && !itemrenders.length) return elements;
+      if(!images.length) return elements;
       const out = elements.map((item) => item && typeof item === "object" ? Object.assign({}, item) : item);
+      const readFxCrop = function(fx){
+        const direct = fx && typeof fx.imageCrop === "object" ? fx.imageCrop : (fx && typeof fx.crop === "object" ? fx.crop : null);
+        const raw = direct || fx || {};
+        const enabled = direct ? raw.enabled !== false : (fx.cropEnabled === true || String(fx.cropEnabled || "").toLowerCase() === "true");
+        const w = Math.max(0, Number(raw.w != null ? raw.w : (raw.cropW != null ? raw.cropW : raw.width)) || 0);
+        const h = Math.max(0, Number(raw.h != null ? raw.h : (raw.cropH != null ? raw.cropH : raw.height)) || 0);
+        if(!enabled || w <= 0 || h <= 0) return null;
+        return {
+          enabled:true,
+          x:Number(raw.x != null ? raw.x : raw.cropX) || 0,
+          y:Number(raw.y != null ? raw.y : raw.cropY) || 0,
+          w:w,
+          h:h,
+          sourceW:Math.max(0, Number(raw.sourceW || raw.sourceWidth || 0) || 0),
+          sourceH:Math.max(0, Number(raw.sourceH || raw.sourceHeight || 0) || 0)
+        };
+      };
+      const applyFxLayout = function(item, fx, type){
+        const crop = readFxCrop(fx);
+        if(type === "image"){
+          if(crop) item.imageCrop = crop;
+          if(fx.imageScale != null) item.imageScale = Number(fx.imageScale) || item.imageScale;
+          if(fx.imageInsetX != null) item.imageInsetX = Number(fx.imageInsetX) || 0;
+          if(fx.imageOffsetX != null) item.imageOffsetX = Number(fx.imageOffsetX) || 0;
+          if(fx.imageOffsetY != null) item.imageOffsetY = Number(fx.imageOffsetY) || 0;
+        }else if(type === "dialog"){
+          if(crop) item.dialogImageCrop = crop;
+          if(fx.imageScale != null) item.dialogImageScale = Number(fx.imageScale) || item.dialogImageScale;
+          if(fx.imageOffsetX != null) item.dialogImageOffsetX = Number(fx.imageOffsetX) || 0;
+          if(fx.imageOffsetY != null) item.dialogImageOffsetY = Number(fx.imageOffsetY) || 0;
+        }
+      };
       for(let i=0;i<images.length;i++){
         const fx = images[i] || {};
         const path = fxImageRuntimePath(fx);
         if(!path) continue;
-        let applied = false;
         for(let j=0;j<out.length;j++){
           const item = out[j] || {};
           if(!fxTargetMatches(item, fx)) continue;
           const type = String(item.type || "").toLowerCase();
           if(type === "image") item.imagePath = path;
           else if(type === "dialog") item.dialogImagePath = path;
-          else if(type === "itemrender") item.itemRenderImagePath = path;
           else continue;
-          applied = true;
-        }
-        if(!applied){
-          for(let j=0;j<out.length;j++){
-            const item = out[j] || {};
-            if(String(item.type || "").toLowerCase() !== "image") continue;
-            item.imagePath = path;
-            break;
-          }
-        }
-      }
-      for(let k=0;k<itemrenders.length;k++){
-        const fx = itemrenders[k] || {};
-        for(let m=0;m<out.length;m++){
-          const item = out[m] || {};
-          if(String(item.type || "").toLowerCase() !== "itemrender") continue;
-          if(!fxTargetMatches(item, fx)) continue;
-          item.itemRenderId = String(fx.itemId || fx.itemRenderId || item.itemRenderId || "minecraft:diamond_sword");
-          if(fx.itemScale != null) item.itemRenderScale = Number(fx.itemScale) || item.itemRenderScale;
-          if(fx.itemRotation != null) item.itemRenderRotation = Number(fx.itemRotation) || 0;
+          applyFxLayout(item, fx, type);
         }
       }
       return out;
-    }    function render(){
+    }
+
+    function render(){
       DCLOG("render()", { w: window.innerWidth, h: window.innerHeight, elements: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0, choices: (INIT.choice||INIT.choices||BIND.choice||BIND.choices||[]).length });
       clearRuntimeTimers();
       setScale();
@@ -1118,7 +1083,7 @@ var stopPagerEv = function(ev){
           continue;
         }
         if(type === "image"){
-          const path = String(item.imageAsset && item.imageAsset.runtimePath || item.imagePath || "").trim();
+          const path = String(item.imagePath || item.imageAsset && item.imageAsset.runtimePath || "").trim();
           renderImage(stage, item, path);
           continue;
         }
@@ -1128,10 +1093,6 @@ var stopPagerEv = function(ev){
         }
         if(type === "pager"){
           renderPager(stage, item, elements);
-          continue;
-        }
-        if(type === "itemrender"){
-          renderItemRender(stage, item);
           continue;
         }
         if(type === "choice"){
@@ -1182,8 +1143,6 @@ var stopPagerEv = function(ev){
   </script>
 </body>
 </html>
-
-
 
 
 

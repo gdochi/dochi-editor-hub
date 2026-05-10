@@ -5,11 +5,37 @@
   "editor": "item_editor",
   "mc_version": "forge_1_20_1",
   "description": "item_editor package sample for Forge 1.20.1",
-  "entry": "item_editor.js",
+  "entry": "dc_item_editor.js",
   "files": [
     {
-      "source": "item_editor_1.0.0.js",
-      "install_as": "item_editor.js"
+      "source": "dc_item_editor.js",
+      "install_as": "dc_item_editor.js",
+      "dependencies": [
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/",
+          "required": true,
+          "note": "Default item JSON save/load root."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/prefix/",
+          "required": true,
+          "note": "Default prefix preset directory."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/JSON/item/category_config.json",
+          "required": true,
+          "note": "Category configuration file created/read by the editor."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/category_presets/",
+          "required": false,
+          "note": "Optional category preset directory used by preset import/export."
+        }
+      ]
     }
   ]
 }

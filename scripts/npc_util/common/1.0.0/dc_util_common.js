@@ -60,39 +60,28 @@ function util_soundPath(cfg) {
 function util_soundPlay(p, id, pitch, volume) {
   var soundId = String(id || "").trim();
   if (!p || typeof p.playSound !== "function" || !soundId) return false;
-  try {
-    p.playSound(soundId, util_toF(volume, 1), util_toF(pitch, 1));
-    return true;
-  } catch (e) {}
-  return false;
+  p.playSound(soundId, util_toF(volume, 1), util_toF(pitch, 1));
+  return true;
 }
 
 function util_soundHtml(p, sound) {
   if (!p || !sound) return false;
   if (typeof cnpcext === "undefined" || !cnpcext || typeof cnpcext.getClientBridge !== "function") return false;
-  var bridge = null;
-  try {
-    bridge = cnpcext.getClientBridge(p.getMCEntity());
-  } catch (e0) {
-    bridge = null;
-  }
+  var bridge = cnpcext.getClientBridge(p.getMCEntity());
   if (!bridge || typeof bridge.openOverlay !== "function") return false;
-  try {
-    var cfg = sound.sound ? sound.sound : sound;
-    bridge.openOverlay(
-      String(cfg.overlayName || cfg.name || "npc_sound_once"),
-      String(cfg.htmlPath || "html/dc_util/dc_sound.html"),
-      0, 0, 0, 0,
-      JSON.stringify({
-        soundPath: util_soundPath(cfg),
-        volume: util_toF(cfg.volume != null ? cfg.volume : cfg.vol, 1),
-        pitch: util_toF(cfg.pitch, 1),
-        autoCloseMs: util_toInt(cfg.autoCloseMs, 3000)
-      })
-    );
-    return true;
-  } catch (e1) {}
-  return false;
+  var cfg = sound.sound ? sound.sound : sound;
+  bridge.openOverlay(
+    String(cfg.overlayName || cfg.name || "npc_sound_once"),
+    String(cfg.htmlPath || "html/dc_util/dc_sound.html"),
+    0, 0, 0, 0,
+    JSON.stringify({
+      soundPath: util_soundPath(cfg),
+      volume: util_toF(cfg.volume != null ? cfg.volume : cfg.vol, 1),
+      pitch: util_toF(cfg.pitch, 1),
+      autoCloseMs: util_toInt(cfg.autoCloseMs, 3000)
+    })
+  );
+  return true;
 }
 
 function util_sound(p, sound) {

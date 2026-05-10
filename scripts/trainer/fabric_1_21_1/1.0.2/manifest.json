@@ -5,15 +5,25 @@
   "editor": "trainer",
   "mc_version": "fabric_1_21_1",
   "description": "Trainer package sample for Fabric 1.21.1",
-  "entry": "trainer.js",
+  "entry": "dc_trainer.js",
   "files": [
     {
-      "source": "trainer_1.0.2.js",
-      "install_as": "trainer.js"
+      "source": "dc_trainer.js",
+      "install_as": "dc_trainer.js",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_trainer.html",
+          "required": true,
+          "note": "DOM mount target is supplied by dc_trainer.html."
+        }
+      ]
     },
     {
-      "source": "trainer_1.0.2.html",
-      "install_as": "trainer.html"
+      "source": "dc_trainer.html",
+      "install_as": "dc_trainer.html",
+      "type": "html",
+      "dependencies": []
     }
   ]
 }
