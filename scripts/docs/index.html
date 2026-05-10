@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dochi Script Dependencies</title>
+<style>
+:root {
+  --bg: #f6f8fb;
+  --panel: #ffffff;
+  --text: #18202b;
+  --muted: #657184;
+  --line: #d7dee9;
+  --line2: #e8edf4;
+  --accent: #2563eb;
+  --script: #dceeff;
+  --set: #fff2c7;
+  --html: #dcf8e8;
+  --mod: #ffe0e0;
+  --data: #eee8ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Arial, sans-serif; }
+header { padding: 24px 28px 16px; border-bottom: 1px solid var(--line); background: #fff; }
+h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: 0; }
+h2 { margin: 22px 0 12px; font-size: 17px; }
+h3 { margin: 0; font-size: 15px; }
+.sub { color: var(--muted); }
+.wrap { padding: 18px 28px 34px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+.stat b { display: block; font-size: 22px; margin-bottom: 2px; }
+.controls { display: grid; grid-template-columns: 1fr 180px 180px; gap: 10px; margin: 16px 0; }
+input, select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; background: #fff; color: var(--text); }
+.grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 16px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.panel-head { padding: 13px 14px; border-bottom: 1px solid var(--line2); display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 860px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line2); text-align: left; vertical-align: top; }
+th { font-size: 12px; color: var(--muted); background: #f9fbfe; position: sticky; top: 0; z-index: 1; }
+code { background: #eef2f7; border: 1px solid #dbe2ec; border-radius: 4px; padding: 1px 5px; font-family: Consolas, Menlo, monospace; font-size: 12px; }
+.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid transparent; margin: 0 4px 4px 0; }
+.badge.script { background: var(--script); border-color: #b4d2ef; }
+.badge.set { background: var(--set); border-color: #e0c66d; }
+.badge.html { background: var(--html); border-color: #97d9b1; }
+.badge.mod { background: var(--mod); border-color: #edaaaa; }
+.badge.data { background: var(--data); border-color: #c6bbeb; }
+.badge.optional { background: #f3f4f6; border-color: #d5d9e0; color: #545f70; }
+.details { display: flex; flex-direction: column; gap: 10px; }
+details { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+summary { cursor: pointer; padding: 12px 14px; font-weight: 700; }
+.dep-list { padding: 0 14px 14px; }
+.dep { display: grid; grid-template-columns: 92px 1fr 84px; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line2); align-items: start; }
+.dep .note { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
+.graph { padding: 14px; overflow: auto; min-height: 420px; }
+svg { display: block; min-width: 960px; }
+.node rect { stroke-width: 1.3; rx: 6; }
+.node text { font-size: 12px; fill: #18202b; }
+.edge { stroke: #97a4b8; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+.empty { padding: 16px; color: var(--muted); }
+@media (max-width: 1100px) {
+  .grid, .stats, .controls { grid-template-columns: 1fr; }
+  header, .wrap { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dochi Script Dependencies</h1>
+  <div class="sub">Generated from <code>dc_dependencies.json</code> at <code>2026-05-10T05:37:37.208Z</code></div>
+  <div class="stats">
+    <div class="stat"><b id="statPackages">0</b><span>packages</span></div>
+    <div class="stat"><b id="statFiles">0</b><span>files</span></div>
+    <div class="stat"><b id="statSets">0</b><span>dependency sets</span></div>
+    <div class="stat"><b id="statDeps">0</b><span>expanded dependencies</span></div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Script Table</h3>
+      <span class="sub" id="rowCount"></span>
+    </div>
+    <div class="controls">
+      <input id="search" type="search" placeholder="Search package, script, dependency, path">
+      <select id="packageFilter"><option value="">All packages</option></select>
+      <select id="typeFilter"><option value="">All dependency types</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>MC</th>
+            <th>Version</th>
+            <th>Source</th>
+            <th>Install As</th>
+            <th>Inherits</th>
+            <th>Deps</th>
+            <th>Types</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="grid">
+    <div class="panel">
+      <div class="panel-head"><h3>Visual Graph</h3><span class="sub">script -> inherited set -> dependency</span></div>
+      <div class="graph" id="graph"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Expanded Dependencies</h3><span class="sub">click to inspect</span></div>
+      <div class="details" id="details"></div>
+    </div>
+  </section>
+</main>
+<script>
+const DATA = {"generated_at":"2026-05-10T05:37:37.208Z","registry_path":"dc_dependencies.json","registry":{"schema":1,"description":"Main dependency registry for Dochi script package manifests. Manifest dependency entries may inherit these sets with { \"inherits\": \"set.name\" }.","resolution":{"manifest_dependency_entry":{"inherits":"Looks up dependency_sets[entry.inherits].dependencies and expands it in place.","extra_fields":"Extra fields on the manifest entry may override or annotate the inherited set in installer/validator tooling."}},"dependency_sets":{"npc_util.util_common":{"description":"Optional HTML sound overlay used by dc_util_common.js.","dependencies":[{"type":"html","path":"html/dc_util/dc_sound.html","required":false,"note":"Required only for util_sound html/overlay mode."}]},"npc_util.gecko":{"description":"Optional Gecko animation integration.","dependencies":[{"type":"mod","id":"CNPC-Gecko","required":false,"note":"Only needed when NPC FX uses Gecko skin/model/animation calls."}]},"npc_util.gui_runtime":{"description":"Script and HTML dependencies needed by dc_gui_runtime.js.","dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2},{"type":"script","path":"dc_lib/ds_npc_util/dc_util_common.js","required":true,"load_order":3},{"type":"mod","id":"CNPCExtended","required":true,"note":"Required for HTML GUI and browser bridge calls."},{"type":"html","path":"html/dc_util/dc_gui_runtime.html","required":true}]},"npc_util.dialogue_util":{"description":"Dependencies needed by dc_dialogue_util.js.","dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2},{"type":"script","path":"dc_lib/ds_npc_util/dc_gui_runtime.js","required":true,"load_order":4},{"type":"script","path":"dc_lib/ds_npc_util/dc_gecko_util.js","required":false,"note":"Only needed when NPC FX uses Gecko skin/model/animation calls."},{"type":"json","path":"customnpcs/dc_data/dc_gui/dialogue_gui.json","required":true,"note":"Default GUI template when guiJsonPath is empty."},{"type":"json_dir","path":"customnpcs/dc_data/dc_dialogues/","required":true,"note":"dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."}]},"npc_util.dialogue_trigger":{"description":"Full dependency chain needed by dc_dialogue_trigger.js.","dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_npc_core_module.js","required":true,"load_order":1},{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2},{"type":"script","path":"dc_lib/ds_npc_util/dc_util_common.js","required":true,"load_order":3},{"type":"script","path":"dc_lib/ds_npc_util/dc_gui_runtime.js","required":true,"load_order":4},{"type":"script","path":"dc_lib/ds_npc_util/dc_dialogue_util.js","required":true,"load_order":5},{"type":"html","path":"html/dc_util/dc_gui_runtime.html","required":true},{"type":"json_dir","path":"customnpcs/dc_data/dc_dialogues/","required":true,"note":"dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."}]},"npc_editor.runtime":{"description":"Dependencies used by the NPC editor HTML GUI and script browser.","dependencies":[{"type":"mod","id":"CNPCExtended","required":true,"note":"Required for HTML GUI and browser bridge calls."},{"type":"html","path":"html/dc_npc_editor.html","required":true},{"type":"directory","path":"customnpcs/scripts/ecmascript/","required":true,"note":"Scans installed ECMAScript and dc_lib scripts."},{"type":"directory","path":"customnpcs/dc_admins/","required":true,"note":"Stores and reads NPC editor admin access data."}]},"item_editor.data":{"description":"Item editor JSON save/load roots and config files.","dependencies":[{"type":"json_dir","path":"customnpcs/JSON/item/","required":true,"note":"Default item JSON save/load root."},{"type":"json_dir","path":"customnpcs/JSON/item/prefix/","required":true,"note":"Default prefix preset directory."},{"type":"json","path":"customnpcs/JSON/item/category_config.json","required":true,"note":"Category configuration file created/read by the editor."},{"type":"json_dir","path":"customnpcs/JSON/item/category_presets/","required":false,"note":"Optional category preset directory used by preset import/export."}]},"scroll_dialogue.data":{"description":"Legacy scroll dialogue JSON input directory.","dependencies":[{"type":"json_dir","path":"customnpcs/JSON/npc_dialogue/","required":true,"note":"Reads \u003cnpc_name\u003e.json from this directory."},{"type":"json","path":"customnpcs/JSON/npc_dialogue/\u003cnpc_name\u003e.json","required":true,"note":"Runtime dialogue file name is derived from the NPC name."}]},"soullikemob.html":{"description":"Soullikemob HTML mount dependency.","dependencies":[{"type":"html","path":"html/dc_soullikemob.html","required":true,"note":"DOM mount target is supplied by dc_soullikemob.html."}]},"trainer.html":{"description":"Trainer HTML mount dependency.","dependencies":[{"type":"html","path":"html/dc_trainer.html","required":true,"note":"DOM mount target is supplied by dc_trainer.html."}]}}},"manifests":[{"path":"dialogue/common/1.0.0/manifest.json","id":"dialogue/common/1.0.0","package":"dialogue","version":"1.0.0","mc_version":"common"},{"path":"item_editor/forge_1_20_1/1.0.0/manifest.json","id":"item_editor/forge_1_20_1/1.0.0","package":"item_editor","version":"1.0.0","mc_version":"forge_1_20_1"},{"path":"npc_editor/common/1.0.0/manifest.json","id":"npc_editor/common/1.0.0","package":"npc_editor","version":"1.0.0","mc_version":"common"},{"path":"npc_util/common/1.0.0/manifest.json","id":"npc_util/common/1.0.0","package":"npc_util","version":"1.0.0","mc_version":"common"},{"path":"scroll_dialogue/common/1.0.0/manifest.json","id":"scroll_dialogue/common/1.0.0","package":"scroll_dialogue","version":"1.0.0","mc_version":"common"},{"path":"soullikemob/forge_1_20_1/1.0.0/manifest.json","id":"soullikemob/forge_1_20_1/1.0.0","package":"soullikemob","version":"1.0.0","mc_version":"forge_1_20_1"},{"path":"soullikemob/forge_1_20_1/1.0.1/manifest.json","id":"soullikemob/forge_1_20_1/1.0.1","package":"soullikemob","version":"1.0.1","mc_version":"forge_1_20_1"},{"path":"soullikemob/forge_1_20_1/1.0.2/manifest.json","id":"soullikemob/forge_1_20_1/1.0.2","package":"soullikemob","version":"1.0.2","mc_version":"forge_1_20_1"},{"path":"trainer/fabric_1_21_1/1.0.0/manifest.json","id":"trainer/fabric_1_21_1/1.0.0","package":"trainer","version":"1.0.0","mc_version":"fabric_1_21_1"},{"path":"trainer/fabric_1_21_1/1.0.1/manifest.json","id":"trainer/fabric_1_21_1/1.0.1","package":"trainer","version":"1.0.1","mc_version":"fabric_1_21_1"},{"path":"trainer/fabric_1_21_1/1.0.2/manifest.json","id":"trainer/fabric_1_21_1/1.0.2","package":"trainer","version":"1.0.2","mc_version":"fabric_1_21_1"}],"rows":[{"package":"dialogue","version":"1.0.0","mc_version":"common","manifest_id":"dialogue/common/1.0.0","manifest_path":"dialogue/common/1.0.0/manifest.json","entry":"dc_dialogue_trigger.js","source":"dc_dialogue_trigger.js","install_as":"dc_dialogue_trigger.js","file_type":"script","inherited_sets":["npc_util.dialogue_trigger"],"dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_npc_core_module.js","required":true,"load_order":1,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_util_common.js","required":true,"load_order":3,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_gui_runtime.js","required":true,"load_order":4,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_dialogue_util.js","required":true,"load_order":5,"inherited_from":"npc_util.dialogue_trigger"},{"type":"html","path":"html/dc_util/dc_gui_runtime.html","required":true,"inherited_from":"npc_util.dialogue_trigger"},{"type":"json_dir","path":"customnpcs/dc_data/dc_dialogues/","required":true,"note":"dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied.","inherited_from":"npc_util.dialogue_trigger"}],"dependency_count":7,"required_count":7,"optional_count":0,"type_counts":{"script":5,"html":1,"json_dir":1}},{"package":"item_editor","version":"1.0.0","mc_version":"forge_1_20_1","manifest_id":"item_editor/forge_1_20_1/1.0.0","manifest_path":"item_editor/forge_1_20_1/1.0.0/manifest.json","entry":"dc_item_editor.js","source":"dc_item_editor.js","install_as":"dc_item_editor.js","file_type":"script","inherited_sets":["item_editor.data"],"dependencies":[{"type":"json_dir","path":"customnpcs/JSON/item/","required":true,"note":"Default item JSON save/load root.","inherited_from":"item_editor.data"},{"type":"json_dir","path":"customnpcs/JSON/item/prefix/","required":true,"note":"Default prefix preset directory.","inherited_from":"item_editor.data"},{"type":"json","path":"customnpcs/JSON/item/category_config.json","required":true,"note":"Category configuration file created/read by the editor.","inherited_from":"item_editor.data"},{"type":"json_dir","path":"customnpcs/JSON/item/category_presets/","required":false,"note":"Optional category preset directory used by preset import/export.","inherited_from":"item_editor.data"}],"dependency_count":4,"required_count":3,"optional_count":1,"type_counts":{"json_dir":3,"json":1}},{"package":"npc_editor","version":"1.0.0","mc_version":"common","manifest_id":"npc_editor/common/1.0.0","manifest_path":"npc_editor/common/1.0.0/manifest.json","entry":"dc_npc_editor.js","source":"dc_npc_editor.html","install_as":"dc_npc_editor.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_editor","version":"1.0.0","mc_version":"common","manifest_id":"npc_editor/common/1.0.0","manifest_path":"npc_editor/common/1.0.0/manifest.json","entry":"dc_npc_editor.js","source":"dc_npc_editor.js","install_as":"dc_npc_editor.js","file_type":"script","inherited_sets":["npc_editor.runtime"],"dependencies":[{"type":"mod","id":"CNPCExtended","required":true,"note":"Required for HTML GUI and browser bridge calls.","inherited_from":"npc_editor.runtime"},{"type":"html","path":"html/dc_npc_editor.html","required":true,"inherited_from":"npc_editor.runtime"},{"type":"directory","path":"customnpcs/scripts/ecmascript/","required":true,"note":"Scans installed ECMAScript and dc_lib scripts.","inherited_from":"npc_editor.runtime"},{"type":"directory","path":"customnpcs/dc_admins/","required":true,"note":"Stores and reads NPC editor admin access data.","inherited_from":"npc_editor.runtime"}],"dependency_count":4,"required_count":4,"optional_count":0,"type_counts":{"mod":1,"html":1,"directory":2}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_cfg_checker.js","install_as":"dc_cfg_checker.js","file_type":"script","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_cond_checker.js","install_as":"dc_cond_checker.js","file_type":"script","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_dialogue_trigger.js","install_as":"dc_dialogue_trigger.js","file_type":"script","inherited_sets":["npc_util.dialogue_trigger"],"dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_npc_core_module.js","required":true,"load_order":1,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_util_common.js","required":true,"load_order":3,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_gui_runtime.js","required":true,"load_order":4,"inherited_from":"npc_util.dialogue_trigger"},{"type":"script","path":"dc_lib/ds_npc_util/dc_dialogue_util.js","required":true,"load_order":5,"inherited_from":"npc_util.dialogue_trigger"},{"type":"html","path":"html/dc_util/dc_gui_runtime.html","required":true,"inherited_from":"npc_util.dialogue_trigger"},{"type":"json_dir","path":"customnpcs/dc_data/dc_dialogues/","required":true,"note":"dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied.","inherited_from":"npc_util.dialogue_trigger"}],"dependency_count":7,"required_count":7,"optional_count":0,"type_counts":{"script":5,"html":1,"json_dir":1}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_dialogue_util.js","install_as":"dc_dialogue_util.js","file_type":"script","inherited_sets":["npc_util.dialogue_util"],"dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2,"inherited_from":"npc_util.dialogue_util"},{"type":"script","path":"dc_lib/ds_npc_util/dc_gui_runtime.js","required":true,"load_order":4,"inherited_from":"npc_util.dialogue_util"},{"type":"script","path":"dc_lib/ds_npc_util/dc_gecko_util.js","required":false,"note":"Only needed when NPC FX uses Gecko skin/model/animation calls.","inherited_from":"npc_util.dialogue_util"},{"type":"json","path":"customnpcs/dc_data/dc_gui/dialogue_gui.json","required":true,"note":"Default GUI template when guiJsonPath is empty.","inherited_from":"npc_util.dialogue_util"},{"type":"json_dir","path":"customnpcs/dc_data/dc_dialogues/","required":true,"note":"dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied.","inherited_from":"npc_util.dialogue_util"}],"dependency_count":5,"required_count":4,"optional_count":1,"type_counts":{"script":3,"json":1,"json_dir":1}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_gecko_util.js","install_as":"dc_gecko_util.js","file_type":"script","inherited_sets":["npc_util.gecko"],"dependencies":[{"type":"mod","id":"CNPC-Gecko","required":false,"note":"Only needed when NPC FX uses Gecko skin/model/animation calls.","inherited_from":"npc_util.gecko"}],"dependency_count":1,"required_count":0,"optional_count":1,"type_counts":{"mod":1}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_gui_runtime.html","install_as":"dc_util/dc_gui_runtime.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_gui_runtime.js","install_as":"dc_gui_runtime.js","file_type":"script","inherited_sets":["npc_util.gui_runtime"],"dependencies":[{"type":"script","path":"dc_lib/ds_npc_util/dc_cfg_checker.js","required":true,"load_order":2,"inherited_from":"npc_util.gui_runtime"},{"type":"script","path":"dc_lib/ds_npc_util/dc_util_common.js","required":true,"load_order":3,"inherited_from":"npc_util.gui_runtime"},{"type":"mod","id":"CNPCExtended","required":true,"note":"Required for HTML GUI and browser bridge calls.","inherited_from":"npc_util.gui_runtime"},{"type":"html","path":"html/dc_util/dc_gui_runtime.html","required":true,"inherited_from":"npc_util.gui_runtime"}],"dependency_count":4,"required_count":4,"optional_count":0,"type_counts":{"script":2,"mod":1,"html":1}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_npc_core_module.js","install_as":"dc_npc_core_module.js","file_type":"script","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_reward_checker.js","install_as":"dc_reward_checker.js","file_type":"script","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_sequence_core.js","install_as":"dc_sequence_core.js","file_type":"script","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_sound.html","install_as":"dc_util/dc_sound.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"npc_util","version":"1.0.0","mc_version":"common","manifest_id":"npc_util/common/1.0.0","manifest_path":"npc_util/common/1.0.0/manifest.json","entry":"dc_npc_core_module.js","source":"dc_util_common.js","install_as":"dc_util_common.js","file_type":"script","inherited_sets":["npc_util.util_common"],"dependencies":[{"type":"html","path":"html/dc_util/dc_sound.html","required":false,"note":"Required only for util_sound html/overlay mode.","inherited_from":"npc_util.util_common"}],"dependency_count":1,"required_count":0,"optional_count":1,"type_counts":{"html":1}},{"package":"scroll_dialogue","version":"1.0.0","mc_version":"common","manifest_id":"scroll_dialogue/common/1.0.0","manifest_path":"scroll_dialogue/common/1.0.0/manifest.json","entry":"dc_story_scroll.js","source":"dc_story_scroll.js","install_as":"dc_story_scroll.js","file_type":"script","inherited_sets":["scroll_dialogue.data"],"dependencies":[{"type":"json_dir","path":"customnpcs/JSON/npc_dialogue/","required":true,"note":"Reads \u003cnpc_name\u003e.json from this directory.","inherited_from":"scroll_dialogue.data"},{"type":"json","path":"customnpcs/JSON/npc_dialogue/\u003cnpc_name\u003e.json","required":true,"note":"Runtime dialogue file name is derived from the NPC name.","inherited_from":"scroll_dialogue.data"}],"dependency_count":2,"required_count":2,"optional_count":0,"type_counts":{"json_dir":1,"json":1}},{"package":"soullikemob","version":"1.0.0","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.0","manifest_path":"soullikemob/forge_1_20_1/1.0.0/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.html","install_as":"dc_soullikemob.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"soullikemob","version":"1.0.0","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.0","manifest_path":"soullikemob/forge_1_20_1/1.0.0/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.js","install_as":"dc_soullikemob.js","file_type":"script","inherited_sets":["soullikemob.html"],"dependencies":[{"type":"html","path":"html/dc_soullikemob.html","required":true,"note":"DOM mount target is supplied by dc_soullikemob.html.","inherited_from":"soullikemob.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}},{"package":"soullikemob","version":"1.0.1","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.1","manifest_path":"soullikemob/forge_1_20_1/1.0.1/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.html","install_as":"dc_soullikemob.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"soullikemob","version":"1.0.1","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.1","manifest_path":"soullikemob/forge_1_20_1/1.0.1/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.js","install_as":"dc_soullikemob.js","file_type":"script","inherited_sets":["soullikemob.html"],"dependencies":[{"type":"html","path":"html/dc_soullikemob.html","required":true,"note":"DOM mount target is supplied by dc_soullikemob.html.","inherited_from":"soullikemob.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}},{"package":"soullikemob","version":"1.0.2","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.2","manifest_path":"soullikemob/forge_1_20_1/1.0.2/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.html","install_as":"dc_soullikemob.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"soullikemob","version":"1.0.2","mc_version":"forge_1_20_1","manifest_id":"soullikemob/forge_1_20_1/1.0.2","manifest_path":"soullikemob/forge_1_20_1/1.0.2/manifest.json","entry":"dc_soullikemob.js","source":"dc_soullikemob.js","install_as":"dc_soullikemob.js","file_type":"script","inherited_sets":["soullikemob.html"],"dependencies":[{"type":"html","path":"html/dc_soullikemob.html","required":true,"note":"DOM mount target is supplied by dc_soullikemob.html.","inherited_from":"soullikemob.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}},{"package":"trainer","version":"1.0.0","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.0","manifest_path":"trainer/fabric_1_21_1/1.0.0/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.html","install_as":"dc_trainer.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"trainer","version":"1.0.0","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.0","manifest_path":"trainer/fabric_1_21_1/1.0.0/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.js","install_as":"dc_trainer.js","file_type":"script","inherited_sets":["trainer.html"],"dependencies":[{"type":"html","path":"html/dc_trainer.html","required":true,"note":"DOM mount target is supplied by dc_trainer.html.","inherited_from":"trainer.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}},{"package":"trainer","version":"1.0.1","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.1","manifest_path":"trainer/fabric_1_21_1/1.0.1/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.html","install_as":"dc_trainer.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"trainer","version":"1.0.1","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.1","manifest_path":"trainer/fabric_1_21_1/1.0.1/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.js","install_as":"dc_trainer.js","file_type":"script","inherited_sets":["trainer.html"],"dependencies":[{"type":"html","path":"html/dc_trainer.html","required":true,"note":"DOM mount target is supplied by dc_trainer.html.","inherited_from":"trainer.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}},{"package":"trainer","version":"1.0.2","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.2","manifest_path":"trainer/fabric_1_21_1/1.0.2/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.html","install_as":"dc_trainer.html","file_type":"html","inherited_sets":[],"dependencies":[],"dependency_count":0,"required_count":0,"optional_count":0,"type_counts":{}},{"package":"trainer","version":"1.0.2","mc_version":"fabric_1_21_1","manifest_id":"trainer/fabric_1_21_1/1.0.2","manifest_path":"trainer/fabric_1_21_1/1.0.2/manifest.json","entry":"dc_trainer.js","source":"dc_trainer.js","install_as":"dc_trainer.js","file_type":"script","inherited_sets":["trainer.html"],"dependencies":[{"type":"html","path":"html/dc_trainer.html","required":true,"note":"DOM mount target is supplied by dc_trainer.html.","inherited_from":"trainer.html"}],"dependency_count":1,"required_count":1,"optional_count":0,"type_counts":{"html":1}}],"graph_edges":[{"from":"script:dialogue/common/1.0.0:dc_dialogue_trigger.js","fromLabel":"dc_dialogue_trigger.js","fromType":"script","to":"set:npc_util.dialogue_trigger","toLabel":"npc_util.dialogue_trigger","toType":"set"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_npc_core_module.js","toLabel":"dc_lib/ds_npc_util/dc_npc_core_module.js","toType":"script"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_cfg_checker.js","toLabel":"dc_lib/ds_npc_util/dc_cfg_checker.js","toType":"script"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_util_common.js","toLabel":"dc_lib/ds_npc_util/dc_util_common.js","toType":"script"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_gui_runtime.js","toLabel":"dc_lib/ds_npc_util/dc_gui_runtime.js","toType":"script"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_dialogue_util.js","toLabel":"dc_lib/ds_npc_util/dc_dialogue_util.js","toType":"script"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:html:html/dc_util/dc_gui_runtime.html","toLabel":"html/dc_util/dc_gui_runtime.html","toType":"html"},{"from":"set:npc_util.dialogue_trigger","fromLabel":"npc_util.dialogue_trigger","fromType":"set","to":"dep:json_dir:customnpcs/dc_data/dc_dialogues/","toLabel":"customnpcs/dc_data/dc_dialogues/","toType":"json_dir"},{"from":"script:item_editor/forge_1_20_1/1.0.0:dc_item_editor.js","fromLabel":"dc_item_editor.js","fromType":"script","to":"set:item_editor.data","toLabel":"item_editor.data","toType":"set"},{"from":"set:item_editor.data","fromLabel":"item_editor.data","fromType":"set","to":"dep:json_dir:customnpcs/JSON/item/","toLabel":"customnpcs/JSON/item/","toType":"json_dir"},{"from":"set:item_editor.data","fromLabel":"item_editor.data","fromType":"set","to":"dep:json_dir:customnpcs/JSON/item/prefix/","toLabel":"customnpcs/JSON/item/prefix/","toType":"json_dir"},{"from":"set:item_editor.data","fromLabel":"item_editor.data","fromType":"set","to":"dep:json:customnpcs/JSON/item/category_config.json","toLabel":"customnpcs/JSON/item/category_config.json","toType":"json"},{"from":"set:item_editor.data","fromLabel":"item_editor.data","fromType":"set","to":"dep:json_dir:customnpcs/JSON/item/category_presets/","toLabel":"customnpcs/JSON/item/category_presets/","toType":"json_dir"},{"from":"script:npc_editor/common/1.0.0:dc_npc_editor.js","fromLabel":"dc_npc_editor.js","fromType":"script","to":"set:npc_editor.runtime","toLabel":"npc_editor.runtime","toType":"set"},{"from":"set:npc_editor.runtime","fromLabel":"npc_editor.runtime","fromType":"set","to":"dep:mod:CNPCExtended","toLabel":"CNPCExtended","toType":"mod"},{"from":"set:npc_editor.runtime","fromLabel":"npc_editor.runtime","fromType":"set","to":"dep:html:html/dc_npc_editor.html","toLabel":"html/dc_npc_editor.html","toType":"html"},{"from":"set:npc_editor.runtime","fromLabel":"npc_editor.runtime","fromType":"set","to":"dep:directory:customnpcs/scripts/ecmascript/","toLabel":"customnpcs/scripts/ecmascript/","toType":"directory"},{"from":"set:npc_editor.runtime","fromLabel":"npc_editor.runtime","fromType":"set","to":"dep:directory:customnpcs/dc_admins/","toLabel":"customnpcs/dc_admins/","toType":"directory"},{"from":"script:npc_util/common/1.0.0:dc_util_common.js","fromLabel":"dc_util_common.js","fromType":"script","to":"set:npc_util.util_common","toLabel":"npc_util.util_common","toType":"set"},{"from":"set:npc_util.util_common","fromLabel":"npc_util.util_common","fromType":"set","to":"dep:html:html/dc_util/dc_sound.html","toLabel":"html/dc_util/dc_sound.html","toType":"html"},{"from":"script:npc_util/common/1.0.0:dc_gecko_util.js","fromLabel":"dc_gecko_util.js","fromType":"script","to":"set:npc_util.gecko","toLabel":"npc_util.gecko","toType":"set"},{"from":"set:npc_util.gecko","fromLabel":"npc_util.gecko","fromType":"set","to":"dep:mod:CNPC-Gecko","toLabel":"CNPC-Gecko","toType":"mod"},{"from":"script:npc_util/common/1.0.0:dc_gui_runtime.js","fromLabel":"dc_gui_runtime.js","fromType":"script","to":"set:npc_util.gui_runtime","toLabel":"npc_util.gui_runtime","toType":"set"},{"from":"set:npc_util.gui_runtime","fromLabel":"npc_util.gui_runtime","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_cfg_checker.js","toLabel":"dc_lib/ds_npc_util/dc_cfg_checker.js","toType":"script"},{"from":"set:npc_util.gui_runtime","fromLabel":"npc_util.gui_runtime","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_util_common.js","toLabel":"dc_lib/ds_npc_util/dc_util_common.js","toType":"script"},{"from":"set:npc_util.gui_runtime","fromLabel":"npc_util.gui_runtime","fromType":"set","to":"dep:mod:CNPCExtended","toLabel":"CNPCExtended","toType":"mod"},{"from":"set:npc_util.gui_runtime","fromLabel":"npc_util.gui_runtime","fromType":"set","to":"dep:html:html/dc_util/dc_gui_runtime.html","toLabel":"html/dc_util/dc_gui_runtime.html","toType":"html"},{"from":"script:npc_util/common/1.0.0:dc_dialogue_util.js","fromLabel":"dc_dialogue_util.js","fromType":"script","to":"set:npc_util.dialogue_util","toLabel":"npc_util.dialogue_util","toType":"set"},{"from":"set:npc_util.dialogue_util","fromLabel":"npc_util.dialogue_util","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_cfg_checker.js","toLabel":"dc_lib/ds_npc_util/dc_cfg_checker.js","toType":"script"},{"from":"set:npc_util.dialogue_util","fromLabel":"npc_util.dialogue_util","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_gui_runtime.js","toLabel":"dc_lib/ds_npc_util/dc_gui_runtime.js","toType":"script"},{"from":"set:npc_util.dialogue_util","fromLabel":"npc_util.dialogue_util","fromType":"set","to":"dep:script:dc_lib/ds_npc_util/dc_gecko_util.js","toLabel":"dc_lib/ds_npc_util/dc_gecko_util.js","toType":"script"},{"from":"set:npc_util.dialogue_util","fromLabel":"npc_util.dialogue_util","fromType":"set","to":"dep:json:customnpcs/dc_data/dc_gui/dialogue_gui.json","toLabel":"customnpcs/dc_data/dc_gui/dialogue_gui.json","toType":"json"},{"from":"set:npc_util.dialogue_util","fromLabel":"npc_util.dialogue_util","fromType":"set","to":"dep:json_dir:customnpcs/dc_data/dc_dialogues/","toLabel":"customnpcs/dc_data/dc_dialogues/","toType":"json_dir"},{"from":"script:npc_util/common/1.0.0:dc_dialogue_trigger.js","fromLabel":"dc_dialogue_trigger.js","fromType":"script","to":"set:npc_util.dialogue_trigger","toLabel":"npc_util.dialogue_trigger","toType":"set"},{"from":"script:scroll_dialogue/common/1.0.0:dc_story_scroll.js","fromLabel":"dc_story_scroll.js","fromType":"script","to":"set:scroll_dialogue.data","toLabel":"scroll_dialogue.data","toType":"set"},{"from":"set:scroll_dialogue.data","fromLabel":"scroll_dialogue.data","fromType":"set","to":"dep:json_dir:customnpcs/JSON/npc_dialogue/","toLabel":"customnpcs/JSON/npc_dialogue/","toType":"json_dir"},{"from":"set:scroll_dialogue.data","fromLabel":"scroll_dialogue.data","fromType":"set","to":"dep:json:customnpcs/JSON/npc_dialogue/\u003cnpc_name\u003e.json","toLabel":"customnpcs/JSON/npc_dialogue/\u003cnpc_name\u003e.json","toType":"json"},{"from":"script:soullikemob/forge_1_20_1/1.0.0:dc_soullikemob.js","fromLabel":"dc_soullikemob.js","fromType":"script","to":"set:soullikemob.html","toLabel":"soullikemob.html","toType":"set"},{"from":"set:soullikemob.html","fromLabel":"soullikemob.html","fromType":"set","to":"dep:html:html/dc_soullikemob.html","toLabel":"html/dc_soullikemob.html","toType":"html"},{"from":"script:soullikemob/forge_1_20_1/1.0.1:dc_soullikemob.js","fromLabel":"dc_soullikemob.js","fromType":"script","to":"set:soullikemob.html","toLabel":"soullikemob.html","toType":"set"},{"from":"script:soullikemob/forge_1_20_1/1.0.2:dc_soullikemob.js","fromLabel":"dc_soullikemob.js","fromType":"script","to":"set:soullikemob.html","toLabel":"soullikemob.html","toType":"set"},{"from":"script:trainer/fabric_1_21_1/1.0.0:dc_trainer.js","fromLabel":"dc_trainer.js","fromType":"script","to":"set:trainer.html","toLabel":"trainer.html","toType":"set"},{"from":"set:trainer.html","fromLabel":"trainer.html","fromType":"set","to":"dep:html:html/dc_trainer.html","toLabel":"html/dc_trainer.html","toType":"html"},{"from":"script:trainer/fabric_1_21_1/1.0.1:dc_trainer.js","fromLabel":"dc_trainer.js","fromType":"script","to":"set:trainer.html","toLabel":"trainer.html","toType":"set"},{"from":"script:trainer/fabric_1_21_1/1.0.2:dc_trainer.js","fromLabel":"dc_trainer.js","fromType":"script","to":"set:trainer.html","toLabel":"trainer.html","toType":"set"}]};
+const state = { search: "", package: "", type: "" };
+
+function depTarget(dep) {
+  return dep.path || dep.id || dep.type || "";
+}
+
+function depTypeClass(type) {
+  if (type === "script") return "script";
+  if (type === "html") return "html";
+  if (type === "mod") return "mod";
+  if (type === "json" || type === "json_dir" || type === "directory") return "data";
+  return "optional";
+}
+
+function typeSummary(row) {
+  return Object.keys(row.type_counts).sort().map(type => {
+    return '<span class="badge ' + depTypeClass(type) + '">' + type + ': ' + row.type_counts[type] + '</span>';
+  }).join("");
+}
+
+function setStats() {
+  const packages = new Set(DATA.rows.map(row => row.package));
+  document.getElementById("statPackages").textContent = packages.size;
+  document.getElementById("statFiles").textContent = DATA.rows.length;
+  document.getElementById("statSets").textContent = Object.keys(DATA.registry.dependency_sets || {}).length;
+  document.getElementById("statDeps").textContent = DATA.rows.reduce((sum, row) => sum + row.dependency_count, 0);
+}
+
+function fillFilters() {
+  const pkg = document.getElementById("packageFilter");
+  Array.from(new Set(DATA.rows.map(row => row.package))).sort().forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    pkg.appendChild(opt);
+  });
+
+  const types = new Set();
+  DATA.rows.forEach(row => row.dependencies.forEach(dep => types.add(dep.type || "unknown")));
+  const typeFilter = document.getElementById("typeFilter");
+  Array.from(types).sort().forEach(type => {
+    const opt = document.createElement("option");
+    opt.value = type;
+    opt.textContent = type;
+    typeFilter.appendChild(opt);
+  });
+}
+
+function getFilteredRows() {
+  const q = state.search.toLowerCase();
+  return DATA.rows.filter(row => {
+    if (state.package && row.package !== state.package) return false;
+    if (state.type && !row.dependencies.some(dep => (dep.type || "unknown") === state.type)) return false;
+    if (!q) return true;
+    const haystack = [
+      row.package, row.mc_version, row.version, row.source, row.install_as,
+      row.inherited_sets.join(" "),
+      row.dependencies.map(dep => [dep.type, depTarget(dep), dep.note, dep.inherited_from].join(" ")).join(" ")
+    ].join(" ").toLowerCase();
+    return haystack.indexOf(q) !== -1;
+  });
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = [
+      '<td>' + escapeHtml(row.package) + '</td>',
+      '<td>' + escapeHtml(row.mc_version) + '</td>',
+      '<td>' + escapeHtml(row.version) + '</td>',
+      '<td><code>' + escapeHtml(row.source) + '</code></td>',
+      '<td><code>' + escapeHtml(row.install_as) + '</code></td>',
+      '<td>' + (row.inherited_sets.map(set => '<span class="badge set">' + escapeHtml(set) + '</span>').join("") || '<span class="sub">none</span>') + '</td>',
+      '<td>' + row.dependency_count + ' <span class="sub">(' + row.required_count + ' req, ' + row.optional_count + ' opt)</span></td>',
+      '<td>' + typeSummary(row) + '</td>'
+    ].join("");
+    tbody.appendChild(tr);
+  });
+  document.getElementById("rowCount").textContent = rows.length + " visible";
+}
+
+function renderDetails(rows) {
+  const box = document.getElementById("details");
+  box.innerHTML = "";
+  const withDeps = rows.filter(row => row.dependencies.length);
+  if (!withDeps.length) {
+    box.innerHTML = '<div class="empty">No dependencies match the current filters.</div>';
+    return;
+  }
+  withDeps.forEach((row, index) => {
+    const el = document.createElement("details");
+    if (index < 3) el.open = true;
+    const deps = row.dependencies.map(dep => {
+      const required = dep.required === false ? '<span class="badge optional">optional</span>' : '<span class="badge script">required</span>';
+      const note = dep.note ? '<div class="note">' + escapeHtml(dep.note) + '</div>' : "";
+      return '<div class="dep"><span class="badge ' + depTypeClass(dep.type) + '">' + escapeHtml(dep.type || "unknown") + '</span><code>' + escapeHtml(depTarget(dep)) + '</code>' + required + note + '</div>';
+    }).join("");
+    el.innerHTML = '<summary>' + escapeHtml(row.package + " " + row.version + " - " + row.source) + '</summary><div class="dep-list">' + deps + '</div>';
+    box.appendChild(el);
+  });
+}
+
+function renderGraph(rows) {
+  const graph = document.getElementById("graph");
+  const visibleScripts = new Set(rows.map(row => "script:" + row.manifest_id + ":" + row.source));
+  const edges = DATA.graph_edges.filter(edge => visibleScripts.has(edge.from) || edge.from.indexOf("set:") === 0);
+  const scriptNodes = [];
+  const setNodes = [];
+  const depNodes = [];
+  const nodeMap = new Map();
+
+  function addNode(id, label, type) {
+    if (nodeMap.has(id)) return nodeMap.get(id);
+    const node = { id, label, type, x: 0, y: 0, w: 230, h: 34 };
+    nodeMap.set(id, node);
+    if (type === "script") scriptNodes.push(node);
+    else if (type === "set") setNodes.push(node);
+    else depNodes.push(node);
+    return node;
+  }
+
+  edges.forEach(edge => {
+    addNode(edge.from, edge.fromLabel, edge.fromType);
+    addNode(edge.to, edge.toLabel, edge.toType);
+  });
+
+  const columns = [scriptNodes, setNodes, depNodes];
+  const colX = [20, 330, 640];
+  let height = 120;
+  columns.forEach((nodes, col) => {
+    nodes.sort((a, b) => a.label.localeCompare(b.label));
+    nodes.forEach((node, i) => {
+      node.x = colX[col];
+      node.y = 24 + i * 48;
+      height = Math.max(height, node.y + 58);
+    });
+  });
+
+  const width = 920;
+  const nodeClass = type => {
+    if (type === "script") return "#dceeff";
+    if (type === "set") return "#fff2c7";
+    if (type === "html") return "#dcf8e8";
+    if (type === "mod") return "#ffe0e0";
+    if (type === "json" || type === "json_dir" || type === "directory") return "#eee8ff";
+    return "#eef2f7";
+  };
+
+  const edgeLines = edges.map(edge => {
+    const a = nodeMap.get(edge.from);
+    const b = nodeMap.get(edge.to);
+    if (!a || !b) return "";
+    const x1 = a.x + a.w;
+    const y1 = a.y + a.h / 2;
+    const x2 = b.x;
+    const y2 = b.y + b.h / 2;
+    const mid = (x1 + x2) / 2;
+    return '<path class="edge" d="M' + x1 + ' ' + y1 + ' C' + mid + ' ' + y1 + ', ' + mid + ' ' + y2 + ', ' + x2 + ' ' + y2 + '"></path>';
+  }).join("");
+
+  const nodeEls = Array.from(nodeMap.values()).map(node => {
+    const label = node.label.length > 30 ? node.label.slice(0, 27) + "..." : node.label;
+    return '<g class="node"><rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" fill="' + nodeClass(node.type) + '" stroke="#9aa7ba"></rect><text x="' + (node.x + 10) + '" y="' + (node.y + 22) + '">' + escapeHtml(label) + '</text><title>' + escapeHtml(node.label) + '</title></g>';
+  }).join("");
+
+  graph.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" role="img" aria-label="Dependency graph"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#97a4b8"></path></marker></defs>' + edgeLines + nodeEls + '</svg>';
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[ch]));
+}
+
+function render() {
+  const rows = getFilteredRows();
+  renderTable(rows);
+  renderDetails(rows);
+  renderGraph(rows);
+}
+
+setStats();
+fillFilters();
+document.getElementById("search").addEventListener("input", event => { state.search = event.target.value; render(); });
+document.getElementById("packageFilter").addEventListener("change", event => { state.package = event.target.value; render(); });
+document.getElementById("typeFilter").addEventListener("change", event => { state.type = event.target.value; render(); });
+render();
+</script>
+</body>
+</html>

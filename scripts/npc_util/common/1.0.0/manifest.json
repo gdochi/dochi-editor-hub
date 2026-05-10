@@ -5,6 +5,7 @@
   "editor": "npc_util",
   "mc_version": "common",
   "description": "Common NPC utility package shared across Forge and Fabric",
+  "dependency_registry": "../../../dc_dependencies.json",
   "entry": "dc_npc_core_module.js",
   "files": [
     {
@@ -22,10 +23,7 @@
       "install_as": "dc_util_common.js",
       "dependencies": [
         {
-          "type": "html",
-          "path": "html/dc_util/dc_sound.html",
-          "required": false,
-          "note": "Required only for util_sound html/overlay mode."
+          "inherits": "npc_util.util_common"
         }
       ]
     },
@@ -49,10 +47,7 @@
       "install_as": "dc_gecko_util.js",
       "dependencies": [
         {
-          "type": "mod",
-          "id": "CNPC-Gecko",
-          "required": false,
-          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
+          "inherits": "npc_util.gecko"
         }
       ]
     },
@@ -61,27 +56,7 @@
       "install_as": "dc_gui_runtime.js",
       "dependencies": [
         {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
-          "required": true,
-          "load_order": 2
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_util_common.js",
-          "required": true,
-          "load_order": 3
-        },
-        {
-          "type": "mod",
-          "id": "CNPCExtended",
-          "required": true,
-          "note": "Required for HTML GUI and browser bridge calls."
-        },
-        {
-          "type": "html",
-          "path": "html/dc_util/dc_gui_runtime.html",
-          "required": true
+          "inherits": "npc_util.gui_runtime"
         }
       ]
     },
@@ -90,34 +65,7 @@
       "install_as": "dc_dialogue_util.js",
       "dependencies": [
         {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
-          "required": true,
-          "load_order": 2
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
-          "required": true,
-          "load_order": 4
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gecko_util.js",
-          "required": false,
-          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
-        },
-        {
-          "type": "json",
-          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
-          "required": true,
-          "note": "Default GUI template when guiJsonPath is empty."
-        },
-        {
-          "type": "json_dir",
-          "path": "customnpcs/dc_data/dc_dialogues/",
-          "required": true,
-          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+          "inherits": "npc_util.dialogue_util"
         }
       ]
     },
@@ -126,45 +74,7 @@
       "install_as": "dc_dialogue_trigger.js",
       "dependencies": [
         {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
-          "required": true,
-          "load_order": 1
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
-          "required": true,
-          "load_order": 2
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_util_common.js",
-          "required": true,
-          "load_order": 3
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
-          "required": true,
-          "load_order": 4
-        },
-        {
-          "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
-          "required": true,
-          "load_order": 5
-        },
-        {
-          "type": "html",
-          "path": "html/dc_util/dc_gui_runtime.html",
-          "required": true
-        },
-        {
-          "type": "json_dir",
-          "path": "customnpcs/dc_data/dc_dialogues/",
-          "required": true,
-          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+          "inherits": "npc_util.dialogue_trigger"
         }
       ]
     },

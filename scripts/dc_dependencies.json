@@ -1,0 +1,239 @@
+{
+  "schema": 1,
+  "description": "Main dependency registry for Dochi script package manifests. Manifest dependency entries may inherit these sets with { \"inherits\": \"set.name\" }.",
+  "resolution": {
+    "manifest_dependency_entry": {
+      "inherits": "Looks up dependency_sets[entry.inherits].dependencies and expands it in place.",
+      "extra_fields": "Extra fields on the manifest entry may override or annotate the inherited set in installer/validator tooling."
+    }
+  },
+  "dependency_sets": {
+    "npc_util.util_common": {
+      "description": "Optional HTML sound overlay used by dc_util_common.js.",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_sound.html",
+          "required": false,
+          "note": "Required only for util_sound html/overlay mode."
+        }
+      ]
+    },
+    "npc_util.gecko": {
+      "description": "Optional Gecko animation integration.",
+      "dependencies": [
+        {
+          "type": "mod",
+          "id": "CNPC-Gecko",
+          "required": false,
+          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
+        }
+      ]
+    },
+    "npc_util.gui_runtime": {
+      "description": "Script and HTML dependencies needed by dc_gui_runtime.js.",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for HTML GUI and browser bridge calls."
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        }
+      ]
+    },
+    "npc_util.dialogue_util": {
+      "description": "Dependencies needed by dc_dialogue_util.js.",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gecko_util.js",
+          "required": false,
+          "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
+          "required": true,
+          "note": "Default GUI template when guiJsonPath is empty."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": true,
+          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
+    },
+    "npc_util.dialogue_trigger": {
+      "description": "Full dependency chain needed by dc_dialogue_trigger.js.",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
+          "required": true,
+          "load_order": 1
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": true,
+          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
+    },
+    "npc_editor.runtime": {
+      "description": "Dependencies used by the NPC editor HTML GUI and script browser.",
+      "dependencies": [
+        {
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for HTML GUI and browser bridge calls."
+        },
+        {
+          "type": "html",
+          "path": "html/dc_npc_editor.html",
+          "required": true
+        },
+        {
+          "type": "directory",
+          "path": "customnpcs/scripts/ecmascript/",
+          "required": true,
+          "note": "Scans installed ECMAScript and dc_lib scripts."
+        },
+        {
+          "type": "directory",
+          "path": "customnpcs/dc_admins/",
+          "required": true,
+          "note": "Stores and reads NPC editor admin access data."
+        }
+      ]
+    },
+    "item_editor.data": {
+      "description": "Item editor JSON save/load roots and config files.",
+      "dependencies": [
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/",
+          "required": true,
+          "note": "Default item JSON save/load root."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/prefix/",
+          "required": true,
+          "note": "Default prefix preset directory."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/JSON/item/category_config.json",
+          "required": true,
+          "note": "Category configuration file created/read by the editor."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/item/category_presets/",
+          "required": false,
+          "note": "Optional category preset directory used by preset import/export."
+        }
+      ]
+    },
+    "scroll_dialogue.data": {
+      "description": "Legacy scroll dialogue JSON input directory.",
+      "dependencies": [
+        {
+          "type": "json_dir",
+          "path": "customnpcs/JSON/npc_dialogue/",
+          "required": true,
+          "note": "Reads <npc_name>.json from this directory."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/JSON/npc_dialogue/<npc_name>.json",
+          "required": true,
+          "note": "Runtime dialogue file name is derived from the NPC name."
+        }
+      ]
+    },
+    "soullikemob.html": {
+      "description": "Soullikemob HTML mount dependency.",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_soullikemob.html",
+          "required": true,
+          "note": "DOM mount target is supplied by dc_soullikemob.html."
+        }
+      ]
+    },
+    "trainer.html": {
+      "description": "Trainer HTML mount dependency.",
+      "dependencies": [
+        {
+          "type": "html",
+          "path": "html/dc_trainer.html",
+          "required": true,
+          "note": "DOM mount target is supplied by dc_trainer.html."
+        }
+      ]
+    }
+  }
+}
