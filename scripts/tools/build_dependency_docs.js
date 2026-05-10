@@ -2,17 +2,39 @@ const fs = require("fs")
 const path = require("path")
 
 const rootDir = path.resolve(__dirname, "..")
-const overviewPath = path.join(rootDir, "dc_main_scripts.json")
+const utilityRootRel = "npc_util/common/1.0.0"
+const utilityRoot = path.join(rootDir, utilityRootRel)
+const jsonPath = path.join(rootDir, "dc_main_scripts.json")
 const mdPath = path.join(rootDir, "DEPENDENCIES.md")
 const htmlPath = path.join(rootDir, "docs", "dependencies.html")
 const htmlIndexPath = path.join(rootDir, "docs", "index.html")
 
+const utilityNamePattern = /^(cfg_chk_|cond_|cond_chk_|rew_chk_|seq_core_|util_|dc_gecko_|dc_dialogue_|dc_dialogue_trigger_|openDcGuiRuntime$|NpcEventModule$|DcGuiRuntimeModule$)/
+const ignoredMainPackages = { npc_util: true }
+
+function readText(filePath) {
+  return fs.readFileSync(filePath, "utf8")
+}
+
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"))
+  return JSON.parse(readText(filePath))
+}
+
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n", "utf8")
 }
 
 function rel(filePath) {
   return path.relative(rootDir, filePath).replace(/\\/g, "/")
+}
+
+function normalizePath(value) {
+  return String(value == null ? "" : value).replace(/\\/g, "/")
+}
+
+function baseName(value) {
+  const parts = normalizePath(value).split("/")
+  return parts[parts.length - 1] || ""
 }
 
 function escapeMd(value) {
@@ -27,162 +49,410 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
 }
 
-function escapeMermaid(value) {
-  return String(value == null ? "" : value)
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, "'")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
+function walk(dir, out, fileName) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+  entries.forEach((entry) => {
+    if (entry.name === ".git" || entry.name === "node_modules") return
+    const fullPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      walk(fullPath, out, fileName)
+      return
+    }
+    if (entry.isFile() && (!fileName || entry.name === fileName)) out.push(fullPath)
+  })
 }
 
-function attachmentTarget(item) {
-  return item.path || item.id || ""
+function stripCommentsAndStrings(text) {
+  const out = text.split("")
+  let i = 0
+  let mode = "code"
+  let quote = ""
+
+  while (i < text.length) {
+    const ch = text[i]
+    const next = text[i + 1]
+
+    if (mode === "code") {
+      if (ch === "/" && next === "/") {
+        out[i] = " "
+        out[i + 1] = " "
+        i += 2
+        mode = "lineComment"
+        continue
+      }
+      if (ch === "/" && next === "*") {
+        out[i] = " "
+        out[i + 1] = " "
+        i += 2
+        mode = "blockComment"
+        continue
+      }
+      if (ch === "\"" || ch === "'") {
+        quote = ch
+        i++
+        mode = "string"
+        continue
+      }
+      i++
+      continue
+    }
+
+    if (mode === "lineComment") {
+      if (ch === "\r" || ch === "\n") {
+        mode = "code"
+        i++
+        continue
+      }
+      out[i] = " "
+      i++
+      continue
+    }
+
+    if (mode === "blockComment") {
+      if (ch === "*" && next === "/") {
+        out[i] = " "
+        out[i + 1] = " "
+        i += 2
+        mode = "code"
+        continue
+      }
+      if (ch !== "\r" && ch !== "\n") out[i] = " "
+      i++
+      continue
+    }
+
+    if (mode === "string") {
+      if (ch === "\\") {
+        i += 2
+        continue
+      }
+      if (ch === quote) {
+        i++
+        mode = "code"
+        continue
+      }
+      i++
+    }
+  }
+
+  return out.join("")
+}
+
+function getLineNumber(text, index) {
+  return text.slice(0, index).split(/\r\n|\r|\n/).length
+}
+
+function uniqueSorted(list) {
+  return Array.from(new Set(list.filter(Boolean))).sort()
+}
+
+function extractOwnDeclarations(text) {
+  const clean = stripCommentsAndStrings(text)
+  const names = []
+  let match
+  const fnRe = /\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g
+  while ((match = fnRe.exec(clean))) names.push(match[1])
+  const assignedFnRe = /\b(?:var\s+)?([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*function\s*\(/g
+  while ((match = assignedFnRe.exec(clean))) names.push(match[1])
+  return new Set(names)
+}
+
+function extractUtilitySymbols(filePath) {
+  const text = readText(filePath)
+  const clean = stripCommentsAndStrings(text)
+  const symbols = []
+  const seen = {}
+
+  function add(name, kind) {
+    if (!utilityNamePattern.test(name)) return
+    if (seen[name]) return
+    seen[name] = true
+    symbols.push({ name, kind })
+  }
+
+  let match
+  const fnRe = /\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g
+  while ((match = fnRe.exec(clean))) add(match[1], "function")
+
+  const assignedFnRe = /\b(?:var\s+)?([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*function\s*\(/g
+  while ((match = assignedFnRe.exec(clean))) add(match[1], "function")
+
+  const varRe = /\bvar\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=/g
+  while ((match = varRe.exec(clean))) add(match[1], "global")
+
+  return {
+    script: path.basename(filePath),
+    path: rel(filePath),
+    symbols
+  }
+}
+
+function buildUtilityIndex() {
+  const order = {}
+  const manifestPath = path.join(utilityRoot, "manifest.json")
+  if (fs.existsSync(manifestPath)) {
+    const manifest = readJson(manifestPath)
+    ;(manifest.files || []).forEach((file, index) => {
+      if (fileType(file) !== "script") return
+      order[file.install_as || file.source] = index + 1
+    })
+  }
+
+  const files = fs.readdirSync(utilityRoot)
+    .filter((name) => name.endsWith(".js"))
+    .sort()
+    .map((name) => path.join(utilityRoot, name))
+
+  return files.map((filePath) => {
+    const item = extractUtilitySymbols(filePath)
+    item.default_order = order[item.script] || null
+    return item
+  })
+}
+
+function findSymbolMatches(text, ownDeclarations, symbol) {
+  if (ownDeclarations.has(symbol.name)) return []
+  const clean = stripCommentsAndStrings(text)
+  const escaped = symbol.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const pattern = symbol.kind === "function"
+    ? new RegExp("\\b" + escaped + "\\s*\\(", "g")
+    : new RegExp("\\b" + escaped + "\\b", "g")
+  const matches = []
+  let match
+  while ((match = pattern.exec(clean))) {
+    matches.push({
+      symbol: symbol.name,
+      kind: symbol.kind,
+      line: getLineNumber(text, match.index)
+    })
+  }
+  return matches
+}
+
+function collectManifests() {
+  const manifestPaths = []
+  walk(rootDir, manifestPaths, "manifest.json")
+  return manifestPaths.sort().map((filePath) => ({
+    path: rel(filePath),
+    dir: path.dirname(filePath),
+    manifest: readJson(filePath)
+  }))
+}
+
+function fileType(file) {
+  if (file.type) return file.type
+  if (/\.js$/i.test(file.source || "")) return "script"
+  if (/\.html$/i.test(file.source || "")) return "html"
+  return "file"
+}
+
+function attachmentTarget(dep) {
+  return dep.path || dep.id || dep.type || ""
+}
+
+function findManifestUtilityDep(main, utilScript) {
+  const targets = []
+  ;(main.versions || []).forEach((version) => {
+    ;(version.dependencies || []).forEach((dep) => {
+      if (dep.type !== "script") return
+      if (baseName(dep.path) !== utilScript) return
+      targets.push(dep)
+    })
+  })
+  if (!targets.length) return null
+  targets.sort((a, b) => {
+    const ao = a.load_order == null ? 9999 : Number(a.load_order)
+    const bo = b.load_order == null ? 9999 : Number(b.load_order)
+    return ao - bo
+  })
+  return targets[0]
+}
+
+function collectMainScripts(manifests) {
+  const map = {}
+
+  manifests.forEach((item) => {
+    const manifest = item.manifest
+    if (ignoredMainPackages[manifest.package]) return
+    ;(manifest.files || []).forEach((file) => {
+      if (fileType(file) !== "script") return
+      const installAs = file.install_as || file.source
+      const key = manifest.package + ":" + installAs
+      const sourcePath = path.join(item.dir, file.source)
+      if (!map[key]) {
+        map[key] = {
+          id: manifest.package,
+          title: manifest.editor || manifest.package || installAs,
+          package: manifest.package || "",
+          script: installAs,
+          description: manifest.description || "",
+          versions: [],
+          utilities: [],
+          attachments: []
+        }
+      }
+      map[key].versions.push({
+        mc_version: manifest.mc_version || "",
+        version: manifest.version || "",
+        manifest: item.path,
+        source: file.source || "",
+        source_path: rel(sourcePath),
+        dependencies: file.dependencies || []
+      })
+    })
+  })
+
+  return Object.keys(map).sort().map((key) => map[key])
+}
+
+function detectUtilityDependencies(mainScripts, utilityIndex) {
+  mainScripts.forEach((main) => {
+    const utilityMap = {}
+    const attachmentMap = {}
+
+    main.versions.forEach((version) => {
+      ;(version.dependencies || []).forEach((dep) => {
+        if (dep.type === "script") return
+        const key = (dep.type || "") + ":" + attachmentTarget(dep)
+        if (!attachmentMap[key]) {
+          attachmentMap[key] = {
+            type: dep.type || "",
+            target: attachmentTarget(dep),
+            required: dep.required !== false,
+            note: dep.note || ""
+          }
+        }
+      })
+
+      const filePath = path.join(rootDir, version.source_path)
+      if (!fs.existsSync(filePath)) return
+      const text = readText(filePath)
+      const ownDeclarations = extractOwnDeclarations(text)
+
+      utilityIndex.forEach((util) => {
+        const matched = []
+        util.symbols.forEach((symbol) => {
+          findSymbolMatches(text, ownDeclarations, symbol).forEach((item) => matched.push(item))
+        })
+        if (!matched.length) return
+
+        if (!utilityMap[util.script]) {
+          const manifestDep = findManifestUtilityDep(main, util.script)
+          utilityMap[util.script] = {
+            script: util.script,
+            path: util.path,
+            required: manifestDep ? manifestDep.required !== false : true,
+            load_order: manifestDep && manifestDep.load_order != null ? manifestDep.load_order : util.default_order,
+            detected_symbols: [],
+            matches: []
+          }
+        }
+        matched.forEach((item) => {
+          utilityMap[util.script].detected_symbols.push(item.symbol)
+          utilityMap[util.script].matches.push({
+            version: version.version,
+            mc_version: version.mc_version,
+            source_path: version.source_path,
+            symbol: item.symbol,
+            kind: item.kind,
+            line: item.line
+          })
+        })
+      })
+    })
+
+    main.utilities = Object.keys(utilityMap).sort((a, b) => {
+      const ao = utilityMap[a].load_order == null ? 9999 : Number(utilityMap[a].load_order)
+      const bo = utilityMap[b].load_order == null ? 9999 : Number(utilityMap[b].load_order)
+      if (ao !== bo) return ao - bo
+      return a.localeCompare(b)
+    }).map((key) => {
+      const util = utilityMap[key]
+      util.detected_symbols = uniqueSorted(util.detected_symbols)
+      util.matches.sort((a, b) => {
+        return [a.symbol, a.source_path, String(a.line)].join("\u0000").localeCompare(
+          [b.symbol, b.source_path, String(b.line)].join("\u0000")
+        )
+      })
+      return util
+    })
+
+    main.attachments = Object.keys(attachmentMap).sort().map((key) => attachmentMap[key])
+    delete main.versions.forEach
+  })
+}
+
+function buildData() {
+  const manifests = collectManifests()
+  const utilityIndex = buildUtilityIndex()
+  const mainScripts = collectMainScripts(manifests)
+  detectUtilityDependencies(mainScripts, utilityIndex)
+
+  return {
+    schema: 2,
+    generated_at: new Date().toISOString(),
+    detection: "Scans npc_util function/global symbols and records calls/references from non-npc_util main scripts.",
+    utility_root: utilityRootRel,
+    main_scripts: mainScripts
+  }
 }
 
 function versionLabel(version) {
   return version.mc_version + " " + version.version
 }
 
-function validateOverview(data) {
-  const warnings = []
-  const utilityRoot = path.join(rootDir, data.utility_root || "")
-
-  ;(data.main_scripts || []).forEach((main) => {
-    ;(main.versions || []).forEach((version) => {
-      const manifestPath = path.join(rootDir, version.manifest || "")
-      if (!fs.existsSync(manifestPath)) {
-        warnings.push(main.script + ": missing manifest " + version.manifest)
-        return
-      }
-      const manifest = readJson(manifestPath)
-      const hasScript = (manifest.files || []).some((file) => {
-        return file.source === main.script || file.install_as === main.script
-      })
-      if (!hasScript) warnings.push(main.script + ": manifest does not list this script in " + version.manifest)
-    })
-
-    ;(main.utilities || []).forEach((util) => {
-      const utilPath = path.join(utilityRoot, util.script || "")
-      if (!fs.existsSync(utilPath)) warnings.push(main.script + ": missing utility " + util.script)
-    })
-  })
-
-  return warnings
-}
-
-function collectData() {
-  const overview = readJson(overviewPath)
-  const mains = (overview.main_scripts || []).slice().sort((a, b) => {
-    return String(a.package || a.id || "").localeCompare(String(b.package || b.id || ""))
-  })
-
-  return {
-    generated_at: new Date().toISOString(),
-    source_path: rel(overviewPath),
-    utility_root: overview.utility_root || "",
-    description: overview.description || "",
-    main_scripts: mains,
-    warnings: validateOverview(overview)
-  }
-}
-
-function makeMermaid(data) {
-  const lines = ["flowchart LR"]
-  let nodeIndex = 0
-  const nodes = {}
-
-  function nodeId(key, label, type) {
-    if (!nodes[key]) {
-      nodes[key] = {
-        id: "n" + nodeIndex++,
-        label,
-        type
-      }
-    }
-    return nodes[key].id
-  }
-
-  data.main_scripts.forEach((main) => {
-    if (!main.utilities || !main.utilities.length) return
-    const from = nodeId("main:" + main.script, main.script, "main")
-    main.utilities.forEach((util) => {
-      const to = nodeId("util:" + util.script, util.script, "util")
-      lines.push('  ' + from + '["' + escapeMermaid(main.script) + '"] --> ' + to + '["' + escapeMermaid(util.script) + '"]')
-    })
-  })
-
-  if (lines.length === 1) lines.push('  empty["No utility attachments"]')
-  lines.push("  classDef main fill:#e8f2ff,stroke:#376b9f,color:#14273a")
-  lines.push("  classDef util fill:#e7f8ef,stroke:#2c8a54,color:#0d3320")
-
-  Object.keys(nodes).forEach((key) => {
-    const node = nodes[key]
-    lines.push("  class " + node.id + " " + node.type)
-  })
-
-  return lines.join("\n")
+function matchSummary(util) {
+  return util.detected_symbols.map((name) => "`" + escapeMd(name) + "`").join("<br>")
 }
 
 function buildMarkdown(data) {
   const lines = []
-  lines.push("# Dochi Main Scripts")
+  lines.push("# Dochi Main Script Utility Dependencies")
   lines.push("")
-  lines.push("Generated from `" + data.source_path + "`.")
+  lines.push("Generated from script-call scanning.")
   lines.push("")
   lines.push("- Generated: `" + data.generated_at + "`")
   lines.push("- Utility root: `" + data.utility_root + "`")
   lines.push("- Main scripts: `" + data.main_scripts.length + "`")
   lines.push("")
-  lines.push("## Main List")
+  lines.push("## Main Scripts")
   lines.push("")
-  lines.push("| Main Script | Package | Versions | Attached Utilities | Attachments | Role |")
+  lines.push("| Main Script | Package | Versions | Utility Scripts | Detected Symbols | Attachments |")
   lines.push("|---|---|---|---|---|---|")
   data.main_scripts.forEach((main) => {
-    const versions = (main.versions || []).map(versionLabel).join("<br>") || "-"
-    const utilities = (main.utilities || []).map((util) => "`" + escapeMd(util.script) + "`").join("<br>") || "-"
-    const attachments = (main.attachments || []).map((item) => item.type + ": `" + escapeMd(attachmentTarget(item)) + "`").join("<br>") || "-"
+    const versions = uniqueSorted(main.versions.map(versionLabel)).join("<br>") || "-"
+    const utilities = main.utilities.map((util) => "`" + escapeMd(util.script) + "`").join("<br>") || "-"
+    const symbols = main.utilities.map((util) => "**" + escapeMd(util.script) + "**<br>" + matchSummary(util)).join("<br><br>") || "-"
+    const attachments = main.attachments.map((item) => item.type + ": `" + escapeMd(item.target) + "`").join("<br>") || "-"
     lines.push("| " + [
       "`" + escapeMd(main.script) + "`",
-      escapeMd(main.package || ""),
+      escapeMd(main.package),
       versions,
       utilities,
-      attachments,
-      escapeMd(main.role || "")
+      symbols,
+      attachments
     ].join(" | ") + " |")
   })
-  lines.push("")
-  lines.push("## Utility Map")
-  lines.push("")
-  lines.push("```mermaid")
-  lines.push(makeMermaid(data))
-  lines.push("```")
   lines.push("")
   lines.push("## Details")
   lines.push("")
   data.main_scripts.forEach((main) => {
     lines.push("### `" + main.script + "`")
     lines.push("")
-    lines.push(main.role || "")
+    lines.push(main.description || "")
     lines.push("")
-    lines.push("| Utility Script | Required | Load Order | Role |")
+    lines.push("| Utility Script | Required | Load Order | Detected Calls / References |")
     lines.push("|---|---|---:|---|")
-    if (!main.utilities || !main.utilities.length) {
-      lines.push("| - | - | - | No utility script attachment. |")
+    if (!main.utilities.length) {
+      lines.push("| - | - | - | No npc_util function call detected. |")
     } else {
       main.utilities.forEach((util) => {
-        lines.push("| `" + escapeMd(util.script) + "` | " + (util.required === false ? "no" : "yes") + " | " + (util.load_order == null ? "" : util.load_order) + " | " + escapeMd(util.role || "") + " |")
+        const refs = util.detected_symbols.map((symbol) => "`" + escapeMd(symbol) + "`").join("<br>")
+        lines.push("| `" + escapeMd(util.script) + "` | " + (util.required ? "yes" : "no") + " | " + (util.load_order == null ? "" : util.load_order) + " | " + refs + " |")
       })
     }
     lines.push("")
   })
-
-  if (data.warnings.length) {
-    lines.push("## Warnings")
-    lines.push("")
-    data.warnings.forEach((warning) => lines.push("- " + escapeMd(warning)))
-    lines.push("")
-  }
-
   return lines.join("\n")
 }
 
@@ -197,185 +467,142 @@ function buildHtml(data) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dochi Main Scripts</title>
+<title>Dochi Utility Dependencies</title>
 <style>
-:root{--bg:#f6f8fb;--panel:#fff;--text:#17202d;--muted:#657184;--line:#d8e0eb;--line2:#ebf0f6;--main:#e8f2ff;--util:#e7f8ef;--warn:#fff3cd}
+:root{--bg:#f6f8fb;--panel:#fff;--text:#17202d;--muted:#657184;--line:#d8e0eb;--line2:#ebf0f6;--main:#e8f2ff;--util:#e7f8ef;--attach:#f1eefc}
 *{box-sizing:border-box}
+html,body{min-width:1480px}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}
-header{padding:24px 28px 18px;background:#fff;border-bottom:1px solid var(--line)}
+header{padding:24px 32px 18px;background:#fff;border-bottom:1px solid var(--line)}
 h1{margin:0 0 6px;font-size:26px;letter-spacing:0}
 h2{font-size:17px;margin:22px 0 12px}
-h3{margin:0;font-size:17px}
-code{background:#eef2f7;border:1px solid #dbe2ec;border-radius:4px;padding:1px 5px;font-family:Consolas,Menlo,monospace;font-size:12px}
+code{background:#eef2f7;border:1px solid #dbe2ec;border-radius:4px;padding:1px 5px;font-family:Consolas,Menlo,monospace;font-size:12px;white-space:nowrap}
 .sub{color:var(--muted)}
-.wrap{padding:18px 28px 34px}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.wrap{width:1480px;padding:18px 32px 34px}
+.stats{display:grid;grid-template-columns:repeat(3,220px);gap:12px;margin-top:16px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
 .stat b{display:block;font-size:22px;margin-bottom:2px}
-.controls{display:grid;grid-template-columns:1fr 180px;gap:10px;margin:0 0 16px}
+.controls{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:0 0 16px}
 input,select{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:#fff;color:var(--text)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
-.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid var(--line2);padding-bottom:10px;margin-bottom:10px}
-.badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;margin:0 4px 4px 0}
+table{width:1416px;border-collapse:collapse;background:#fff;border:1px solid var(--line);table-layout:fixed}
+th,td{border-bottom:1px solid var(--line2);border-right:1px solid var(--line2);padding:10px 12px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);background:#f9fbfe}
+tr:nth-child(even) td{background:#f8fafc}
+th:nth-child(1),td:nth-child(1){width:190px}
+th:nth-child(2),td:nth-child(2){width:140px}
+th:nth-child(3),td:nth-child(3){width:170px}
+th:nth-child(4),td:nth-child(4){width:260px}
+th:nth-child(5),td:nth-child(5){width:480px}
+th:nth-child(6),td:nth-child(6){width:176px}
+.badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;margin:0 4px 4px 0;white-space:nowrap}
 .badge.main{background:var(--main);border-color:#b4d2ef}
 .badge.util{background:var(--util);border-color:#97d9b1}
-.badge.attach{background:#f1eefc;border-color:#c9bee9}
+.badge.attach{background:var(--attach);border-color:#c9bee9}
 .badge.none{background:#f3f4f6;border-color:#d5d9e0;color:#545f70}
-.list{display:flex;flex-direction:column;gap:8px}
-.line{display:grid;grid-template-columns:180px 1fr;gap:8px;border-top:1px solid var(--line2);padding-top:8px}
-.graph{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;min-height:360px}
-svg{display:block;min-width:760px}
-.edge{stroke:#97a4b8;stroke-width:1.2;fill:none;marker-end:url(#arrow)}
-.node rect{stroke-width:1.3;rx:6}
-.node text{font-size:12px;fill:#17202d}
-.warn{background:var(--warn);border:1px solid #e0c66d;border-radius:8px;padding:12px;margin-bottom:16px}
-@media(max-width:1000px){.grid,.stats,.controls{grid-template-columns:1fr}.wrap,header{padding-left:16px;padding-right:16px}.line{grid-template-columns:1fr}}
+.symbols{display:flex;flex-wrap:wrap;gap:4px}
+.detail{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+.detail h3{margin:0 0 8px;font-size:16px}
 </style>
 </head>
 <body>
 <header>
-  <h1>Dochi Main Scripts</h1>
-  <div class="sub">Simple view from <code>${escapeHtml(data.source_path)}</code>. Main scripts only, with attached utility scripts.</div>
+  <h1>Dochi Utility Dependencies</h1>
+  <div class="sub">Detected by scanning calls/references to symbols declared in <code>${escapeHtml(data.utility_root)}</code>.</div>
   <div class="stats">
     <div class="stat"><b id="statMain">0</b><span>main scripts</span></div>
-    <div class="stat"><b id="statUtil">0</b><span>utility attachments</span></div>
-    <div class="stat"><b id="statVersion">0</b><span>version entries</span></div>
+    <div class="stat"><b id="statUtil">0</b><span>utility links</span></div>
+    <div class="stat"><b id="statSymbols">0</b><span>detected symbols</span></div>
   </div>
 </header>
 <main class="wrap">
-  <div id="warnings"></div>
   <div class="controls">
-    <input id="search" type="search" placeholder="Search script, package, utility, role">
+    <input id="search" type="search" placeholder="Search script, package, utility, function">
     <select id="packageFilter"><option value="">All packages</option></select>
   </div>
-  <section class="grid">
-    <div>
-      <h2>Main List</h2>
-      <div id="cards"></div>
-    </div>
-    <div>
-      <h2>Utility Map</h2>
-      <div class="graph" id="graph"></div>
-    </div>
-  </section>
+  <h2>Main Scripts</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Main Script</th>
+        <th>Package</th>
+        <th>Versions</th>
+        <th>Utility Scripts</th>
+        <th>Detected Calls / References</th>
+        <th>Attachments</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="details"></div>
 </main>
 <script>
 const DATA=${payload};
 const state={search:"",package:""};
-
 function escapeHtml(value){return String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
-function attachmentTarget(item){return item.path||item.id||""}
 function versionLabel(version){return version.mc_version+" "+version.version}
-
+function unique(list){return Array.from(new Set(list.filter(Boolean)))}
 function setStats(){
   document.getElementById("statMain").textContent=DATA.main_scripts.length;
   document.getElementById("statUtil").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.utilities||[]).length,0);
-  document.getElementById("statVersion").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.versions||[]).length,0);
+  document.getElementById("statSymbols").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.utilities||[]).reduce((s,u)=>s+(u.detected_symbols||[]).length,0),0);
 }
-
 function fillFilters(){
   const select=document.getElementById("packageFilter");
-  Array.from(new Set(DATA.main_scripts.map(item=>item.package))).sort().forEach(pkg=>{
-    const option=document.createElement("option");
-    option.value=pkg;
-    option.textContent=pkg;
-    select.appendChild(option);
-  });
+  unique(DATA.main_scripts.map(item=>item.package)).sort().forEach(pkg=>{const o=document.createElement("option");o.value=pkg;o.textContent=pkg;select.appendChild(o)});
 }
-
 function filtered(){
   const q=state.search.toLowerCase();
   return DATA.main_scripts.filter(item=>{
     if(state.package&&item.package!==state.package)return false;
     if(!q)return true;
-    const text=[item.title,item.package,item.script,item.role,(item.utilities||[]).map(u=>[u.script,u.role].join(" ")).join(" "),(item.attachments||[]).map(a=>[a.type,attachmentTarget(a),a.role].join(" ")).join(" ")].join(" ").toLowerCase();
+    const text=[item.package,item.script,item.description,(item.utilities||[]).map(u=>[u.script,(u.detected_symbols||[]).join(" ")].join(" ")).join(" "),(item.attachments||[]).map(a=>a.target).join(" ")].join(" ").toLowerCase();
     return text.indexOf(q)!==-1;
   });
 }
-
-function renderWarnings(){
-  const box=document.getElementById("warnings");
-  if(!DATA.warnings||!DATA.warnings.length){box.innerHTML="";return}
-  box.innerHTML='<div class="warn"><b>Warnings</b><br>'+DATA.warnings.map(escapeHtml).join("<br>")+'</div>';
+function badges(items, cls, empty){
+  if(!items.length)return '<span class="badge none">'+empty+'</span>';
+  return items.map(item=>'<span class="badge '+cls+'">'+escapeHtml(item)+'</span>').join("");
 }
-
-function renderCards(items){
-  const box=document.getElementById("cards");
-  box.innerHTML="";
+function renderTable(items){
+  const tbody=document.getElementById("tbody");
+  tbody.innerHTML="";
   items.forEach(item=>{
-    const utilities=(item.utilities||[]).length?(item.utilities||[]).map(util=>{
-      const meta=[util.required===false?"optional":"required",util.load_order!=null?"order "+util.load_order:""].filter(Boolean).join(", ");
-      return '<div class="line"><div><span class="badge util">'+escapeHtml(util.script)+'</span></div><div><span class="sub">'+escapeHtml(meta)+'</span><br>'+escapeHtml(util.role||"")+'</div></div>';
-    }).join(""):'<span class="badge none">No utility script attachment</span>';
-    const attachments=(item.attachments||[]).map(att=>'<span class="badge attach">'+escapeHtml(att.type)+': '+escapeHtml(attachmentTarget(att))+'</span>').join("")||'<span class="badge none">No extra attachment</span>';
-    const versions=(item.versions||[]).map(version=>'<span class="badge main">'+escapeHtml(versionLabel(version))+'</span>').join("");
-    const card=document.createElement("article");
-    card.className="card";
-    card.innerHTML='<div class="card-head"><div><h3><code>'+escapeHtml(item.script)+'</code></h3><div class="sub">'+escapeHtml(item.title||item.package)+'</div></div><span class="badge main">'+escapeHtml(item.package)+'</span></div><p>'+escapeHtml(item.role||"")+'</p><div class="list"><div><b>Versions</b><br>'+versions+'</div><div><b>Utility Scripts</b>'+utilities+'</div><div><b>Attachments</b><br>'+attachments+'</div></div>';
-    box.appendChild(card);
+    const versions=unique((item.versions||[]).map(versionLabel));
+    const utilities=(item.utilities||[]).map(u=>u.script);
+    const symbolHtml=(item.utilities||[]).map(u=>'<div><b>'+escapeHtml(u.script)+'</b><div class="symbols">'+badges(u.detected_symbols||[],'util','none')+'</div></div>').join("");
+    const attachments=(item.attachments||[]).map(a=>a.type+': '+a.target);
+    const tr=document.createElement("tr");
+    tr.innerHTML='<td><code>'+escapeHtml(item.script)+'</code></td><td>'+escapeHtml(item.package)+'</td><td>'+badges(versions,'main','none')+'</td><td>'+badges(utilities,'util','No utility detected')+'</td><td>'+(symbolHtml||'<span class="badge none">No npc_util function call detected</span>')+'</td><td>'+badges(attachments,'attach','No attachment')+'</td>';
+    tbody.appendChild(tr);
   });
 }
-
-function renderGraph(items){
-  const graph=document.getElementById("graph");
-  const edges=[];
-  const nodes=new Map();
-  function addNode(id,label,type){
-    if(nodes.has(id))return nodes.get(id);
-    const node={id,label,type,x:0,y:0,w:240,h:38};
-    nodes.set(id,node);
-    return node;
-  }
-  items.forEach(item=>{
-    if(!(item.utilities||[]).length)return;
-    const main=addNode("main:"+item.script,item.script,"main");
-    (item.utilities||[]).forEach(util=>{
-      const node=addNode("util:"+util.script,util.script,"util");
-      edges.push({from:main.id,to:node.id});
-    });
-  });
-  if(!edges.length){graph.innerHTML='<div class="sub">No utility attachments in this view.</div>';return}
-  const mainNodes=Array.from(nodes.values()).filter(n=>n.type==="main").sort((a,b)=>a.label.localeCompare(b.label));
-  const utilNodes=Array.from(nodes.values()).filter(n=>n.type==="util").sort((a,b)=>a.label.localeCompare(b.label));
-  let height=120;
-  mainNodes.forEach((node,i)=>{node.x=20;node.y=24+i*58;height=Math.max(height,node.y+70)});
-  utilNodes.forEach((node,i)=>{node.x=360;node.y=24+i*58;height=Math.max(height,node.y+70)});
-  const width=760;
-  const edgeSvg=edges.map(edge=>{
-    const a=nodes.get(edge.from),b=nodes.get(edge.to),x1=a.x+a.w,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2,mid=(x1+x2)/2;
-    return '<path class="edge" d="M'+x1+' '+y1+' C'+mid+' '+y1+', '+mid+' '+y2+', '+x2+' '+y2+'"></path>';
+function renderDetails(items){
+  const box=document.getElementById("details");
+  box.innerHTML=items.map(item=>{
+    const rows=(item.utilities||[]).map(u=>{
+      const refs=(u.matches||[]).slice(0,12).map(m=>'<code>'+escapeHtml(m.symbol)+'</code> <span class="sub">'+escapeHtml(m.source_path+':'+m.line)+'</span>').join("<br>");
+      return '<p><b>'+escapeHtml(u.script)+'</b><br>'+refs+'</p>';
+    }).join("")||'<p class="sub">No npc_util function call detected.</p>';
+    return '<section class="detail"><h3><code>'+escapeHtml(item.script)+'</code></h3><p class="sub">'+escapeHtml(item.description||"")+'</p>'+rows+'</section>';
   }).join("");
-  const nodeSvg=Array.from(nodes.values()).map(node=>{
-    const fill=node.type==="main"?"#e8f2ff":"#e7f8ef";
-    return '<g class="node"><rect x="'+node.x+'" y="'+node.y+'" width="'+node.w+'" height="'+node.h+'" fill="'+fill+'" stroke="#9aa7ba"></rect><text x="'+(node.x+10)+'" y="'+(node.y+24)+'">'+escapeHtml(node.label)+'</text></g>';
-  }).join("");
-  graph.innerHTML='<svg viewBox="0 0 '+width+' '+height+'" width="'+width+'" height="'+height+'" role="img" aria-label="Main script utility map"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#97a4b8"></path></marker></defs>'+edgeSvg+nodeSvg+'</svg>';
 }
-
-function render(){
-  const items=filtered();
-  renderCards(items);
-  renderGraph(items);
-}
-
-setStats();
-fillFilters();
-renderWarnings();
-document.getElementById("search").addEventListener("input",event=>{state.search=event.target.value;render()});
-document.getElementById("packageFilter").addEventListener("change",event=>{state.package=event.target.value;render()});
-render();
+function render(){const items=filtered();renderTable(items);renderDetails(items)}
+setStats();fillFilters();render();
+document.getElementById("search").addEventListener("input",e=>{state.search=e.target.value;render()});
+document.getElementById("packageFilter").addEventListener("change",e=>{state.package=e.target.value;render()});
 </script>
 </body>
 </html>`
 }
 
 function main() {
-  const data = collectData()
+  const data = buildData()
+  writeJson(jsonPath, data)
   const html = buildHtml(data) + "\n"
   fs.writeFileSync(mdPath, buildMarkdown(data) + "\n", "utf8")
   fs.writeFileSync(htmlPath, html, "utf8")
   fs.writeFileSync(htmlIndexPath, html, "utf8")
+  console.log("Wrote " + rel(jsonPath))
   console.log("Wrote " + rel(mdPath))
   console.log("Wrote " + rel(htmlPath))
   console.log("Wrote " + rel(htmlIndexPath))

@@ -1,92 +1,76 @@
-# Dochi Main Scripts
+# Dochi Main Script Utility Dependencies
 
-Generated from `dc_main_scripts.json`.
+Generated from script-call scanning.
 
-- Generated: `2026-05-10T05:55:02.168Z`
+- Generated: `2026-05-10T06:10:29.859Z`
 - Utility root: `npc_util/common/1.0.0`
 - Main scripts: `6`
 
-## Main List
+## Main Scripts
 
-| Main Script | Package | Versions | Attached Utilities | Attachments | Role |
+| Main Script | Package | Versions | Utility Scripts | Detected Symbols | Attachments |
 |---|---|---|---|---|---|
-| `dc_dialogue_trigger.js` | dialogue | common 1.0.0 | `dc_npc_core_module.js`<br>`dc_cfg_checker.js`<br>`dc_util_common.js`<br>`dc_gui_runtime.js`<br>`dc_dialogue_util.js` | html: `html/dc_util/dc_gui_runtime.html`<br>json_dir: `customnpcs/dc_data/dc_dialogues/` | Runs dialogue trigger logic and opens the shared dialogue runtime. |
-| `dc_item_editor.js` | item_editor | forge_1_20_1 1.0.0 | - | json_dir: `customnpcs/JSON/item/`<br>json_dir: `customnpcs/JSON/item/prefix/`<br>json: `customnpcs/JSON/item/category_config.json` | Standalone item JSON editor. |
-| `dc_npc_editor.js` | npc_editor | common 1.0.0 | - | mod: `CNPCExtended`<br>html: `html/dc_npc_editor.html`<br>directory: `customnpcs/scripts/ecmascript/`<br>directory: `customnpcs/dc_admins/` | Standalone NPC browser/editor HTML GUI. |
-| `dc_story_scroll.js` | scroll_dialogue | common 1.0.0 | - | json_dir: `customnpcs/JSON/npc_dialogue/` | Standalone CustomNPCs scroll dialogue GUI. |
-| `dc_soullikemob.js` | soullikemob | forge_1_20_1 1.0.0<br>forge_1_20_1 1.0.1<br>forge_1_20_1 1.0.2 | - | html: `html/dc_soullikemob.html` | HTML-backed Soullikemob package sample. |
-| `dc_trainer.js` | trainer | fabric_1_21_1 1.0.0<br>fabric_1_21_1 1.0.1<br>fabric_1_21_1 1.0.2 | - | html: `html/dc_trainer.html` | HTML-backed Trainer package sample. |
-
-## Utility Map
-
-```mermaid
-flowchart LR
-  n0["dc_dialogue_trigger.js"] --> n1["dc_npc_core_module.js"]
-  n0["dc_dialogue_trigger.js"] --> n2["dc_cfg_checker.js"]
-  n0["dc_dialogue_trigger.js"] --> n3["dc_util_common.js"]
-  n0["dc_dialogue_trigger.js"] --> n4["dc_gui_runtime.js"]
-  n0["dc_dialogue_trigger.js"] --> n5["dc_dialogue_util.js"]
-  classDef main fill:#e8f2ff,stroke:#376b9f,color:#14273a
-  classDef util fill:#e7f8ef,stroke:#2c8a54,color:#0d3320
-  class n0 main
-  class n1 util
-  class n2 util
-  class n3 util
-  class n4 util
-  class n5 util
-```
+| `dc_dialogue_trigger.js` | dialogue | common 1.0.0 | `dc_npc_core_module.js`<br>`dc_dialogue_util.js` | **dc_npc_core_module.js**<br>`NpcEventModule`<br><br>**dc_dialogue_util.js**<br>`dc_dialogue_handleHtmlEvent`<br>`dc_dialogue_open` | html: `html/dc_util/dc_gui_runtime.html`<br>json_dir: `customnpcs/dc_data/dc_dialogues/` |
+| `dc_item_editor.js` | item_editor | forge_1_20_1 1.0.0 | - | - | json: `customnpcs/JSON/item/category_config.json`<br>json_dir: `customnpcs/JSON/item/`<br>json_dir: `customnpcs/JSON/item/category_presets/`<br>json_dir: `customnpcs/JSON/item/prefix/` |
+| `dc_npc_editor.js` | npc_editor | common 1.0.0 | - | - | directory: `customnpcs/dc_admins/`<br>directory: `customnpcs/scripts/ecmascript/`<br>html: `html/dc_npc_editor.html`<br>mod: `CNPCExtended` |
+| `dc_story_scroll.js` | scroll_dialogue | common 1.0.0 | - | - | json: `customnpcs/JSON/npc_dialogue/<npc_name>.json`<br>json_dir: `customnpcs/JSON/npc_dialogue/` |
+| `dc_soullikemob.js` | soullikemob | forge_1_20_1 1.0.0<br>forge_1_20_1 1.0.1<br>forge_1_20_1 1.0.2 | - | - | html: `html/dc_soullikemob.html` |
+| `dc_trainer.js` | trainer | fabric_1_21_1 1.0.0<br>fabric_1_21_1 1.0.1<br>fabric_1_21_1 1.0.2 | `dc_npc_core_module.js`<br>`dc_cfg_checker.js`<br>`dc_util_common.js`<br>`dc_cond_checker.js`<br>`dc_reward_checker.js`<br>`dc_sequence_core.js`<br>`dc_dialogue_util.js` | **dc_npc_core_module.js**<br>`NpcEventModule`<br><br>**dc_cfg_checker.js**<br>`cfg_chk_defaultConfig`<br>`cfg_chk_merge`<br>`cfg_chk_readJsonFile`<br>`cfg_chk_readTextFile`<br>`cfg_chk_resolveFile`<br><br>**dc_util_common.js**<br>`util_fw`<br>`util_msgPrint`<br>`util_sound`<br>`util_toF`<br>`util_toInt`<br><br>**dc_cond_checker.js**<br>`cond_adv`<br>`cond_faction`<br>`cond_item`<br>`cond_stored`<br>`cond_tag`<br><br>**dc_reward_checker.js**<br>`rew_chk_applyAdvancement`<br>`rew_chk_applyCommand`<br>`rew_chk_applyFaction`<br>`rew_chk_applyItem`<br>`rew_chk_pickList`<br><br>**dc_sequence_core.js**<br>`seq_core_calcTotal`<br>`seq_core_hasSteps`<br>`seq_core_pack`<br>`seq_core_prepareSteps`<br><br>**dc_dialogue_util.js**<br>`dc_dialogue_handleHtmlEvent`<br>`dc_dialogue_open` | html: `html/dc_trainer.html` |
 
 ## Details
 
 ### `dc_dialogue_trigger.js`
 
-Runs dialogue trigger logic and opens the shared dialogue runtime.
+Dialogue trigger package shared for Forge and Fabric
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| `dc_npc_core_module.js` | yes | 1 | Core NPC/module helpers. |
-| `dc_cfg_checker.js` | yes | 2 | Config validation helpers. |
-| `dc_util_common.js` | yes | 3 | Shared utility helpers. |
-| `dc_gui_runtime.js` | yes | 4 | Shared HTML GUI bridge/runtime. |
-| `dc_dialogue_util.js` | yes | 5 | Dialogue data loading and rendering helpers. |
+| `dc_npc_core_module.js` | yes | 1 | `NpcEventModule` |
+| `dc_dialogue_util.js` | yes | 5 | `dc_dialogue_handleHtmlEvent`<br>`dc_dialogue_open` |
 
 ### `dc_item_editor.js`
 
-Standalone item JSON editor.
+item_editor package sample for Forge 1.20.1
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| - | - | - | No utility script attachment. |
+| - | - | - | No npc_util function call detected. |
 
 ### `dc_npc_editor.js`
 
-Standalone NPC browser/editor HTML GUI.
+NPC editor package sample shared for Forge and Fabric
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| - | - | - | No utility script attachment. |
+| - | - | - | No npc_util function call detected. |
 
 ### `dc_story_scroll.js`
 
-Standalone CustomNPCs scroll dialogue GUI.
+Scroll dialogue CustomNPCs GUI script
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| - | - | - | No utility script attachment. |
+| - | - | - | No npc_util function call detected. |
 
 ### `dc_soullikemob.js`
 
-HTML-backed Soullikemob package sample.
+Soullikemob package sample for Forge 1.20.1
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| - | - | - | No utility script attachment. |
+| - | - | - | No npc_util function call detected. |
 
 ### `dc_trainer.js`
 
-HTML-backed Trainer package sample.
+Trainer package sample for Fabric 1.21.1
 
-| Utility Script | Required | Load Order | Role |
+| Utility Script | Required | Load Order | Detected Calls / References |
 |---|---|---:|---|
-| - | - | - | No utility script attachment. |
+| `dc_npc_core_module.js` | yes | 1 | `NpcEventModule` |
+| `dc_cfg_checker.js` | yes | 2 | `cfg_chk_defaultConfig`<br>`cfg_chk_merge`<br>`cfg_chk_readJsonFile`<br>`cfg_chk_readTextFile`<br>`cfg_chk_resolveFile` |
+| `dc_util_common.js` | yes | 3 | `util_fw`<br>`util_msgPrint`<br>`util_sound`<br>`util_toF`<br>`util_toInt` |
+| `dc_cond_checker.js` | yes | 4 | `cond_adv`<br>`cond_faction`<br>`cond_item`<br>`cond_stored`<br>`cond_tag` |
+| `dc_reward_checker.js` | yes | 5 | `rew_chk_applyAdvancement`<br>`rew_chk_applyCommand`<br>`rew_chk_applyFaction`<br>`rew_chk_applyItem`<br>`rew_chk_pickList` |
+| `dc_sequence_core.js` | yes | 6 | `seq_core_calcTotal`<br>`seq_core_hasSteps`<br>`seq_core_pack`<br>`seq_core_prepareSteps` |
+| `dc_dialogue_util.js` | yes | 9 | `dc_dialogue_handleHtmlEvent`<br>`dc_dialogue_open` |
 
