@@ -607,11 +607,25 @@ pushBrowser(e.player,"npcScriptData",result);
 function onNpcScriptApply(e,data){
 var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw,existing,tabs,newRaw,style,scriptEnabled,res,expectedState,lock,validation;
 if(!npc){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"NPC is outside the current scan range. Refresh or move closer."});return;}
+style=String(data.scriptStyle||"general");
+lock=getNpcDochiLock(npc);
+if(style!=="dcE"&&data.styleOnly===true){
+if(lock.locked&&data.confirmGeneralConvert!==true){
+pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"This NPC is locked to Dochi script mode. Use dcE mode to update it."});
+return;
+}
+setNpcScriptStyle(npc,style);
+if(style==="general"){
+setNpcDcSelection(npc,{});
+setNpcDochiLock(npc,{locked:false});
+}
+pushBrowser(e.player,"npcScriptApplyResult",{ok:true,scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
+pushNpcList(e.player,getStoredScanRange(e.player));
+return;
+}
 raw=getEntityNbtSafe(npc);
 existing=extractScriptTabsFromRaw(raw);
-style=String(data.scriptStyle||"general");
 if(style==="dcE"){applyDochiScriptToNpc(e.player,npc,data,raw,existing);return;}
-lock=getNpcDochiLock(npc);
 if(lock.locked&&data.confirmGeneralConvert!==true){
 pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"This NPC is locked to Dochi script mode. Use dcE mode to update it."});
 return;
@@ -627,7 +641,8 @@ if(!res.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:res.erro
 setNpcScriptStyle(npc,style);
 setNpcDcSelection(npc,{});
 setNpcDochiLock(npc,{locked:false});
-pushBrowser(e.player,"npcScriptApplyResult",{ok:true,dochiLock:defaultDochiLock()});
+pushBrowser(e.player,"npcScriptApplyResult",{ok:true,scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:defaultDochiLock()});
+pushNpcList(e.player,getStoredScanRange(e.player));
 }
 function clearAllTabs(tabs){
 var out=[],i,t;
@@ -795,7 +810,8 @@ lock=buildDochiLock(selection);
 setNpcScriptStyle(npc,"dcE");
 setNpcDcSelection(npc,selection);
 setNpcDochiLock(npc,lock);
-pushBrowser(player,"npcScriptApplyResult",{ok:true,dochiLock:lock});
+pushBrowser(player,"npcScriptApplyResult",{ok:true,scriptStyle:"dcE",dcSelection:selection,dochiLock:lock});
+pushNpcList(player,getStoredScanRange(player));
 }
 
 function getEntityNbtSafe(npc){
@@ -1469,6 +1485,7 @@ return JSON.parse(raw);
 }
 function setNpcDcSelection(npc,selection){
 var sel=normalizeDcSelection(selection||{});
+if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){npc.getStoreddata().remove(CFG.DC_SELECTION_KEY);return;}
 npc.getStoreddata().put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
 }
 function onNpcDcJsonFileList(e,data){
