@@ -2,26 +2,13 @@ const fs = require("fs")
 const path = require("path")
 
 const rootDir = path.resolve(__dirname, "..")
-const registryPath = path.join(rootDir, "dc_dependencies.json")
+const overviewPath = path.join(rootDir, "dc_main_scripts.json")
 const mdPath = path.join(rootDir, "DEPENDENCIES.md")
 const htmlPath = path.join(rootDir, "docs", "dependencies.html")
 const htmlIndexPath = path.join(rootDir, "docs", "index.html")
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"))
-}
-
-function walk(dir, out) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true })
-  entries.forEach((entry) => {
-    if (entry.name === ".git" || entry.name === "node_modules") return
-    const fullPath = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      walk(fullPath, out)
-      return
-    }
-    if (entry.isFile() && entry.name === "manifest.json") out.push(fullPath)
-  })
 }
 
 function rel(filePath) {
@@ -48,269 +35,62 @@ function escapeMermaid(value) {
     .replace(/>/g, "&gt;")
 }
 
-function getDepTarget(dep) {
-  if (!dep) return ""
-  return dep.path || dep.id || dep.type || ""
+function attachmentTarget(item) {
+  return item.path || item.id || ""
 }
 
-function normalizePath(value) {
-  return String(value == null ? "" : value).replace(/\\/g, "/")
+function versionLabel(version) {
+  return version.mc_version + " " + version.version
 }
 
-function baseName(value) {
-  const normalized = normalizePath(value)
-  const parts = normalized.split("/")
-  return parts[parts.length - 1] || normalized
-}
+function validateOverview(data) {
+  const warnings = []
+  const utilityRoot = path.join(rootDir, data.utility_root || "")
 
-function scriptKey(value) {
-  return "script:" + baseName(value)
-}
-
-function fileNodeFromRow(row) {
-  if (row.file_type === "script") {
-    const label = baseName(row.install_as || row.source)
-    return {
-      key: scriptKey(label),
-      label,
-      type: "script"
-    }
-  }
-  if (row.file_type === "html") {
-    const label = normalizePath(row.install_as || row.source)
-    return {
-      key: "html:" + label,
-      label,
-      type: "html"
-    }
-  }
-  const label = normalizePath(row.install_as || row.source)
-  return {
-    key: "file:" + label,
-    label,
-    type: row.file_type || "file"
-  }
-}
-
-function depNodeFromDependency(dep) {
-  const target = getDepTarget(dep)
-  const type = dep.type || "unknown"
-  if (type === "script") {
-    const label = baseName(target)
-    return {
-      key: scriptKey(label),
-      label,
-      type: "script"
-    }
-  }
-  if (type === "mod") {
-    return {
-      key: "mod:" + target,
-      label: target,
-      type: "mod"
-    }
-  }
-  if (type === "html") {
-    const label = normalizePath(target)
-    return {
-      key: "html:" + label,
-      label,
-      type: "html"
-    }
-  }
-  return {
-    key: type + ":" + normalizePath(target),
-    label: normalizePath(target),
-    type
-  }
-}
-
-function classifyFile(file) {
-  if (file.type) return file.type
-  if (/\.html$/i.test(file.source || "")) return "html"
-  if (/\.js$/i.test(file.source || "")) return "script"
-  return "file"
-}
-
-function expandDependencyEntry(entry, registry) {
-  if (!entry) return []
-  if (!entry.inherits) return [Object.assign({}, entry)]
-  const set = registry.dependency_sets[entry.inherits]
-  if (!set) {
-    return [
-      {
-        type: "missing",
-        path: entry.inherits,
-        required: true,
-        note: "Missing inherited dependency set"
+  ;(data.main_scripts || []).forEach((main) => {
+    ;(main.versions || []).forEach((version) => {
+      const manifestPath = path.join(rootDir, version.manifest || "")
+      if (!fs.existsSync(manifestPath)) {
+        warnings.push(main.script + ": missing manifest " + version.manifest)
+        return
       }
-    ]
-  }
-  return (set.dependencies || []).map((dep) => {
-    const copy = Object.assign({}, dep)
-    copy.inherited_from = entry.inherits
-    return copy
+      const manifest = readJson(manifestPath)
+      const hasScript = (manifest.files || []).some((file) => {
+        return file.source === main.script || file.install_as === main.script
+      })
+      if (!hasScript) warnings.push(main.script + ": manifest does not list this script in " + version.manifest)
+    })
+
+    ;(main.utilities || []).forEach((util) => {
+      const utilPath = path.join(utilityRoot, util.script || "")
+      if (!fs.existsSync(utilPath)) warnings.push(main.script + ": missing utility " + util.script)
+    })
   })
+
+  return warnings
 }
 
 function collectData() {
-  const registry = readJson(registryPath)
-  const manifestPaths = []
-  walk(rootDir, manifestPaths)
-  manifestPaths.sort()
-
-  const manifests = manifestPaths.map((filePath) => {
-    const manifest = readJson(filePath)
-    return {
-      path: rel(filePath),
-      dir: path.dirname(filePath),
-      manifest
-    }
+  const overview = readJson(overviewPath)
+  const mains = (overview.main_scripts || []).slice().sort((a, b) => {
+    return String(a.package || a.id || "").localeCompare(String(b.package || b.id || ""))
   })
-
-  const rows = []
-
-  manifests.forEach((item) => {
-    const manifest = item.manifest
-    ;(manifest.files || []).forEach((file) => {
-      const dependencyEntries = file.dependencies || []
-      const inheritedSets = dependencyEntries.filter((dep) => dep && dep.inherits).map((dep) => dep.inherits)
-      const expandedDeps = []
-
-      dependencyEntries.forEach((entry) => {
-        expandDependencyEntry(entry, registry).forEach((dep) => expandedDeps.push(dep))
-      })
-
-      const typeCounts = {}
-      expandedDeps.forEach((dep) => {
-        typeCounts[dep.type || "unknown"] = (typeCounts[dep.type || "unknown"] || 0) + 1
-      })
-
-      const row = {
-        package: manifest.package || "",
-        version: manifest.version || "",
-        mc_version: manifest.mc_version || "",
-        manifest_id: manifest.id || "",
-        manifest_path: item.path,
-        entry: manifest.entry || "",
-        source: file.source || "",
-        install_as: file.install_as || "",
-        file_type: classifyFile(file),
-        inherited_sets: inheritedSets,
-        dependencies: expandedDeps,
-        dependency_count: expandedDeps.length,
-        required_count: expandedDeps.filter((dep) => dep.required !== false).length,
-        optional_count: expandedDeps.filter((dep) => dep.required === false).length,
-        type_counts: typeCounts
-      }
-      row.graph_node = fileNodeFromRow(row)
-      rows.push(row)
-    })
-  })
-
-  rows.sort((a, b) => {
-    return [a.package, a.mc_version, a.version, a.source].join("\u0000").localeCompare(
-      [b.package, b.mc_version, b.version, b.source].join("\u0000")
-    )
-  })
-
-  const graph = buildDirectGraph(rows)
 
   return {
     generated_at: new Date().toISOString(),
-    registry_path: rel(registryPath),
-    registry,
-    manifests: manifests.map((item) => ({
-      path: item.path,
-      id: item.manifest.id || "",
-      package: item.manifest.package || "",
-      version: item.manifest.version || "",
-      mc_version: item.manifest.mc_version || ""
-    })),
-    rows,
-    graph_nodes: graph.nodes,
-    graph_edges: graph.edges
+    source_path: rel(overviewPath),
+    utility_root: overview.utility_root || "",
+    description: overview.description || "",
+    main_scripts: mains,
+    warnings: validateOverview(overview)
   }
 }
 
-function buildDirectGraph(rows) {
-  const nodeMap = {}
-  const edges = []
-
-  function ensureNode(node, row) {
-    if (!nodeMap[node.key]) {
-      nodeMap[node.key] = {
-        key: node.key,
-        label: node.label,
-        type: node.type,
-        packages: [],
-        versions: [],
-        manifests: [],
-        sources: []
-      }
-    }
-    if (!row) return
-    addUnique(nodeMap[node.key].packages, row.package)
-    addUnique(nodeMap[node.key].versions, row.package + " " + row.version)
-    addUnique(nodeMap[node.key].manifests, row.manifest_id)
-    addUnique(nodeMap[node.key].sources, row.source)
-  }
-
-  rows.forEach((row) => {
-    ensureNode(row.graph_node, row)
-    if (row.file_type !== "script") return
-    row.dependencies.forEach((dep) => {
-      const target = depNodeFromDependency(dep)
-      ensureNode(target)
-      edges.push({
-        from: row.graph_node.key,
-        fromLabel: row.graph_node.label,
-        fromType: row.graph_node.type,
-        to: target.key,
-        toLabel: target.label,
-        toType: target.type,
-        required: dep.required !== false,
-        inherited_from: dep.inherited_from || "",
-        load_order: dep.load_order == null ? null : dep.load_order,
-        note: dep.note || ""
-      })
-    })
-  })
-
-  return {
-    nodes: nodeMap,
-    edges: dedupeEdges(edges)
-  }
-}
-
-function addUnique(list, value) {
-  if (!value) return
-  if (list.indexOf(value) === -1) list.push(value)
-}
-
-function dedupeEdges(edges) {
-  const seen = {}
-  const out = []
-  edges.forEach((edge) => {
-    const key = edge.from + "->" + edge.to + ":" + edge.required + ":" + edge.inherited_from
-    if (seen[key]) return
-    seen[key] = true
-    out.push(edge)
-  })
-  return out
-}
-
-function graphEdgesForRows(data, rows) {
-  const visible = {}
-  rows.forEach((row) => {
-    if (row.file_type === "script" && row.graph_node && row.graph_node.key) visible[row.graph_node.key] = true
-  })
-  return data.graph_edges.filter((edge) => visible[edge.from])
-}
-
-function makeMermaid(data, rows) {
-  const nodes = {}
+function makeMermaid(data) {
+  const lines = ["flowchart LR"]
   let nodeIndex = 0
+  const nodes = {}
+
   function nodeId(key, label, type) {
     if (!nodes[key]) {
       nodes[key] = {
@@ -322,26 +102,22 @@ function makeMermaid(data, rows) {
     return nodes[key].id
   }
 
-  const lines = ["flowchart LR"]
-  const edges = rows ? graphEdgesForRows(data, rows) : data.graph_edges
-  edges.forEach((edge) => {
-    const from = nodeId(edge.from, edge.fromLabel, edge.fromType)
-    const to = nodeId(edge.to, edge.toLabel, edge.toType)
-    lines.push('  ' + from + '["' + escapeMermaid(edge.fromLabel) + '"] --> ' + to + '["' + escapeMermaid(edge.toLabel) + '"]')
+  data.main_scripts.forEach((main) => {
+    if (!main.utilities || !main.utilities.length) return
+    const from = nodeId("main:" + main.script, main.script, "main")
+    main.utilities.forEach((util) => {
+      const to = nodeId("util:" + util.script, util.script, "util")
+      lines.push('  ' + from + '["' + escapeMermaid(main.script) + '"] --> ' + to + '["' + escapeMermaid(util.script) + '"]')
+    })
   })
 
-  lines.push("  classDef script fill:#e8f2ff,stroke:#376b9f,color:#14273a")
-  lines.push("  classDef html fill:#e7f8ef,stroke:#2c8a54,color:#0d3320")
-  lines.push("  classDef mod fill:#fdecec,stroke:#b34b4b,color:#4a1515")
-  lines.push("  classDef data fill:#f0edff,stroke:#6f58b8,color:#241b4a")
+  if (lines.length === 1) lines.push('  empty["No utility attachments"]')
+  lines.push("  classDef main fill:#e8f2ff,stroke:#376b9f,color:#14273a")
+  lines.push("  classDef util fill:#e7f8ef,stroke:#2c8a54,color:#0d3320")
 
   Object.keys(nodes).forEach((key) => {
     const node = nodes[key]
-    const type = node.type
-    if (type === "script") lines.push("  class " + node.id + " script")
-    else if (type === "html") lines.push("  class " + node.id + " html")
-    else if (type === "mod") lines.push("  class " + node.id + " mod")
-    else if (type === "json" || type === "json_dir" || type === "directory") lines.push("  class " + node.id + " data")
+    lines.push("  class " + node.id + " " + node.type)
   })
 
   return lines.join("\n")
@@ -349,81 +125,64 @@ function makeMermaid(data, rows) {
 
 function buildMarkdown(data) {
   const lines = []
-  lines.push("# Dochi Script Dependencies")
+  lines.push("# Dochi Main Scripts")
   lines.push("")
-  lines.push("Generated from `" + data.registry_path + "` and package manifests.")
-  lines.push("")
-  lines.push("Graph nodes are collapsed by installed script identity, so repeated versions such as `dc_trainer.js` appear once.")
+  lines.push("Generated from `" + data.source_path + "`.")
   lines.push("")
   lines.push("- Generated: `" + data.generated_at + "`")
-  lines.push("- Manifests: `" + data.manifests.length + "`")
-  lines.push("- Files: `" + data.rows.length + "`")
-  lines.push("- Dependency sets: `" + Object.keys(data.registry.dependency_sets || {}).length + "`")
+  lines.push("- Utility root: `" + data.utility_root + "`")
+  lines.push("- Main scripts: `" + data.main_scripts.length + "`")
   lines.push("")
-  lines.push("## Overview")
+  lines.push("## Main List")
   lines.push("")
-  lines.push("| Package | MC | Version | Source | Install As | Inherits | Deps | Required | Optional |")
-  lines.push("|---|---|---:|---|---|---|---:|---:|---:|")
-  data.rows.forEach((row) => {
-    lines.push("| " +
-      [
-        escapeMd(row.package),
-        escapeMd(row.mc_version),
-        escapeMd(row.version),
-        "`" + escapeMd(row.source) + "`",
-        "`" + escapeMd(row.install_as) + "`",
-        row.inherited_sets.map((set) => "`" + escapeMd(set) + "`").join("<br>") || "-",
-        row.dependency_count,
-        row.required_count,
-        row.optional_count
-      ].join(" | ") + " |"
-    )
+  lines.push("| Main Script | Package | Versions | Attached Utilities | Attachments | Role |")
+  lines.push("|---|---|---|---|---|---|")
+  data.main_scripts.forEach((main) => {
+    const versions = (main.versions || []).map(versionLabel).join("<br>") || "-"
+    const utilities = (main.utilities || []).map((util) => "`" + escapeMd(util.script) + "`").join("<br>") || "-"
+    const attachments = (main.attachments || []).map((item) => item.type + ": `" + escapeMd(attachmentTarget(item)) + "`").join("<br>") || "-"
+    lines.push("| " + [
+      "`" + escapeMd(main.script) + "`",
+      escapeMd(main.package || ""),
+      versions,
+      utilities,
+      attachments,
+      escapeMd(main.role || "")
+    ].join(" | ") + " |")
   })
   lines.push("")
-  lines.push("## Dependency Sets")
+  lines.push("## Utility Map")
   lines.push("")
-  lines.push("| Set | Description | Dependencies |")
-  lines.push("|---|---|---:|")
-  Object.keys(data.registry.dependency_sets || {}).sort().forEach((name) => {
-    const set = data.registry.dependency_sets[name]
-    lines.push("| `" + escapeMd(name) + "` | " + escapeMd(set.description || "") + " | " + ((set.dependencies || []).length) + " |")
+  lines.push("```mermaid")
+  lines.push(makeMermaid(data))
+  lines.push("```")
+  lines.push("")
+  lines.push("## Details")
+  lines.push("")
+  data.main_scripts.forEach((main) => {
+    lines.push("### `" + main.script + "`")
+    lines.push("")
+    lines.push(main.role || "")
+    lines.push("")
+    lines.push("| Utility Script | Required | Load Order | Role |")
+    lines.push("|---|---|---:|---|")
+    if (!main.utilities || !main.utilities.length) {
+      lines.push("| - | - | - | No utility script attachment. |")
+    } else {
+      main.utilities.forEach((util) => {
+        lines.push("| `" + escapeMd(util.script) + "` | " + (util.required === false ? "no" : "yes") + " | " + (util.load_order == null ? "" : util.load_order) + " | " + escapeMd(util.role || "") + " |")
+      })
+    }
+    lines.push("")
   })
-  lines.push("")
-  const coreRows = data.rows.filter((row) => row.package === "npc_util" && row.file_type === "script")
 
-  lines.push("## Core Engine Graph")
-  lines.push("")
-  lines.push("```mermaid")
-  lines.push(makeMermaid(data, coreRows))
-  lines.push("```")
-  lines.push("")
-  lines.push("## Full Direct Graph")
-  lines.push("")
-  lines.push("```mermaid")
-  lines.push(makeMermaid(data, data.rows.filter((row) => row.file_type === "script")))
-  lines.push("```")
-  lines.push("")
-  lines.push("## Expanded Dependencies")
-  lines.push("")
-  data.rows.filter((row) => row.dependencies.length).forEach((row) => {
-    lines.push("### " + row.package + " " + row.version + " - `" + row.source + "`")
+  if (data.warnings.length) {
+    lines.push("## Warnings")
     lines.push("")
-    lines.push("| Type | Target | Required | Load Order | Inherited From | Note |")
-    lines.push("|---|---|---|---:|---|---|")
-    row.dependencies.forEach((dep) => {
-      lines.push("| " +
-        [
-          escapeMd(dep.type || ""),
-          "`" + escapeMd(getDepTarget(dep)) + "`",
-          dep.required === false ? "no" : "yes",
-          dep.load_order == null ? "" : dep.load_order,
-          dep.inherited_from ? "`" + escapeMd(dep.inherited_from) + "`" : "",
-          escapeMd(dep.note || "")
-        ].join(" | ") + " |"
-      )
-    })
+    data.warnings.forEach((warning) => lines.push("- " + escapeMd(warning)))
     lines.push("")
-  })
+  }
+
   return lines.join("\n")
 }
 
@@ -438,356 +197,173 @@ function buildHtml(data) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dochi Script Dependencies</title>
+<title>Dochi Main Scripts</title>
 <style>
-:root {
-  --bg: #f6f8fb;
-  --panel: #ffffff;
-  --text: #18202b;
-  --muted: #657184;
-  --line: #d7dee9;
-  --line2: #e8edf4;
-  --accent: #2563eb;
-  --script: #dceeff;
-  --set: #fff2c7;
-  --html: #dcf8e8;
-  --mod: #ffe0e0;
-  --data: #eee8ff;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Arial, sans-serif; }
-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--line); background: #fff; }
-h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: 0; }
-h2 { margin: 22px 0 12px; font-size: 17px; }
-h3 { margin: 0; font-size: 15px; }
-.sub { color: var(--muted); }
-.wrap { padding: 18px 28px 34px; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
-.stat b { display: block; font-size: 22px; margin-bottom: 2px; }
-.controls { display: grid; grid-template-columns: 1fr 180px 180px; gap: 10px; margin: 16px 0; }
-.panel-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.panel-tools select { width: 190px; }
-input, select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; background: #fff; color: var(--text); }
-.grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 16px; align-items: start; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.panel-head { padding: 13px 14px; border-bottom: 1px solid var(--line2); display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-.table-wrap { overflow: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 860px; }
-th, td { padding: 10px 12px; border-bottom: 1px solid var(--line2); text-align: left; vertical-align: top; }
-th { font-size: 12px; color: var(--muted); background: #f9fbfe; position: sticky; top: 0; z-index: 1; }
-code { background: #eef2f7; border: 1px solid #dbe2ec; border-radius: 4px; padding: 1px 5px; font-family: Consolas, Menlo, monospace; font-size: 12px; }
-.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid transparent; margin: 0 4px 4px 0; }
-.badge.script { background: var(--script); border-color: #b4d2ef; }
-.badge.set { background: var(--set); border-color: #e0c66d; }
-.badge.html { background: var(--html); border-color: #97d9b1; }
-.badge.mod { background: var(--mod); border-color: #edaaaa; }
-.badge.data { background: var(--data); border-color: #c6bbeb; }
-.badge.optional { background: #f3f4f6; border-color: #d5d9e0; color: #545f70; }
-.details { display: flex; flex-direction: column; gap: 10px; }
-details { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
-summary { cursor: pointer; padding: 12px 14px; font-weight: 700; }
-.dep-list { padding: 0 14px 14px; }
-.dep { display: grid; grid-template-columns: 92px 1fr 84px; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line2); align-items: start; }
-.dep .note { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
-.graph { padding: 14px; overflow: auto; min-height: 420px; }
-svg { display: block; min-width: 960px; }
-.node rect { stroke-width: 1.3; rx: 6; }
-.node text { font-size: 12px; fill: #18202b; }
-.edge { stroke: #97a4b8; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
-.empty { padding: 16px; color: var(--muted); }
-@media (max-width: 1100px) {
-  .grid, .stats, .controls { grid-template-columns: 1fr; }
-  header, .wrap { padding-left: 16px; padding-right: 16px; }
-}
+:root{--bg:#f6f8fb;--panel:#fff;--text:#17202d;--muted:#657184;--line:#d8e0eb;--line2:#ebf0f6;--main:#e8f2ff;--util:#e7f8ef;--warn:#fff3cd}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}
+header{padding:24px 28px 18px;background:#fff;border-bottom:1px solid var(--line)}
+h1{margin:0 0 6px;font-size:26px;letter-spacing:0}
+h2{font-size:17px;margin:22px 0 12px}
+h3{margin:0;font-size:17px}
+code{background:#eef2f7;border:1px solid #dbe2ec;border-radius:4px;padding:1px 5px;font-family:Consolas,Menlo,monospace;font-size:12px}
+.sub{color:var(--muted)}
+.wrap{padding:18px 28px 34px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+.stat b{display:block;font-size:22px;margin-bottom:2px}
+.controls{display:grid;grid-template-columns:1fr 180px;gap:10px;margin:0 0 16px}
+input,select{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:#fff;color:var(--text)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid var(--line2);padding-bottom:10px;margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;margin:0 4px 4px 0}
+.badge.main{background:var(--main);border-color:#b4d2ef}
+.badge.util{background:var(--util);border-color:#97d9b1}
+.badge.attach{background:#f1eefc;border-color:#c9bee9}
+.badge.none{background:#f3f4f6;border-color:#d5d9e0;color:#545f70}
+.list{display:flex;flex-direction:column;gap:8px}
+.line{display:grid;grid-template-columns:180px 1fr;gap:8px;border-top:1px solid var(--line2);padding-top:8px}
+.graph{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;min-height:360px}
+svg{display:block;min-width:760px}
+.edge{stroke:#97a4b8;stroke-width:1.2;fill:none;marker-end:url(#arrow)}
+.node rect{stroke-width:1.3;rx:6}
+.node text{font-size:12px;fill:#17202d}
+.warn{background:var(--warn);border:1px solid #e0c66d;border-radius:8px;padding:12px;margin-bottom:16px}
+@media(max-width:1000px){.grid,.stats,.controls{grid-template-columns:1fr}.wrap,header{padding-left:16px;padding-right:16px}.line{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Dochi Script Dependencies</h1>
-  <div class="sub">Generated from <code>${escapeHtml(data.registry_path)}</code> at <code>${escapeHtml(data.generated_at)}</code></div>
+  <h1>Dochi Main Scripts</h1>
+  <div class="sub">Simple view from <code>${escapeHtml(data.source_path)}</code>. Main scripts only, with attached utility scripts.</div>
   <div class="stats">
-    <div class="stat"><b id="statPackages">0</b><span>packages</span></div>
-    <div class="stat"><b id="statFiles">0</b><span>files</span></div>
-    <div class="stat"><b id="statSets">0</b><span>dependency sets</span></div>
-    <div class="stat"><b id="statDeps">0</b><span>expanded dependencies</span></div>
+    <div class="stat"><b id="statMain">0</b><span>main scripts</span></div>
+    <div class="stat"><b id="statUtil">0</b><span>utility attachments</span></div>
+    <div class="stat"><b id="statVersion">0</b><span>version entries</span></div>
   </div>
 </header>
 <main class="wrap">
-  <section class="panel">
-    <div class="panel-head">
-      <h3>Script Table</h3>
-      <span class="sub" id="rowCount"></span>
-    </div>
-    <div class="controls">
-      <input id="search" type="search" placeholder="Search package, script, dependency, path">
-      <select id="packageFilter"><option value="">All packages</option></select>
-      <select id="typeFilter"><option value="">All dependency types</option></select>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Package</th>
-            <th>MC</th>
-            <th>Version</th>
-            <th>Source</th>
-            <th>Install As</th>
-            <th>Inherits</th>
-            <th>Deps</th>
-            <th>Types</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </section>
+  <div id="warnings"></div>
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search script, package, utility, role">
+    <select id="packageFilter"><option value="">All packages</option></select>
+  </div>
   <section class="grid">
-    <div class="panel">
-      <div class="panel-head"><h3>Visual Graph</h3><div class="panel-tools"><span class="sub">direct script dependency graph</span><select id="graphMode"><option value="engine">Core engine</option><option value="filtered">Current filters</option><option value="all">All scripts</option></select></div></div>
-      <div class="graph" id="graph"></div>
+    <div>
+      <h2>Main List</h2>
+      <div id="cards"></div>
     </div>
-    <div class="panel">
-      <div class="panel-head"><h3>Expanded Dependencies</h3><span class="sub">click to inspect</span></div>
-      <div class="details" id="details"></div>
+    <div>
+      <h2>Utility Map</h2>
+      <div class="graph" id="graph"></div>
     </div>
   </section>
 </main>
 <script>
-const DATA = ${payload};
-const state = { search: "", package: "", type: "", graphMode: "engine" };
+const DATA=${payload};
+const state={search:"",package:""};
 
-function depTarget(dep) {
-  return dep.path || dep.id || dep.type || "";
+function escapeHtml(value){return String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function attachmentTarget(item){return item.path||item.id||""}
+function versionLabel(version){return version.mc_version+" "+version.version}
+
+function setStats(){
+  document.getElementById("statMain").textContent=DATA.main_scripts.length;
+  document.getElementById("statUtil").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.utilities||[]).length,0);
+  document.getElementById("statVersion").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.versions||[]).length,0);
 }
 
-function depTypeClass(type) {
-  if (type === "script") return "script";
-  if (type === "html") return "html";
-  if (type === "mod") return "mod";
-  if (type === "json" || type === "json_dir" || type === "directory") return "data";
-  return "optional";
-}
-
-function typeSummary(row) {
-  return Object.keys(row.type_counts).sort().map(type => {
-    return '<span class="badge ' + depTypeClass(type) + '">' + type + ': ' + row.type_counts[type] + '</span>';
-  }).join("");
-}
-
-function setStats() {
-  const packages = new Set(DATA.rows.map(row => row.package));
-  document.getElementById("statPackages").textContent = packages.size;
-  document.getElementById("statFiles").textContent = DATA.rows.length;
-  document.getElementById("statSets").textContent = Object.keys(DATA.registry.dependency_sets || {}).length;
-  document.getElementById("statDeps").textContent = DATA.rows.reduce((sum, row) => sum + row.dependency_count, 0);
-}
-
-function fillFilters() {
-  const pkg = document.getElementById("packageFilter");
-  Array.from(new Set(DATA.rows.map(row => row.package))).sort().forEach(name => {
-    const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    pkg.appendChild(opt);
-  });
-
-  const types = new Set();
-  DATA.rows.forEach(row => row.dependencies.forEach(dep => types.add(dep.type || "unknown")));
-  const typeFilter = document.getElementById("typeFilter");
-  Array.from(types).sort().forEach(type => {
-    const opt = document.createElement("option");
-    opt.value = type;
-    opt.textContent = type;
-    typeFilter.appendChild(opt);
+function fillFilters(){
+  const select=document.getElementById("packageFilter");
+  Array.from(new Set(DATA.main_scripts.map(item=>item.package))).sort().forEach(pkg=>{
+    const option=document.createElement("option");
+    option.value=pkg;
+    option.textContent=pkg;
+    select.appendChild(option);
   });
 }
 
-function getFilteredRows() {
-  const q = state.search.toLowerCase();
-  return DATA.rows.filter(row => {
-    if (state.package && row.package !== state.package) return false;
-    if (state.type && !row.dependencies.some(dep => (dep.type || "unknown") === state.type)) return false;
-    if (!q) return true;
-    const haystack = [
-      row.package, row.mc_version, row.version, row.source, row.install_as,
-      row.inherited_sets.join(" "),
-      row.dependencies.map(dep => [dep.type, depTarget(dep), dep.note, dep.inherited_from].join(" ")).join(" ")
-    ].join(" ").toLowerCase();
-    return haystack.indexOf(q) !== -1;
+function filtered(){
+  const q=state.search.toLowerCase();
+  return DATA.main_scripts.filter(item=>{
+    if(state.package&&item.package!==state.package)return false;
+    if(!q)return true;
+    const text=[item.title,item.package,item.script,item.role,(item.utilities||[]).map(u=>[u.script,u.role].join(" ")).join(" "),(item.attachments||[]).map(a=>[a.type,attachmentTarget(a),a.role].join(" ")).join(" ")].join(" ").toLowerCase();
+    return text.indexOf(q)!==-1;
   });
 }
 
-function renderTable(rows) {
-  const tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
-  rows.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = [
-      '<td>' + escapeHtml(row.package) + '</td>',
-      '<td>' + escapeHtml(row.mc_version) + '</td>',
-      '<td>' + escapeHtml(row.version) + '</td>',
-      '<td><code>' + escapeHtml(row.source) + '</code></td>',
-      '<td><code>' + escapeHtml(row.install_as) + '</code></td>',
-      '<td>' + (row.inherited_sets.map(set => '<span class="badge set">' + escapeHtml(set) + '</span>').join("") || '<span class="sub">none</span>') + '</td>',
-      '<td>' + row.dependency_count + ' <span class="sub">(' + row.required_count + ' req, ' + row.optional_count + ' opt)</span></td>',
-      '<td>' + typeSummary(row) + '</td>'
-    ].join("");
-    tbody.appendChild(tr);
-  });
-  document.getElementById("rowCount").textContent = rows.length + " visible";
+function renderWarnings(){
+  const box=document.getElementById("warnings");
+  if(!DATA.warnings||!DATA.warnings.length){box.innerHTML="";return}
+  box.innerHTML='<div class="warn"><b>Warnings</b><br>'+DATA.warnings.map(escapeHtml).join("<br>")+'</div>';
 }
 
-function renderDetails(rows) {
-  const box = document.getElementById("details");
-  box.innerHTML = "";
-  const withDeps = rows.filter(row => row.dependencies.length);
-  if (!withDeps.length) {
-    box.innerHTML = '<div class="empty">No dependencies match the current filters.</div>';
-    return;
-  }
-  withDeps.forEach((row, index) => {
-    const el = document.createElement("details");
-    if (index < 3) el.open = true;
-    const deps = row.dependencies.map(dep => {
-      const required = dep.required === false ? '<span class="badge optional">optional</span>' : '<span class="badge script">required</span>';
-      const note = dep.note ? '<div class="note">' + escapeHtml(dep.note) + '</div>' : "";
-      return '<div class="dep"><span class="badge ' + depTypeClass(dep.type) + '">' + escapeHtml(dep.type || "unknown") + '</span><code>' + escapeHtml(depTarget(dep)) + '</code>' + required + note + '</div>';
-    }).join("");
-    el.innerHTML = '<summary>' + escapeHtml(row.package + " " + row.version + " - " + row.source) + '</summary><div class="dep-list">' + deps + '</div>';
-    box.appendChild(el);
+function renderCards(items){
+  const box=document.getElementById("cards");
+  box.innerHTML="";
+  items.forEach(item=>{
+    const utilities=(item.utilities||[]).length?(item.utilities||[]).map(util=>{
+      const meta=[util.required===false?"optional":"required",util.load_order!=null?"order "+util.load_order:""].filter(Boolean).join(", ");
+      return '<div class="line"><div><span class="badge util">'+escapeHtml(util.script)+'</span></div><div><span class="sub">'+escapeHtml(meta)+'</span><br>'+escapeHtml(util.role||"")+'</div></div>';
+    }).join(""):'<span class="badge none">No utility script attachment</span>';
+    const attachments=(item.attachments||[]).map(att=>'<span class="badge attach">'+escapeHtml(att.type)+': '+escapeHtml(attachmentTarget(att))+'</span>').join("")||'<span class="badge none">No extra attachment</span>';
+    const versions=(item.versions||[]).map(version=>'<span class="badge main">'+escapeHtml(versionLabel(version))+'</span>').join("");
+    const card=document.createElement("article");
+    card.className="card";
+    card.innerHTML='<div class="card-head"><div><h3><code>'+escapeHtml(item.script)+'</code></h3><div class="sub">'+escapeHtml(item.title||item.package)+'</div></div><span class="badge main">'+escapeHtml(item.package)+'</span></div><p>'+escapeHtml(item.role||"")+'</p><div class="list"><div><b>Versions</b><br>'+versions+'</div><div><b>Utility Scripts</b>'+utilities+'</div><div><b>Attachments</b><br>'+attachments+'</div></div>';
+    box.appendChild(card);
   });
 }
 
-function graphRowsForMode(filteredRows) {
-  if (state.graphMode === "all") return DATA.rows.filter(row => row.file_type === "script");
-  if (state.graphMode === "filtered") return filteredRows.filter(row => row.file_type === "script");
-  return DATA.rows.filter(row => row.package === "npc_util" && row.file_type === "script");
-}
-
-function renderGraph(rows) {
-  const graph = document.getElementById("graph");
-  const graphRows = graphRowsForMode(rows);
-  const visibleScripts = new Set(graphRows.map(row => row.graph_node.key));
-  const edges = DATA.graph_edges.filter(edge => visibleScripts.has(edge.from));
-  const nodeMap = new Map();
-
-  function addNode(id, label, type) {
-    if (nodeMap.has(id)) return nodeMap.get(id);
-    const meta = DATA.graph_nodes[id] || {};
-    const node = {
-      id,
-      label,
-      type,
-      x: 0,
-      y: 0,
-      w: 250,
-      h: 38,
-      packages: meta.packages || [],
-      versions: meta.versions || [],
-      sources: meta.sources || []
-    };
-    nodeMap.set(id, node);
+function renderGraph(items){
+  const graph=document.getElementById("graph");
+  const edges=[];
+  const nodes=new Map();
+  function addNode(id,label,type){
+    if(nodes.has(id))return nodes.get(id);
+    const node={id,label,type,x:0,y:0,w:240,h:38};
+    nodes.set(id,node);
     return node;
   }
-
-  edges.forEach(edge => {
-    addNode(edge.from, edge.fromLabel, edge.fromType);
-    addNode(edge.to, edge.toLabel, edge.toType);
-  });
-
-  if (!edges.length) {
-    graph.innerHTML = '<div class="empty">No graph edges match this view.</div>';
-    return;
-  }
-
-  const levels = {};
-  Array.from(nodeMap.keys()).forEach(id => { levels[id] = 0; });
-  for (let pass = 0; pass < 24; pass++) {
-    let changed = false;
-    edges.forEach(edge => {
-      const next = (levels[edge.from] || 0) + 1;
-      if ((levels[edge.to] || 0) < next) {
-        levels[edge.to] = next;
-        changed = true;
-      }
-    });
-    if (!changed) break;
-  }
-
-  const columns = [];
-  Array.from(nodeMap.values()).forEach(node => {
-    const level = levels[node.id] || 0;
-    if (!columns[level]) columns[level] = [];
-    columns[level].push(node);
-  });
-
-  let height = 120;
-  let maxLevel = 0;
-  columns.forEach((nodes, level) => {
-    if (!nodes) return;
-    maxLevel = Math.max(maxLevel, level);
-    nodes.sort((a, b) => a.label.localeCompare(b.label));
-    nodes.forEach((node, i) => {
-      node.x = 20 + level * 310;
-      node.y = 24 + i * 54;
-      height = Math.max(height, node.y + 68);
+  items.forEach(item=>{
+    if(!(item.utilities||[]).length)return;
+    const main=addNode("main:"+item.script,item.script,"main");
+    (item.utilities||[]).forEach(util=>{
+      const node=addNode("util:"+util.script,util.script,"util");
+      edges.push({from:main.id,to:node.id});
     });
   });
-
-  const width = Math.max(920, 40 + (maxLevel + 1) * 310);
-  const nodeClass = type => {
-    if (type === "script") return "#dceeff";
-    if (type === "html") return "#dcf8e8";
-    if (type === "mod") return "#ffe0e0";
-    if (type === "json" || type === "json_dir" || type === "directory") return "#eee8ff";
-    return "#eef2f7";
-  };
-
-  const edgeLines = edges.map(edge => {
-    const a = nodeMap.get(edge.from);
-    const b = nodeMap.get(edge.to);
-    if (!a || !b) return "";
-    const x1 = a.x + a.w;
-    const y1 = a.y + a.h / 2;
-    const x2 = b.x;
-    const y2 = b.y + b.h / 2;
-    const mid = (x1 + x2) / 2;
-    return '<path class="edge" d="M' + x1 + ' ' + y1 + ' C' + mid + ' ' + y1 + ', ' + mid + ' ' + y2 + ', ' + x2 + ' ' + y2 + '"></path>';
+  if(!edges.length){graph.innerHTML='<div class="sub">No utility attachments in this view.</div>';return}
+  const mainNodes=Array.from(nodes.values()).filter(n=>n.type==="main").sort((a,b)=>a.label.localeCompare(b.label));
+  const utilNodes=Array.from(nodes.values()).filter(n=>n.type==="util").sort((a,b)=>a.label.localeCompare(b.label));
+  let height=120;
+  mainNodes.forEach((node,i)=>{node.x=20;node.y=24+i*58;height=Math.max(height,node.y+70)});
+  utilNodes.forEach((node,i)=>{node.x=360;node.y=24+i*58;height=Math.max(height,node.y+70)});
+  const width=760;
+  const edgeSvg=edges.map(edge=>{
+    const a=nodes.get(edge.from),b=nodes.get(edge.to),x1=a.x+a.w,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2,mid=(x1+x2)/2;
+    return '<path class="edge" d="M'+x1+' '+y1+' C'+mid+' '+y1+', '+mid+' '+y2+', '+x2+' '+y2+'"></path>';
   }).join("");
-
-  const nodeEls = Array.from(nodeMap.values()).map(node => {
-    const label = node.label.length > 30 ? node.label.slice(0, 27) + "..." : node.label;
-    const meta = [node.label, node.packages.length ? "Packages: " + node.packages.join(", ") : "", node.versions.length ? "Versions: " + node.versions.join(", ") : ""].filter(Boolean).join("\\n");
-    return '<g class="node"><rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" fill="' + nodeClass(node.type) + '" stroke="#9aa7ba"></rect><text x="' + (node.x + 10) + '" y="' + (node.y + 24) + '">' + escapeHtml(label) + '</text><title>' + escapeHtml(meta) + '</title></g>';
+  const nodeSvg=Array.from(nodes.values()).map(node=>{
+    const fill=node.type==="main"?"#e8f2ff":"#e7f8ef";
+    return '<g class="node"><rect x="'+node.x+'" y="'+node.y+'" width="'+node.w+'" height="'+node.h+'" fill="'+fill+'" stroke="#9aa7ba"></rect><text x="'+(node.x+10)+'" y="'+(node.y+24)+'">'+escapeHtml(node.label)+'</text></g>';
   }).join("");
-
-  graph.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" role="img" aria-label="Dependency graph"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#97a4b8"></path></marker></defs>' + edgeLines + nodeEls + '</svg>';
+  graph.innerHTML='<svg viewBox="0 0 '+width+' '+height+'" width="'+width+'" height="'+height+'" role="img" aria-label="Main script utility map"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#97a4b8"></path></marker></defs>'+edgeSvg+nodeSvg+'</svg>';
 }
 
-function escapeHtml(value) {
-  return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  }[ch]));
-}
-
-function render() {
-  const rows = getFilteredRows();
-  renderTable(rows);
-  renderDetails(rows);
-  renderGraph(rows);
+function render(){
+  const items=filtered();
+  renderCards(items);
+  renderGraph(items);
 }
 
 setStats();
 fillFilters();
-document.getElementById("search").addEventListener("input", event => { state.search = event.target.value; render(); });
-document.getElementById("packageFilter").addEventListener("change", event => { state.package = event.target.value; render(); });
-document.getElementById("typeFilter").addEventListener("change", event => { state.type = event.target.value; render(); });
-document.getElementById("graphMode").addEventListener("change", event => { state.graphMode = event.target.value; render(); });
+renderWarnings();
+document.getElementById("search").addEventListener("input",event=>{state.search=event.target.value;render()});
+document.getElementById("packageFilter").addEventListener("change",event=>{state.package=event.target.value;render()});
 render();
 </script>
 </body>

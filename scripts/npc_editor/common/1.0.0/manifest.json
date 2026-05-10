@@ -5,7 +5,6 @@
   "editor": "npc_editor",
   "mc_version": "common",
   "description": "NPC editor package sample shared for Forge and Fabric",
-  "dependency_registry": "../../../dc_dependencies.json",
   "entry": "dc_npc_editor.js",
   "files": [
     {
@@ -13,7 +12,27 @@
       "install_as": "dc_npc_editor.js",
       "dependencies": [
         {
-          "inherits": "npc_editor.runtime"
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for HTML GUI and browser bridge calls."
+        },
+        {
+          "type": "html",
+          "path": "html/dc_npc_editor.html",
+          "required": true
+        },
+        {
+          "type": "directory",
+          "path": "customnpcs/scripts/ecmascript/",
+          "required": true,
+          "note": "Scans installed ECMAScript and dc_lib scripts."
+        },
+        {
+          "type": "directory",
+          "path": "customnpcs/dc_admins/",
+          "required": true,
+          "note": "Stores and reads NPC editor admin access data."
         }
       ]
     },

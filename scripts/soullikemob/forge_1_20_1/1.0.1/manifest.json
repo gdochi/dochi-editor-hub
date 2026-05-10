@@ -5,7 +5,6 @@
   "editor": "soullikemob",
   "mc_version": "forge_1_20_1",
   "description": "Soullikemob package sample for Forge 1.20.1",
-  "dependency_registry": "../../../dc_dependencies.json",
   "entry": "dc_soullikemob.js",
   "files": [
     {
@@ -13,7 +12,10 @@
       "install_as": "dc_soullikemob.js",
       "dependencies": [
         {
-          "inherits": "soullikemob.html"
+          "type": "html",
+          "path": "html/dc_soullikemob.html",
+          "required": true,
+          "note": "DOM mount target is supplied by dc_soullikemob.html."
         }
       ]
     },
