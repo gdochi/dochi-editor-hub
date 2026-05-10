@@ -619,7 +619,7 @@ if(style==="general"){
 setNpcDcSelection(npc,{});
 setNpcDochiLock(npc,{locked:false});
 }
-pushBrowser(e.player,"npcScriptApplyResult",{ok:true,scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
+pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
 pushNpcList(e.player,getStoredScanRange(e.player));
 return;
 }
@@ -641,7 +641,7 @@ if(!res.ok){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:res.erro
 setNpcScriptStyle(npc,style);
 setNpcDcSelection(npc,{});
 setNpcDochiLock(npc,{locked:false});
-pushBrowser(e.player,"npcScriptApplyResult",{ok:true,scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:defaultDochiLock()});
+pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:defaultDochiLock()});
 pushNpcList(e.player,getStoredScanRange(e.player));
 }
 function clearAllTabs(tabs){
@@ -810,7 +810,7 @@ lock=buildDochiLock(selection);
 setNpcScriptStyle(npc,"dcE");
 setNpcDcSelection(npc,selection);
 setNpcDochiLock(npc,lock);
-pushBrowser(player,"npcScriptApplyResult",{ok:true,scriptStyle:"dcE",dcSelection:selection,dochiLock:lock});
+pushBrowser(player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:"dcE",dcSelection:selection,dochiLock:lock});
 pushNpcList(player,getStoredScanRange(player));
 }
 
