@@ -1,1614 +1,196 @@
 {
-  "schema": 2,
-  "generated_at": "2026-05-10T06:10:29.859Z",
-  "detection": "Scans npc_util function/global symbols and records calls/references from non-npc_util main scripts.",
+  "schema": 3,
+  "generated_at": "2026-05-10T07:18:55.670Z",
+  "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
     {
       "id": "dialogue",
-      "title": "dialogue",
       "package": "dialogue",
       "script": "dc_dialogue_trigger.js",
-      "description": "Dialogue trigger package shared for Forge and Fabric",
       "versions": [
         {
           "mc_version": "common",
           "version": "1.0.0",
           "manifest": "dialogue/common/1.0.0/manifest.json",
-          "source": "dc_dialogue_trigger.js",
-          "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-          "dependencies": [
-            {
-              "type": "script",
-              "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
-              "required": true,
-              "load_order": 1
-            },
-            {
-              "type": "script",
-              "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
-              "required": true,
-              "load_order": 2
-            },
-            {
-              "type": "script",
-              "path": "dc_lib/ds_npc_util/dc_util_common.js",
-              "required": true,
-              "load_order": 3
-            },
-            {
-              "type": "script",
-              "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
-              "required": true,
-              "load_order": 4
-            },
-            {
-              "type": "script",
-              "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
-              "required": true,
-              "load_order": 5
-            },
-            {
-              "type": "html",
-              "path": "html/dc_util/dc_gui_runtime.html",
-              "required": true
-            },
-            {
-              "type": "json_dir",
-              "path": "customnpcs/dc_data/dc_dialogues/",
-              "required": true,
-              "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
-            }
-          ]
+          "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js"
         }
       ],
-      "utilities": [
+      "script_dependencies": [
         {
           "script": "dc_npc_core_module.js",
           "path": "npc_util/common/1.0.0/dc_npc_core_module.js",
           "required": true,
-          "load_order": 1,
-          "detected_symbols": [
-            "NpcEventModule"
-          ],
-          "matches": [
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 75
-            },
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 75
-            },
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 75
-            },
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 76
-            }
-          ]
+          "load_order": 1
         },
         {
           "script": "dc_dialogue_util.js",
           "path": "npc_util/common/1.0.0/dc_dialogue_util.js",
           "required": true,
-          "load_order": 5,
-          "detected_symbols": [
-            "dc_dialogue_handleHtmlEvent",
-            "dc_dialogue_open"
-          ],
-          "matches": [
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "dc_dialogue_handleHtmlEvent",
-              "kind": "function",
-              "line": 57
-            },
-            {
-              "version": "1.0.0",
-              "mc_version": "common",
-              "source_path": "dialogue/common/1.0.0/dc_dialogue_trigger.js",
-              "symbol": "dc_dialogue_open",
-              "kind": "function",
-              "line": 47
-            }
-          ]
+          "load_order": 5
         }
       ],
-      "attachments": [
+      "html_dependencies": [
         {
-          "type": "html",
-          "target": "html/dc_util/dc_gui_runtime.html",
-          "required": true,
-          "note": ""
-        },
-        {
-          "type": "json_dir",
-          "target": "customnpcs/dc_data/dc_dialogues/",
-          "required": true,
-          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
         }
       ]
     },
     {
       "id": "item_editor",
-      "title": "item_editor",
       "package": "item_editor",
       "script": "dc_item_editor.js",
-      "description": "item_editor package sample for Forge 1.20.1",
       "versions": [
         {
           "mc_version": "forge_1_20_1",
           "version": "1.0.0",
           "manifest": "item_editor/forge_1_20_1/1.0.0/manifest.json",
-          "source": "dc_item_editor.js",
-          "source_path": "item_editor/forge_1_20_1/1.0.0/dc_item_editor.js",
-          "dependencies": [
-            {
-              "type": "json_dir",
-              "path": "customnpcs/JSON/item/",
-              "required": true,
-              "note": "Default item JSON save/load root."
-            },
-            {
-              "type": "json_dir",
-              "path": "customnpcs/JSON/item/prefix/",
-              "required": true,
-              "note": "Default prefix preset directory."
-            },
-            {
-              "type": "json",
-              "path": "customnpcs/JSON/item/category_config.json",
-              "required": true,
-              "note": "Category configuration file created/read by the editor."
-            },
-            {
-              "type": "json_dir",
-              "path": "customnpcs/JSON/item/category_presets/",
-              "required": false,
-              "note": "Optional category preset directory used by preset import/export."
-            }
-          ]
+          "source_path": "item_editor/forge_1_20_1/1.0.0/dc_item_editor.js"
         }
       ],
-      "utilities": [],
-      "attachments": [
-        {
-          "type": "json",
-          "target": "customnpcs/JSON/item/category_config.json",
-          "required": true,
-          "note": "Category configuration file created/read by the editor."
-        },
-        {
-          "type": "json_dir",
-          "target": "customnpcs/JSON/item/",
-          "required": true,
-          "note": "Default item JSON save/load root."
-        },
-        {
-          "type": "json_dir",
-          "target": "customnpcs/JSON/item/category_presets/",
-          "required": false,
-          "note": "Optional category preset directory used by preset import/export."
-        },
-        {
-          "type": "json_dir",
-          "target": "customnpcs/JSON/item/prefix/",
-          "required": true,
-          "note": "Default prefix preset directory."
-        }
-      ]
+      "script_dependencies": [],
+      "html_dependencies": []
     },
     {
       "id": "npc_editor",
-      "title": "npc_editor",
       "package": "npc_editor",
       "script": "dc_npc_editor.js",
-      "description": "NPC editor package sample shared for Forge and Fabric",
       "versions": [
         {
           "mc_version": "common",
           "version": "1.0.0",
           "manifest": "npc_editor/common/1.0.0/manifest.json",
-          "source": "dc_npc_editor.js",
-          "source_path": "npc_editor/common/1.0.0/dc_npc_editor.js",
-          "dependencies": [
-            {
-              "type": "mod",
-              "id": "CNPCExtended",
-              "required": true,
-              "note": "Required for HTML GUI and browser bridge calls."
-            },
-            {
-              "type": "html",
-              "path": "html/dc_npc_editor.html",
-              "required": true
-            },
-            {
-              "type": "directory",
-              "path": "customnpcs/scripts/ecmascript/",
-              "required": true,
-              "note": "Scans installed ECMAScript and dc_lib scripts."
-            },
-            {
-              "type": "directory",
-              "path": "customnpcs/dc_admins/",
-              "required": true,
-              "note": "Stores and reads NPC editor admin access data."
-            }
-          ]
+          "source_path": "npc_editor/common/1.0.0/dc_npc_editor.js"
         }
       ],
-      "utilities": [],
-      "attachments": [
+      "script_dependencies": [],
+      "html_dependencies": [
         {
-          "type": "directory",
-          "target": "customnpcs/dc_admins/",
-          "required": true,
-          "note": "Stores and reads NPC editor admin access data."
-        },
-        {
-          "type": "directory",
-          "target": "customnpcs/scripts/ecmascript/",
-          "required": true,
-          "note": "Scans installed ECMAScript and dc_lib scripts."
-        },
-        {
-          "type": "html",
-          "target": "html/dc_npc_editor.html",
-          "required": true,
-          "note": ""
-        },
-        {
-          "type": "mod",
-          "target": "CNPCExtended",
-          "required": true,
-          "note": "Required for HTML GUI and browser bridge calls."
+          "path": "html/dc_npc_editor.html",
+          "required": true
         }
       ]
     },
     {
       "id": "scroll_dialogue",
-      "title": "scroll_dialogue",
       "package": "scroll_dialogue",
       "script": "dc_story_scroll.js",
-      "description": "Scroll dialogue CustomNPCs GUI script",
       "versions": [
         {
           "mc_version": "common",
           "version": "1.0.0",
           "manifest": "scroll_dialogue/common/1.0.0/manifest.json",
-          "source": "dc_story_scroll.js",
-          "source_path": "scroll_dialogue/common/1.0.0/dc_story_scroll.js",
-          "dependencies": [
-            {
-              "type": "json_dir",
-              "path": "customnpcs/JSON/npc_dialogue/",
-              "required": true,
-              "note": "Reads <npc_name>.json from this directory."
-            },
-            {
-              "type": "json",
-              "path": "customnpcs/JSON/npc_dialogue/<npc_name>.json",
-              "required": true,
-              "note": "Runtime dialogue file name is derived from the NPC name."
-            }
-          ]
+          "source_path": "scroll_dialogue/common/1.0.0/dc_story_scroll.js"
         }
       ],
-      "utilities": [],
-      "attachments": [
-        {
-          "type": "json",
-          "target": "customnpcs/JSON/npc_dialogue/<npc_name>.json",
-          "required": true,
-          "note": "Runtime dialogue file name is derived from the NPC name."
-        },
-        {
-          "type": "json_dir",
-          "target": "customnpcs/JSON/npc_dialogue/",
-          "required": true,
-          "note": "Reads <npc_name>.json from this directory."
-        }
-      ]
+      "script_dependencies": [],
+      "html_dependencies": []
     },
     {
       "id": "soullikemob",
-      "title": "soullikemob",
       "package": "soullikemob",
       "script": "dc_soullikemob.js",
-      "description": "Soullikemob package sample for Forge 1.20.1",
       "versions": [
         {
           "mc_version": "forge_1_20_1",
           "version": "1.0.0",
           "manifest": "soullikemob/forge_1_20_1/1.0.0/manifest.json",
-          "source": "dc_soullikemob.js",
-          "source_path": "soullikemob/forge_1_20_1/1.0.0/dc_soullikemob.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_soullikemob.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_soullikemob.html."
-            }
-          ]
+          "source_path": "soullikemob/forge_1_20_1/1.0.0/dc_soullikemob.js"
         },
         {
           "mc_version": "forge_1_20_1",
           "version": "1.0.1",
           "manifest": "soullikemob/forge_1_20_1/1.0.1/manifest.json",
-          "source": "dc_soullikemob.js",
-          "source_path": "soullikemob/forge_1_20_1/1.0.1/dc_soullikemob.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_soullikemob.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_soullikemob.html."
-            }
-          ]
+          "source_path": "soullikemob/forge_1_20_1/1.0.1/dc_soullikemob.js"
         },
         {
           "mc_version": "forge_1_20_1",
           "version": "1.0.2",
           "manifest": "soullikemob/forge_1_20_1/1.0.2/manifest.json",
-          "source": "dc_soullikemob.js",
-          "source_path": "soullikemob/forge_1_20_1/1.0.2/dc_soullikemob.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_soullikemob.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_soullikemob.html."
-            }
-          ]
+          "source_path": "soullikemob/forge_1_20_1/1.0.2/dc_soullikemob.js"
         }
       ],
-      "utilities": [],
-      "attachments": [
+      "script_dependencies": [],
+      "html_dependencies": [
         {
-          "type": "html",
-          "target": "html/dc_soullikemob.html",
-          "required": true,
-          "note": "DOM mount target is supplied by dc_soullikemob.html."
+          "path": "html/dc_soullikemob.html",
+          "required": true
         }
       ]
     },
     {
       "id": "trainer",
-      "title": "trainer",
       "package": "trainer",
       "script": "dc_trainer.js",
-      "description": "Trainer package sample for Fabric 1.21.1",
       "versions": [
         {
           "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
           "manifest": "trainer/fabric_1_21_1/1.0.0/manifest.json",
-          "source": "dc_trainer.js",
-          "source_path": "trainer/fabric_1_21_1/1.0.0/dc_trainer.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_trainer.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_trainer.html."
-            }
-          ]
+          "source_path": "trainer/fabric_1_21_1/1.0.0/dc_trainer.js"
         },
         {
           "mc_version": "fabric_1_21_1",
           "version": "1.0.1",
           "manifest": "trainer/fabric_1_21_1/1.0.1/manifest.json",
-          "source": "dc_trainer.js",
-          "source_path": "trainer/fabric_1_21_1/1.0.1/dc_trainer.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_trainer.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_trainer.html."
-            }
-          ]
+          "source_path": "trainer/fabric_1_21_1/1.0.1/dc_trainer.js"
         },
         {
           "mc_version": "fabric_1_21_1",
           "version": "1.0.2",
           "manifest": "trainer/fabric_1_21_1/1.0.2/manifest.json",
-          "source": "dc_trainer.js",
-          "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-          "dependencies": [
-            {
-              "type": "html",
-              "path": "html/dc_trainer.html",
-              "required": true,
-              "note": "DOM mount target is supplied by dc_trainer.html."
-            }
-          ]
+          "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js"
         }
       ],
-      "utilities": [
+      "script_dependencies": [
         {
           "script": "dc_npc_core_module.js",
           "path": "npc_util/common/1.0.0/dc_npc_core_module.js",
           "required": true,
-          "load_order": 1,
-          "detected_symbols": [
-            "NpcEventModule"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1845
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1845
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1845
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1846
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1878
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1897
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 1923
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 2015
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 2015
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 2015
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 2015
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 860
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 860
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 860
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "NpcEventModule",
-              "kind": "global",
-              "line": 861
-            }
-          ]
+          "load_order": 1
         },
         {
           "script": "dc_cfg_checker.js",
           "path": "npc_util/common/1.0.0/dc_cfg_checker.js",
           "required": true,
-          "load_order": 2,
-          "detected_symbols": [
-            "cfg_chk_defaultConfig",
-            "cfg_chk_merge",
-            "cfg_chk_readJsonFile",
-            "cfg_chk_readTextFile",
-            "cfg_chk_resolveFile"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_defaultConfig",
-              "kind": "function",
-              "line": 180
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_defaultConfig",
-              "kind": "function",
-              "line": 210
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_defaultConfig",
-              "kind": "function",
-              "line": 212
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_merge",
-              "kind": "function",
-              "line": 182
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_readJsonFile",
-              "kind": "function",
-              "line": 1260
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_readTextFile",
-              "kind": "function",
-              "line": 1043
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_readTextFile",
-              "kind": "function",
-              "line": 177
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_readTextFile",
-              "kind": "function",
-              "line": 1801
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 1037
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 1257
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 167
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 170
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 1766
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cfg_chk_resolveFile",
-              "kind": "function",
-              "line": 1770
-            }
-          ]
+          "load_order": 2
         },
         {
           "script": "dc_util_common.js",
           "path": "npc_util/common/1.0.0/dc_util_common.js",
           "required": true,
-          "load_order": 3,
-          "detected_symbols": [
-            "util_fw",
-            "util_msgPrint",
-            "util_sound",
-            "util_toF",
-            "util_toInt"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_fw",
-              "kind": "function",
-              "line": 352
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_msgPrint",
-              "kind": "function",
-              "line": 1114
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_sound",
-              "kind": "function",
-              "line": 1120
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_sound",
-              "kind": "function",
-              "line": 1541
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_sound",
-              "kind": "function",
-              "line": 683
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 1517
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 1518
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 1638
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 1640
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 316
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 317
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 317
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 318
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 318
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 319
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 319
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 327
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 328
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 350
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 356
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 371
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 406
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 406
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 407
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 407
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 654
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 654
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 655
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toF",
-              "kind": "function",
-              "line": 655
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1339
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1374
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1424
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1435
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1465
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1532
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1557
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1625
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1639
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1689
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1689
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1689
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1738
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1740
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1859
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1861
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1871
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 1979
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 198
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 199
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 282
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 287
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 295
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 334
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 343
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 421
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 422
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 427
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 429
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 432
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 463
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 465
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 539
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 562
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 562
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 670
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 748
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 820
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 831
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 854
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 868
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 868
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 875
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 877
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 881
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 911
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 913
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 919
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 922
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 928
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 928
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 935
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 936
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 937
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 97
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 970
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 975
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "util_toInt",
-              "kind": "function",
-              "line": 992
-            }
-          ]
+          "load_order": 3
         },
         {
           "script": "dc_cond_checker.js",
           "path": "npc_util/common/1.0.0/dc_cond_checker.js",
           "required": true,
-          "load_order": 4,
-          "detected_symbols": [
-            "cond_adv",
-            "cond_faction",
-            "cond_item",
-            "cond_stored",
-            "cond_tag"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cond_adv",
-              "kind": "function",
-              "line": 521
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cond_faction",
-              "kind": "function",
-              "line": 520
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cond_item",
-              "kind": "function",
-              "line": 517
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cond_stored",
-              "kind": "function",
-              "line": 518
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "cond_tag",
-              "kind": "function",
-              "line": 519
-            }
-          ]
+          "load_order": 4
         },
         {
           "script": "dc_reward_checker.js",
           "path": "npc_util/common/1.0.0/dc_reward_checker.js",
           "required": true,
-          "load_order": 5,
-          "detected_symbols": [
-            "rew_chk_applyAdvancement",
-            "rew_chk_applyCommand",
-            "rew_chk_applyFaction",
-            "rew_chk_applyItem",
-            "rew_chk_pickList"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "rew_chk_applyAdvancement",
-              "kind": "function",
-              "line": 1582
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "rew_chk_applyCommand",
-              "kind": "function",
-              "line": 1580
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "rew_chk_applyFaction",
-              "kind": "function",
-              "line": 1576
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "rew_chk_applyItem",
-              "kind": "function",
-              "line": 1578
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "rew_chk_pickList",
-              "kind": "function",
-              "line": 1568
-            }
-          ]
+          "load_order": 5
         },
         {
           "script": "dc_sequence_core.js",
           "path": "npc_util/common/1.0.0/dc_sequence_core.js",
           "required": true,
-          "load_order": 6,
-          "detected_symbols": [
-            "seq_core_calcTotal",
-            "seq_core_hasSteps",
-            "seq_core_pack",
-            "seq_core_prepareSteps"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "seq_core_calcTotal",
-              "kind": "function",
-              "line": 831
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "seq_core_hasSteps",
-              "kind": "function",
-              "line": 830
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "seq_core_pack",
-              "kind": "function",
-              "line": 927
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "seq_core_prepareSteps",
-              "kind": "function",
-              "line": 927
-            }
-          ]
+          "load_order": 6
         },
         {
           "script": "dc_dialogue_util.js",
           "path": "npc_util/common/1.0.0/dc_dialogue_util.js",
           "required": true,
-          "load_order": 9,
-          "detected_symbols": [
-            "dc_dialogue_handleHtmlEvent",
-            "dc_dialogue_open"
-          ],
-          "matches": [
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "dc_dialogue_handleHtmlEvent",
-              "kind": "function",
-              "line": 1969
-            },
-            {
-              "version": "1.0.2",
-              "mc_version": "fabric_1_21_1",
-              "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js",
-              "symbol": "dc_dialogue_open",
-              "kind": "function",
-              "line": 1351
-            }
-          ]
+          "load_order": 9
         }
       ],
-      "attachments": [
+      "html_dependencies": [
         {
-          "type": "html",
-          "target": "html/dc_trainer.html",
-          "required": true,
-          "note": "DOM mount target is supplied by dc_trainer.html."
+          "path": "html/dc_trainer.html",
+          "required": true
         }
       ]
     }

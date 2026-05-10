@@ -308,18 +308,17 @@ function collectMainScripts(manifests) {
 function detectUtilityDependencies(mainScripts, utilityIndex) {
   mainScripts.forEach((main) => {
     const utilityMap = {}
-    const attachmentMap = {}
+    const htmlMap = {}
 
     main.versions.forEach((version) => {
       ;(version.dependencies || []).forEach((dep) => {
-        if (dep.type === "script") return
-        const key = (dep.type || "") + ":" + attachmentTarget(dep)
-        if (!attachmentMap[key]) {
-          attachmentMap[key] = {
-            type: dep.type || "",
-            target: attachmentTarget(dep),
-            required: dep.required !== false,
-            note: dep.note || ""
+        if (dep.type !== "html") return
+        const target = attachmentTarget(dep)
+        if (!target) return
+        if (!htmlMap[target]) {
+          htmlMap[target] = {
+            path: target,
+            required: dep.required !== false
           }
         }
       })
@@ -342,43 +341,30 @@ function detectUtilityDependencies(mainScripts, utilityIndex) {
             script: util.script,
             path: util.path,
             required: manifestDep ? manifestDep.required !== false : true,
-            load_order: manifestDep && manifestDep.load_order != null ? manifestDep.load_order : util.default_order,
-            detected_symbols: [],
-            matches: []
+            load_order: manifestDep && manifestDep.load_order != null ? manifestDep.load_order : util.default_order
           }
         }
-        matched.forEach((item) => {
-          utilityMap[util.script].detected_symbols.push(item.symbol)
-          utilityMap[util.script].matches.push({
-            version: version.version,
-            mc_version: version.mc_version,
-            source_path: version.source_path,
-            symbol: item.symbol,
-            kind: item.kind,
-            line: item.line
-          })
-        })
       })
     })
 
-    main.utilities = Object.keys(utilityMap).sort((a, b) => {
+    main.script_dependencies = Object.keys(utilityMap).sort((a, b) => {
       const ao = utilityMap[a].load_order == null ? 9999 : Number(utilityMap[a].load_order)
       const bo = utilityMap[b].load_order == null ? 9999 : Number(utilityMap[b].load_order)
       if (ao !== bo) return ao - bo
       return a.localeCompare(b)
-    }).map((key) => {
-      const util = utilityMap[key]
-      util.detected_symbols = uniqueSorted(util.detected_symbols)
-      util.matches.sort((a, b) => {
-        return [a.symbol, a.source_path, String(a.line)].join("\u0000").localeCompare(
-          [b.symbol, b.source_path, String(b.line)].join("\u0000")
-        )
-      })
-      return util
-    })
+    }).map((key) => utilityMap[key])
 
-    main.attachments = Object.keys(attachmentMap).sort().map((key) => attachmentMap[key])
-    delete main.versions.forEach
+    main.html_dependencies = Object.keys(htmlMap).sort().map((key) => htmlMap[key])
+    main.versions = main.versions.map((version) => ({
+      mc_version: version.mc_version,
+      version: version.version,
+      manifest: version.manifest,
+      source_path: version.source_path
+    }))
+    delete main.title
+    delete main.description
+    delete main.utilities
+    delete main.attachments
   })
 }
 
@@ -389,9 +375,9 @@ function buildData() {
   detectUtilityDependencies(mainScripts, utilityIndex)
 
   return {
-    schema: 2,
+    schema: 3,
     generated_at: new Date().toISOString(),
-    detection: "Scans npc_util function/global symbols and records calls/references from non-npc_util main scripts.",
+    detection: "Lists script and HTML dependencies for each main script.",
     utility_root: utilityRootRel,
     main_scripts: mainScripts
   }
@@ -401,57 +387,24 @@ function versionLabel(version) {
   return version.mc_version + " " + version.version
 }
 
-function matchSummary(util) {
-  return util.detected_symbols.map((name) => "`" + escapeMd(name) + "`").join("<br>")
-}
-
 function buildMarkdown(data) {
   const lines = []
-  lines.push("# Dochi Main Script Utility Dependencies")
-  lines.push("")
-  lines.push("Generated from script-call scanning.")
+  lines.push("# Dochi Script Dependencies")
   lines.push("")
   lines.push("- Generated: `" + data.generated_at + "`")
   lines.push("- Utility root: `" + data.utility_root + "`")
   lines.push("- Main scripts: `" + data.main_scripts.length + "`")
   lines.push("")
-  lines.push("## Main Scripts")
-  lines.push("")
-  lines.push("| Main Script | Package | Versions | Utility Scripts | Detected Symbols | Attachments |")
-  lines.push("|---|---|---|---|---|---|")
+  lines.push("| Main Script | Script Dependencies | HTML Dependencies |")
+  lines.push("|---|---|---|")
   data.main_scripts.forEach((main) => {
-    const versions = uniqueSorted(main.versions.map(versionLabel)).join("<br>") || "-"
-    const utilities = main.utilities.map((util) => "`" + escapeMd(util.script) + "`").join("<br>") || "-"
-    const symbols = main.utilities.map((util) => "**" + escapeMd(util.script) + "**<br>" + matchSummary(util)).join("<br><br>") || "-"
-    const attachments = main.attachments.map((item) => item.type + ": `" + escapeMd(item.target) + "`").join("<br>") || "-"
+    const utilities = main.script_dependencies.map((dep) => "`" + escapeMd(dep.script) + "`").join("<br>") || "-"
+    const html = main.html_dependencies.map((dep) => "`" + escapeMd(dep.path) + "`").join("<br>") || "-"
     lines.push("| " + [
       "`" + escapeMd(main.script) + "`",
-      escapeMd(main.package),
-      versions,
       utilities,
-      symbols,
-      attachments
+      html
     ].join(" | ") + " |")
-  })
-  lines.push("")
-  lines.push("## Details")
-  lines.push("")
-  data.main_scripts.forEach((main) => {
-    lines.push("### `" + main.script + "`")
-    lines.push("")
-    lines.push(main.description || "")
-    lines.push("")
-    lines.push("| Utility Script | Required | Load Order | Detected Calls / References |")
-    lines.push("|---|---|---:|---|")
-    if (!main.utilities.length) {
-      lines.push("| - | - | - | No npc_util function call detected. |")
-    } else {
-      main.utilities.forEach((util) => {
-        const refs = util.detected_symbols.map((symbol) => "`" + escapeMd(symbol) + "`").join("<br>")
-        lines.push("| `" + escapeMd(util.script) + "` | " + (util.required ? "yes" : "no") + " | " + (util.load_order == null ? "" : util.load_order) + " | " + refs + " |")
-      })
-    }
-    lines.push("")
   })
   return lines.join("\n")
 }
@@ -467,95 +420,77 @@ function buildHtml(data) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dochi Utility Dependencies</title>
+<title>Dochi Script Dependencies</title>
 <style>
-:root{--bg:#f6f8fb;--panel:#fff;--text:#17202d;--muted:#657184;--line:#d8e0eb;--line2:#ebf0f6;--main:#e8f2ff;--util:#e7f8ef;--attach:#f1eefc}
+:root{--bg:#f6f8fb;--panel:#fff;--text:#17202d;--muted:#657184;--line:#d8e0eb;--line2:#ebf0f6;--main:#e8f2ff;--util:#e7f8ef;--html:#f1eefc}
 *{box-sizing:border-box}
-html,body{min-width:1480px}
+html,body{min-width:2200px}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}
 header{padding:24px 32px 18px;background:#fff;border-bottom:1px solid var(--line)}
 h1{margin:0 0 6px;font-size:26px;letter-spacing:0}
-h2{font-size:17px;margin:22px 0 12px}
-code{background:#eef2f7;border:1px solid #dbe2ec;border-radius:4px;padding:1px 5px;font-family:Consolas,Menlo,monospace;font-size:12px;white-space:nowrap}
+h2{font-size:17px;margin:0 0 12px}
+code{background:#eef2f7;border:1px solid #dbe2ec;border-radius:4px;padding:1px 5px;font-family:Consolas,Menlo,monospace;font-size:12px;overflow-wrap:anywhere}
 .sub{color:var(--muted)}
-.wrap{width:1480px;padding:18px 32px 34px}
+.wrap{width:2200px;padding:18px 32px 34px}
 .stats{display:grid;grid-template-columns:repeat(3,220px);gap:12px;margin-top:16px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
 .stat b{display:block;font-size:22px;margin-bottom:2px}
-.controls{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:0 0 16px}
-input,select{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:#fff;color:var(--text)}
-table{width:1416px;border-collapse:collapse;background:#fff;border:1px solid var(--line);table-layout:fixed}
+.controls{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 16px;width:680px}
+input{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:#fff;color:var(--text)}
+table{width:2136px;border-collapse:collapse;background:#fff;border:1px solid var(--line);table-layout:fixed}
 th,td{border-bottom:1px solid var(--line2);border-right:1px solid var(--line2);padding:10px 12px;text-align:left;vertical-align:top}
 th{font-size:12px;color:var(--muted);background:#f9fbfe}
 tr:nth-child(even) td{background:#f8fafc}
-th:nth-child(1),td:nth-child(1){width:190px}
-th:nth-child(2),td:nth-child(2){width:140px}
-th:nth-child(3),td:nth-child(3){width:170px}
-th:nth-child(4),td:nth-child(4){width:260px}
-th:nth-child(5),td:nth-child(5){width:480px}
-th:nth-child(6),td:nth-child(6){width:176px}
+th:nth-child(1),td:nth-child(1){width:420px}
+th:nth-child(2),td:nth-child(2){width:1080px}
+th:nth-child(3),td:nth-child(3){width:636px}
 .badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;margin:0 4px 4px 0;white-space:nowrap}
 .badge.main{background:var(--main);border-color:#b4d2ef}
 .badge.util{background:var(--util);border-color:#97d9b1}
-.badge.attach{background:var(--attach);border-color:#c9bee9}
+.badge.html{background:var(--html);border-color:#c9bee9}
 .badge.none{background:#f3f4f6;border-color:#d5d9e0;color:#545f70}
-.symbols{display:flex;flex-wrap:wrap;gap:4px}
-.detail{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
-.detail h3{margin:0 0 8px;font-size:16px}
+.deps{display:flex;flex-wrap:wrap;gap:4px}
 </style>
 </head>
 <body>
 <header>
-  <h1>Dochi Utility Dependencies</h1>
-  <div class="sub">Detected by scanning calls/references to symbols declared in <code>${escapeHtml(data.utility_root)}</code>.</div>
+  <h1>Dochi Script Dependencies</h1>
   <div class="stats">
     <div class="stat"><b id="statMain">0</b><span>main scripts</span></div>
-    <div class="stat"><b id="statUtil">0</b><span>utility links</span></div>
-    <div class="stat"><b id="statSymbols">0</b><span>detected symbols</span></div>
+    <div class="stat"><b id="statScript">0</b><span>script links</span></div>
+    <div class="stat"><b id="statHtml">0</b><span>html links</span></div>
   </div>
 </header>
 <main class="wrap">
   <div class="controls">
-    <input id="search" type="search" placeholder="Search script, package, utility, function">
-    <select id="packageFilter"><option value="">All packages</option></select>
+    <input id="search" type="search" placeholder="Search script or html">
   </div>
-  <h2>Main Scripts</h2>
+  <h2>Main List</h2>
   <table>
     <thead>
       <tr>
         <th>Main Script</th>
-        <th>Package</th>
-        <th>Versions</th>
-        <th>Utility Scripts</th>
-        <th>Detected Calls / References</th>
-        <th>Attachments</th>
+        <th>Script Dependencies</th>
+        <th>HTML Dependencies</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
-  <div id="details"></div>
 </main>
 <script>
 const DATA=${payload};
-const state={search:"",package:""};
+const state={search:""};
 function escapeHtml(value){return String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
-function versionLabel(version){return version.mc_version+" "+version.version}
-function unique(list){return Array.from(new Set(list.filter(Boolean)))}
 function setStats(){
   document.getElementById("statMain").textContent=DATA.main_scripts.length;
-  document.getElementById("statUtil").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.utilities||[]).length,0);
-  document.getElementById("statSymbols").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.utilities||[]).reduce((s,u)=>s+(u.detected_symbols||[]).length,0),0);
-}
-function fillFilters(){
-  const select=document.getElementById("packageFilter");
-  unique(DATA.main_scripts.map(item=>item.package)).sort().forEach(pkg=>{const o=document.createElement("option");o.value=pkg;o.textContent=pkg;select.appendChild(o)});
+  document.getElementById("statScript").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.script_dependencies||[]).length,0);
+  document.getElementById("statHtml").textContent=DATA.main_scripts.reduce((sum,item)=>sum+(item.html_dependencies||[]).length,0);
 }
 function filtered(){
   const q=state.search.toLowerCase();
   return DATA.main_scripts.filter(item=>{
-    if(state.package&&item.package!==state.package)return false;
     if(!q)return true;
-    const text=[item.package,item.script,item.description,(item.utilities||[]).map(u=>[u.script,(u.detected_symbols||[]).join(" ")].join(" ")).join(" "),(item.attachments||[]).map(a=>a.target).join(" ")].join(" ").toLowerCase();
+    const text=[item.script,(item.script_dependencies||[]).map(dep=>dep.script).join(" "),(item.html_dependencies||[]).map(dep=>dep.path).join(" ")].join(" ").toLowerCase();
     return text.indexOf(q)!==-1;
   });
 }
@@ -567,29 +502,16 @@ function renderTable(items){
   const tbody=document.getElementById("tbody");
   tbody.innerHTML="";
   items.forEach(item=>{
-    const versions=unique((item.versions||[]).map(versionLabel));
-    const utilities=(item.utilities||[]).map(u=>u.script);
-    const symbolHtml=(item.utilities||[]).map(u=>'<div><b>'+escapeHtml(u.script)+'</b><div class="symbols">'+badges(u.detected_symbols||[],'util','none')+'</div></div>').join("");
-    const attachments=(item.attachments||[]).map(a=>a.type+': '+a.target);
+    const scripts=(item.script_dependencies||[]).map(dep=>dep.script);
+    const html=(item.html_dependencies||[]).map(dep=>dep.path);
     const tr=document.createElement("tr");
-    tr.innerHTML='<td><code>'+escapeHtml(item.script)+'</code></td><td>'+escapeHtml(item.package)+'</td><td>'+badges(versions,'main','none')+'</td><td>'+badges(utilities,'util','No utility detected')+'</td><td>'+(symbolHtml||'<span class="badge none">No npc_util function call detected</span>')+'</td><td>'+badges(attachments,'attach','No attachment')+'</td>';
+    tr.innerHTML='<td><code>'+escapeHtml(item.script)+'</code></td><td><div class="deps">'+badges(scripts,'util','-')+'</div></td><td><div class="deps">'+badges(html,'html','-')+'</div></td>';
     tbody.appendChild(tr);
   });
 }
-function renderDetails(items){
-  const box=document.getElementById("details");
-  box.innerHTML=items.map(item=>{
-    const rows=(item.utilities||[]).map(u=>{
-      const refs=(u.matches||[]).slice(0,12).map(m=>'<code>'+escapeHtml(m.symbol)+'</code> <span class="sub">'+escapeHtml(m.source_path+':'+m.line)+'</span>').join("<br>");
-      return '<p><b>'+escapeHtml(u.script)+'</b><br>'+refs+'</p>';
-    }).join("")||'<p class="sub">No npc_util function call detected.</p>';
-    return '<section class="detail"><h3><code>'+escapeHtml(item.script)+'</code></h3><p class="sub">'+escapeHtml(item.description||"")+'</p>'+rows+'</section>';
-  }).join("");
-}
-function render(){const items=filtered();renderTable(items);renderDetails(items)}
-setStats();fillFilters();render();
+function render(){renderTable(filtered())}
+setStats();render();
 document.getElementById("search").addEventListener("input",e=>{state.search=e.target.value;render()});
-document.getElementById("packageFilter").addEventListener("change",e=>{state.package=e.target.value;render()});
 </script>
 </body>
 </html>`
