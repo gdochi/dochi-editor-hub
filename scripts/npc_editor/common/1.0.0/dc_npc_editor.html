@@ -211,22 +211,8 @@ function isDceNpc(npc){var lock=normalizeDochiLock((npc&&npc.dochiLock)||{locked
 function requestGeneralScriptMode(){
 var npc=getSelectedNpc();
 if(!npc){setStatus("No NPC selected.","status-err");return;}
-if(isDceNpc(npc)){
-showConfirm(
-tr("npc_editor.general_convert_confirm","Adding other scripts may cause errors. Please be careful.\n\nConvert this NPC to a regular script NPC?"),
-tr("npc_editor.warning","Warning"),
-convertSelectedNpcToGeneralMode
-);
-return;
-}
-sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:"general",styleOnly:true});
-setStatus("Sent general mode request.","status-warn");
-}
-function convertSelectedNpcToGeneralMode(){
-var npc=getSelectedNpc();
-if(!npc){setStatus("No NPC selected.","status-err");return;}
 sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:"general",confirmGeneralConvert:true,styleOnly:true});
-setStatus("Sent general mode conversion request.","status-warn");
+setStatus("Sent general mode request.","status-warn");
 }
 function setSelectedNpcDceMode(){
 var npc=getSelectedNpc();
@@ -284,9 +270,7 @@ byId("scriptTabBtn").onclick=requestGeneralScriptMode;
 if(byId("topbarDceBtn")){
 byId("topbarDceBtn").onclick=function(){
 if(this.disabled)return;
-showConfirm("Set the selected NPC to DCE script mode?\n\nThis only changes the NPC mode.","Warning",function(){
 setSelectedNpcDceMode();
-});
 };
 }
 if(byId("noticeOkBtn"))byId("noticeOkBtn").onclick=hideNotice;
@@ -1009,4 +993,3 @@ function appendOption(select, value, label){
 </script>
 </body>
 </html>
-

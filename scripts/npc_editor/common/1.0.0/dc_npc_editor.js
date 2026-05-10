@@ -484,8 +484,40 @@ if(!map)return null;
 npc=map.get(String(uuid||""));
 return npc;
 }
+function getNpcByUuid(player,uuid){
+var wanted=String(uuid||""),npc=null,world=null,list=[],i,n;
+if(!wanted)return null;
+try{
+world=player&&player.world?player.world:null;
+if(world&&world.getEntity){
+npc=world.getEntity(wanted);
+if(npc&&String(npc.getUUID())===wanted)return npc;
+}
+}catch(err1){}
+try{
+world=player&&player.getWorld?player.getWorld():null;
+if(world&&world.getEntity){
+npc=world.getEntity(wanted);
+if(npc&&String(npc.getUUID())===wanted)return npc;
+}
+}catch(err2){}
+try{
+npc=getCachedNpcByUuid(player,wanted);
+if(npc&&String(npc.getUUID())===wanted)return npc;
+}catch(err3){}
+try{
+list=getNearbyNpcList(player,getStoredScanRange(player));
+for(i=0;i<list.length;i++){
+n=list[i];
+if(n&&String(n.getUUID())===wanted)return n;
+}
+}catch(err4){}
+return null;
+}
 function getNpcInCurrentRange(player,uuid){
-var range=getStoredScanRange(player),list=getNearbyNpcList(player,range),i,n,wanted=String(uuid||"");
+var range=getStoredScanRange(player),list=getNearbyNpcList(player,range),i,n,wanted=String(uuid||""),resolved;
+resolved=getNpcByUuid(player,wanted);
+if(resolved)return resolved;
 cacheNearbyList(player,list,range);
 for(i=0;i<list.length;i++){
 n=list[i];
@@ -502,6 +534,7 @@ function buildNpcBrowserInitFromList(player,list,range){
 var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,entityId,dochiLock,overlayEntities=[];
 for(i=0;i<list.length;i++){
 n=list[i];
+try{n=getNpcByUuid(player,String(n.getUUID()))||n;}catch(resolveErr){}
 name="";title="";faction="";
 name=translateNpcNameForPlayer(player,String(n.display.getName()||""));
 title=String(n.display.getTitle()||"");
@@ -610,10 +643,6 @@ if(!npc){pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"NPC is out
 style=String(data.scriptStyle||"general");
 lock=getNpcDochiLock(npc);
 if(data.styleOnly===true){
-if(lock.locked&&data.confirmGeneralConvert!==true){
-pushBrowser(e.player,"npcScriptApplyResult",{ok:false,error:"This NPC is locked to Dochi script mode. Use dcE mode to update it."});
-return;
-}
 setNpcScriptStyle(npc,style);
 if(style==="general"){
 setNpcDcSelection(npc,{});
@@ -621,6 +650,7 @@ setNpcDochiLock(npc,{locked:false});
 }else if(style==="dcE"){
 setNpcDochiLock(npc,buildDochiLock(getNpcDcSelection(npc)));
 }
+npc=getNpcByUuid(e.player,String(npc.getUUID()))||npc;
 pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:getNpcDochiLock(npc),styleOnly:true});
 pushNpcList(e.player,getStoredScanRange(e.player));
 return;
