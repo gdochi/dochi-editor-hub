@@ -3,7 +3,7 @@
 // @file npc_editor_v7.js
 
 var CFG={
-HTML:"html/npc_editor.html",
+HTML:"html/dc_npc_editor.html",
 DEFAULT_RANGE:48,
 MIN_RANGE:8,
 MAX_RANGE:128,
