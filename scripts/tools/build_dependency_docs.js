@@ -53,6 +53,78 @@ function getDepTarget(dep) {
   return dep.path || dep.id || dep.type || ""
 }
 
+function normalizePath(value) {
+  return String(value == null ? "" : value).replace(/\\/g, "/")
+}
+
+function baseName(value) {
+  const normalized = normalizePath(value)
+  const parts = normalized.split("/")
+  return parts[parts.length - 1] || normalized
+}
+
+function scriptKey(value) {
+  return "script:" + baseName(value)
+}
+
+function fileNodeFromRow(row) {
+  if (row.file_type === "script") {
+    const label = baseName(row.install_as || row.source)
+    return {
+      key: scriptKey(label),
+      label,
+      type: "script"
+    }
+  }
+  if (row.file_type === "html") {
+    const label = normalizePath(row.install_as || row.source)
+    return {
+      key: "html:" + label,
+      label,
+      type: "html"
+    }
+  }
+  const label = normalizePath(row.install_as || row.source)
+  return {
+    key: "file:" + label,
+    label,
+    type: row.file_type || "file"
+  }
+}
+
+function depNodeFromDependency(dep) {
+  const target = getDepTarget(dep)
+  const type = dep.type || "unknown"
+  if (type === "script") {
+    const label = baseName(target)
+    return {
+      key: scriptKey(label),
+      label,
+      type: "script"
+    }
+  }
+  if (type === "mod") {
+    return {
+      key: "mod:" + target,
+      label: target,
+      type: "mod"
+    }
+  }
+  if (type === "html") {
+    const label = normalizePath(target)
+    return {
+      key: "html:" + label,
+      label,
+      type: "html"
+    }
+  }
+  return {
+    key: type + ":" + normalizePath(target),
+    label: normalizePath(target),
+    type
+  }
+}
+
 function classifyFile(file) {
   if (file.type) return file.type
   if (/\.html$/i.test(file.source || "")) return "html"
@@ -97,8 +169,6 @@ function collectData() {
   })
 
   const rows = []
-  const graphEdges = []
-  const dependencySets = registry.dependency_sets || {}
 
   manifests.forEach((item) => {
     const manifest = item.manifest
@@ -133,43 +203,8 @@ function collectData() {
         optional_count: expandedDeps.filter((dep) => dep.required === false).length,
         type_counts: typeCounts
       }
+      row.graph_node = fileNodeFromRow(row)
       rows.push(row)
-
-      const scriptNode = "script:" + row.manifest_id + ":" + row.source
-      if (!dependencyEntries.length) return
-      dependencyEntries.forEach((entry) => {
-        if (entry && entry.inherits) {
-          const setNode = "set:" + entry.inherits
-          graphEdges.push({
-            from: scriptNode,
-            fromLabel: row.source,
-            fromType: "script",
-            to: setNode,
-            toLabel: entry.inherits,
-            toType: "set"
-          })
-          const set = dependencySets[entry.inherits]
-          ;((set && set.dependencies) || []).forEach((dep) => {
-            graphEdges.push({
-              from: setNode,
-              fromLabel: entry.inherits,
-              fromType: "set",
-              to: "dep:" + (dep.type || "unknown") + ":" + getDepTarget(dep),
-              toLabel: getDepTarget(dep),
-              toType: dep.type || "dependency"
-            })
-          })
-          return
-        }
-        graphEdges.push({
-          from: scriptNode,
-          fromLabel: row.source,
-          fromType: "script",
-          to: "dep:" + ((entry && entry.type) || "unknown") + ":" + getDepTarget(entry),
-          toLabel: getDepTarget(entry),
-          toType: (entry && entry.type) || "dependency"
-        })
-      })
     })
   })
 
@@ -178,6 +213,8 @@ function collectData() {
       [b.package, b.mc_version, b.version, b.source].join("\u0000")
     )
   })
+
+  const graph = buildDirectGraph(rows)
 
   return {
     generated_at: new Date().toISOString(),
@@ -191,15 +228,71 @@ function collectData() {
       mc_version: item.manifest.mc_version || ""
     })),
     rows,
-    graph_edges: dedupeEdges(graphEdges)
+    graph_nodes: graph.nodes,
+    graph_edges: graph.edges
   }
+}
+
+function buildDirectGraph(rows) {
+  const nodeMap = {}
+  const edges = []
+
+  function ensureNode(node, row) {
+    if (!nodeMap[node.key]) {
+      nodeMap[node.key] = {
+        key: node.key,
+        label: node.label,
+        type: node.type,
+        packages: [],
+        versions: [],
+        manifests: [],
+        sources: []
+      }
+    }
+    if (!row) return
+    addUnique(nodeMap[node.key].packages, row.package)
+    addUnique(nodeMap[node.key].versions, row.package + " " + row.version)
+    addUnique(nodeMap[node.key].manifests, row.manifest_id)
+    addUnique(nodeMap[node.key].sources, row.source)
+  }
+
+  rows.forEach((row) => {
+    ensureNode(row.graph_node, row)
+    if (row.file_type !== "script") return
+    row.dependencies.forEach((dep) => {
+      const target = depNodeFromDependency(dep)
+      ensureNode(target)
+      edges.push({
+        from: row.graph_node.key,
+        fromLabel: row.graph_node.label,
+        fromType: row.graph_node.type,
+        to: target.key,
+        toLabel: target.label,
+        toType: target.type,
+        required: dep.required !== false,
+        inherited_from: dep.inherited_from || "",
+        load_order: dep.load_order == null ? null : dep.load_order,
+        note: dep.note || ""
+      })
+    })
+  })
+
+  return {
+    nodes: nodeMap,
+    edges: dedupeEdges(edges)
+  }
+}
+
+function addUnique(list, value) {
+  if (!value) return
+  if (list.indexOf(value) === -1) list.push(value)
 }
 
 function dedupeEdges(edges) {
   const seen = {}
   const out = []
   edges.forEach((edge) => {
-    const key = edge.from + "->" + edge.to
+    const key = edge.from + "->" + edge.to + ":" + edge.required + ":" + edge.inherited_from
     if (seen[key]) return
     seen[key] = true
     out.push(edge)
@@ -207,7 +300,15 @@ function dedupeEdges(edges) {
   return out
 }
 
-function makeMermaid(data) {
+function graphEdgesForRows(data, rows) {
+  const visible = {}
+  rows.forEach((row) => {
+    if (row.file_type === "script" && row.graph_node && row.graph_node.key) visible[row.graph_node.key] = true
+  })
+  return data.graph_edges.filter((edge) => visible[edge.from])
+}
+
+function makeMermaid(data, rows) {
   const nodes = {}
   let nodeIndex = 0
   function nodeId(key, label, type) {
@@ -222,14 +323,14 @@ function makeMermaid(data) {
   }
 
   const lines = ["flowchart LR"]
-  data.graph_edges.forEach((edge) => {
+  const edges = rows ? graphEdgesForRows(data, rows) : data.graph_edges
+  edges.forEach((edge) => {
     const from = nodeId(edge.from, edge.fromLabel, edge.fromType)
     const to = nodeId(edge.to, edge.toLabel, edge.toType)
     lines.push('  ' + from + '["' + escapeMermaid(edge.fromLabel) + '"] --> ' + to + '["' + escapeMermaid(edge.toLabel) + '"]')
   })
 
   lines.push("  classDef script fill:#e8f2ff,stroke:#376b9f,color:#14273a")
-  lines.push("  classDef set fill:#fff5dc,stroke:#ad7d17,color:#3b2a05")
   lines.push("  classDef html fill:#e7f8ef,stroke:#2c8a54,color:#0d3320")
   lines.push("  classDef mod fill:#fdecec,stroke:#b34b4b,color:#4a1515")
   lines.push("  classDef data fill:#f0edff,stroke:#6f58b8,color:#241b4a")
@@ -238,7 +339,6 @@ function makeMermaid(data) {
     const node = nodes[key]
     const type = node.type
     if (type === "script") lines.push("  class " + node.id + " script")
-    else if (type === "set") lines.push("  class " + node.id + " set")
     else if (type === "html") lines.push("  class " + node.id + " html")
     else if (type === "mod") lines.push("  class " + node.id + " mod")
     else if (type === "json" || type === "json_dir" || type === "directory") lines.push("  class " + node.id + " data")
@@ -252,6 +352,8 @@ function buildMarkdown(data) {
   lines.push("# Dochi Script Dependencies")
   lines.push("")
   lines.push("Generated from `" + data.registry_path + "` and package manifests.")
+  lines.push("")
+  lines.push("Graph nodes are collapsed by installed script identity, so repeated versions such as `dc_trainer.js` appear once.")
   lines.push("")
   lines.push("- Generated: `" + data.generated_at + "`")
   lines.push("- Manifests: `" + data.manifests.length + "`")
@@ -287,10 +389,18 @@ function buildMarkdown(data) {
     lines.push("| `" + escapeMd(name) + "` | " + escapeMd(set.description || "") + " | " + ((set.dependencies || []).length) + " |")
   })
   lines.push("")
-  lines.push("## Graph")
+  const coreRows = data.rows.filter((row) => row.package === "npc_util" && row.file_type === "script")
+
+  lines.push("## Core Engine Graph")
   lines.push("")
   lines.push("```mermaid")
-  lines.push(makeMermaid(data))
+  lines.push(makeMermaid(data, coreRows))
+  lines.push("```")
+  lines.push("")
+  lines.push("## Full Direct Graph")
+  lines.push("")
+  lines.push("```mermaid")
+  lines.push(makeMermaid(data, data.rows.filter((row) => row.file_type === "script")))
   lines.push("```")
   lines.push("")
   lines.push("## Expanded Dependencies")
@@ -356,6 +466,8 @@ h3 { margin: 0; font-size: 15px; }
 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
 .stat b { display: block; font-size: 22px; margin-bottom: 2px; }
 .controls { display: grid; grid-template-columns: 1fr 180px 180px; gap: 10px; margin: 16px 0; }
+.panel-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.panel-tools select { width: 190px; }
 input, select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; background: #fff; color: var(--text); }
 .grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 16px; align-items: start; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -432,7 +544,7 @@ svg { display: block; min-width: 960px; }
   </section>
   <section class="grid">
     <div class="panel">
-      <div class="panel-head"><h3>Visual Graph</h3><span class="sub">script -> inherited set -> dependency</span></div>
+      <div class="panel-head"><h3>Visual Graph</h3><div class="panel-tools"><span class="sub">direct script dependency graph</span><select id="graphMode"><option value="engine">Core engine</option><option value="filtered">Current filters</option><option value="all">All scripts</option></select></div></div>
       <div class="graph" id="graph"></div>
     </div>
     <div class="panel">
@@ -443,7 +555,7 @@ svg { display: block; min-width: 960px; }
 </main>
 <script>
 const DATA = ${payload};
-const state = { search: "", package: "", type: "" };
+const state = { search: "", package: "", type: "", graphMode: "engine" };
 
 function depTarget(dep) {
   return dep.path || dep.id || dep.type || "";
@@ -547,22 +659,35 @@ function renderDetails(rows) {
   });
 }
 
+function graphRowsForMode(filteredRows) {
+  if (state.graphMode === "all") return DATA.rows.filter(row => row.file_type === "script");
+  if (state.graphMode === "filtered") return filteredRows.filter(row => row.file_type === "script");
+  return DATA.rows.filter(row => row.package === "npc_util" && row.file_type === "script");
+}
+
 function renderGraph(rows) {
   const graph = document.getElementById("graph");
-  const visibleScripts = new Set(rows.map(row => "script:" + row.manifest_id + ":" + row.source));
-  const edges = DATA.graph_edges.filter(edge => visibleScripts.has(edge.from) || edge.from.indexOf("set:") === 0);
-  const scriptNodes = [];
-  const setNodes = [];
-  const depNodes = [];
+  const graphRows = graphRowsForMode(rows);
+  const visibleScripts = new Set(graphRows.map(row => row.graph_node.key));
+  const edges = DATA.graph_edges.filter(edge => visibleScripts.has(edge.from));
   const nodeMap = new Map();
 
   function addNode(id, label, type) {
     if (nodeMap.has(id)) return nodeMap.get(id);
-    const node = { id, label, type, x: 0, y: 0, w: 230, h: 34 };
+    const meta = DATA.graph_nodes[id] || {};
+    const node = {
+      id,
+      label,
+      type,
+      x: 0,
+      y: 0,
+      w: 250,
+      h: 38,
+      packages: meta.packages || [],
+      versions: meta.versions || [],
+      sources: meta.sources || []
+    };
     nodeMap.set(id, node);
-    if (type === "script") scriptNodes.push(node);
-    else if (type === "set") setNodes.push(node);
-    else depNodes.push(node);
     return node;
   }
 
@@ -571,22 +696,48 @@ function renderGraph(rows) {
     addNode(edge.to, edge.toLabel, edge.toType);
   });
 
-  const columns = [scriptNodes, setNodes, depNodes];
-  const colX = [20, 330, 640];
+  if (!edges.length) {
+    graph.innerHTML = '<div class="empty">No graph edges match this view.</div>';
+    return;
+  }
+
+  const levels = {};
+  Array.from(nodeMap.keys()).forEach(id => { levels[id] = 0; });
+  for (let pass = 0; pass < 24; pass++) {
+    let changed = false;
+    edges.forEach(edge => {
+      const next = (levels[edge.from] || 0) + 1;
+      if ((levels[edge.to] || 0) < next) {
+        levels[edge.to] = next;
+        changed = true;
+      }
+    });
+    if (!changed) break;
+  }
+
+  const columns = [];
+  Array.from(nodeMap.values()).forEach(node => {
+    const level = levels[node.id] || 0;
+    if (!columns[level]) columns[level] = [];
+    columns[level].push(node);
+  });
+
   let height = 120;
-  columns.forEach((nodes, col) => {
+  let maxLevel = 0;
+  columns.forEach((nodes, level) => {
+    if (!nodes) return;
+    maxLevel = Math.max(maxLevel, level);
     nodes.sort((a, b) => a.label.localeCompare(b.label));
     nodes.forEach((node, i) => {
-      node.x = colX[col];
-      node.y = 24 + i * 48;
-      height = Math.max(height, node.y + 58);
+      node.x = 20 + level * 310;
+      node.y = 24 + i * 54;
+      height = Math.max(height, node.y + 68);
     });
   });
 
-  const width = 920;
+  const width = Math.max(920, 40 + (maxLevel + 1) * 310);
   const nodeClass = type => {
     if (type === "script") return "#dceeff";
-    if (type === "set") return "#fff2c7";
     if (type === "html") return "#dcf8e8";
     if (type === "mod") return "#ffe0e0";
     if (type === "json" || type === "json_dir" || type === "directory") return "#eee8ff";
@@ -607,7 +758,8 @@ function renderGraph(rows) {
 
   const nodeEls = Array.from(nodeMap.values()).map(node => {
     const label = node.label.length > 30 ? node.label.slice(0, 27) + "..." : node.label;
-    return '<g class="node"><rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" fill="' + nodeClass(node.type) + '" stroke="#9aa7ba"></rect><text x="' + (node.x + 10) + '" y="' + (node.y + 22) + '">' + escapeHtml(label) + '</text><title>' + escapeHtml(node.label) + '</title></g>';
+    const meta = [node.label, node.packages.length ? "Packages: " + node.packages.join(", ") : "", node.versions.length ? "Versions: " + node.versions.join(", ") : ""].filter(Boolean).join("\\n");
+    return '<g class="node"><rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" fill="' + nodeClass(node.type) + '" stroke="#9aa7ba"></rect><text x="' + (node.x + 10) + '" y="' + (node.y + 24) + '">' + escapeHtml(label) + '</text><title>' + escapeHtml(meta) + '</title></g>';
   }).join("");
 
   graph.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" role="img" aria-label="Dependency graph"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#97a4b8"></path></marker></defs>' + edgeLines + nodeEls + '</svg>';
@@ -635,6 +787,7 @@ fillFilters();
 document.getElementById("search").addEventListener("input", event => { state.search = event.target.value; render(); });
 document.getElementById("packageFilter").addEventListener("change", event => { state.package = event.target.value; render(); });
 document.getElementById("typeFilter").addEventListener("change", event => { state.type = event.target.value; render(); });
+document.getElementById("graphMode").addEventListener("change", event => { state.graphMode = event.target.value; render(); });
 render();
 </script>
 </body>

@@ -2,7 +2,9 @@
 
 Generated from `dc_dependencies.json` and package manifests.
 
-- Generated: `2026-05-10T05:37:37.208Z`
+Graph nodes are collapsed by installed script identity, so repeated versions such as `dc_trainer.js` appear once.
+
+- Generated: `2026-05-10T05:43:45.289Z`
 - Manifests: `11`
 - Files: `29`
 - Dependency sets: `10`
@@ -56,108 +58,114 @@ Generated from `dc_dependencies.json` and package manifests.
 | `soullikemob.html` | Soullikemob HTML mount dependency. | 1 |
 | `trainer.html` | Trainer HTML mount dependency. | 1 |
 
-## Graph
+## Core Engine Graph
 
 ```mermaid
 flowchart LR
-  n0["dc_dialogue_trigger.js"] --> n1["npc_util.dialogue_trigger"]
-  n1["npc_util.dialogue_trigger"] --> n2["dc_lib/ds_npc_util/dc_npc_core_module.js"]
-  n1["npc_util.dialogue_trigger"] --> n3["dc_lib/ds_npc_util/dc_cfg_checker.js"]
-  n1["npc_util.dialogue_trigger"] --> n4["dc_lib/ds_npc_util/dc_util_common.js"]
-  n1["npc_util.dialogue_trigger"] --> n5["dc_lib/ds_npc_util/dc_gui_runtime.js"]
-  n1["npc_util.dialogue_trigger"] --> n6["dc_lib/ds_npc_util/dc_dialogue_util.js"]
-  n1["npc_util.dialogue_trigger"] --> n7["html/dc_util/dc_gui_runtime.html"]
-  n1["npc_util.dialogue_trigger"] --> n8["customnpcs/dc_data/dc_dialogues/"]
-  n9["dc_item_editor.js"] --> n10["item_editor.data"]
-  n10["item_editor.data"] --> n11["customnpcs/JSON/item/"]
-  n10["item_editor.data"] --> n12["customnpcs/JSON/item/prefix/"]
-  n10["item_editor.data"] --> n13["customnpcs/JSON/item/category_config.json"]
-  n10["item_editor.data"] --> n14["customnpcs/JSON/item/category_presets/"]
-  n15["dc_npc_editor.js"] --> n16["npc_editor.runtime"]
-  n16["npc_editor.runtime"] --> n17["CNPCExtended"]
-  n16["npc_editor.runtime"] --> n18["html/dc_npc_editor.html"]
-  n16["npc_editor.runtime"] --> n19["customnpcs/scripts/ecmascript/"]
-  n16["npc_editor.runtime"] --> n20["customnpcs/dc_admins/"]
-  n21["dc_util_common.js"] --> n22["npc_util.util_common"]
-  n22["npc_util.util_common"] --> n23["html/dc_util/dc_sound.html"]
-  n24["dc_gecko_util.js"] --> n25["npc_util.gecko"]
-  n25["npc_util.gecko"] --> n26["CNPC-Gecko"]
-  n27["dc_gui_runtime.js"] --> n28["npc_util.gui_runtime"]
-  n28["npc_util.gui_runtime"] --> n3["dc_lib/ds_npc_util/dc_cfg_checker.js"]
-  n28["npc_util.gui_runtime"] --> n4["dc_lib/ds_npc_util/dc_util_common.js"]
-  n28["npc_util.gui_runtime"] --> n17["CNPCExtended"]
-  n28["npc_util.gui_runtime"] --> n7["html/dc_util/dc_gui_runtime.html"]
-  n29["dc_dialogue_util.js"] --> n30["npc_util.dialogue_util"]
-  n30["npc_util.dialogue_util"] --> n3["dc_lib/ds_npc_util/dc_cfg_checker.js"]
-  n30["npc_util.dialogue_util"] --> n5["dc_lib/ds_npc_util/dc_gui_runtime.js"]
-  n30["npc_util.dialogue_util"] --> n31["dc_lib/ds_npc_util/dc_gecko_util.js"]
-  n30["npc_util.dialogue_util"] --> n32["customnpcs/dc_data/dc_gui/dialogue_gui.json"]
-  n30["npc_util.dialogue_util"] --> n8["customnpcs/dc_data/dc_dialogues/"]
-  n33["dc_dialogue_trigger.js"] --> n1["npc_util.dialogue_trigger"]
-  n34["dc_story_scroll.js"] --> n35["scroll_dialogue.data"]
-  n35["scroll_dialogue.data"] --> n36["customnpcs/JSON/npc_dialogue/"]
-  n35["scroll_dialogue.data"] --> n37["customnpcs/JSON/npc_dialogue/&lt;npc_name&gt;.json"]
-  n38["dc_soullikemob.js"] --> n39["soullikemob.html"]
-  n39["soullikemob.html"] --> n40["html/dc_soullikemob.html"]
-  n41["dc_soullikemob.js"] --> n39["soullikemob.html"]
-  n42["dc_soullikemob.js"] --> n39["soullikemob.html"]
-  n43["dc_trainer.js"] --> n44["trainer.html"]
-  n44["trainer.html"] --> n45["html/dc_trainer.html"]
-  n46["dc_trainer.js"] --> n44["trainer.html"]
-  n47["dc_trainer.js"] --> n44["trainer.html"]
+  n0["dc_dialogue_trigger.js"] --> n1["dc_npc_core_module.js"]
+  n0["dc_dialogue_trigger.js"] --> n2["dc_cfg_checker.js"]
+  n0["dc_dialogue_trigger.js"] --> n3["dc_util_common.js"]
+  n0["dc_dialogue_trigger.js"] --> n4["dc_gui_runtime.js"]
+  n0["dc_dialogue_trigger.js"] --> n5["dc_dialogue_util.js"]
+  n0["dc_dialogue_trigger.js"] --> n6["html/dc_util/dc_gui_runtime.html"]
+  n0["dc_dialogue_trigger.js"] --> n7["customnpcs/dc_data/dc_dialogues/"]
+  n5["dc_dialogue_util.js"] --> n2["dc_cfg_checker.js"]
+  n5["dc_dialogue_util.js"] --> n4["dc_gui_runtime.js"]
+  n5["dc_dialogue_util.js"] --> n8["dc_gecko_util.js"]
+  n5["dc_dialogue_util.js"] --> n9["customnpcs/dc_data/dc_gui/dialogue_gui.json"]
+  n5["dc_dialogue_util.js"] --> n7["customnpcs/dc_data/dc_dialogues/"]
+  n8["dc_gecko_util.js"] --> n10["CNPC-Gecko"]
+  n4["dc_gui_runtime.js"] --> n2["dc_cfg_checker.js"]
+  n4["dc_gui_runtime.js"] --> n3["dc_util_common.js"]
+  n4["dc_gui_runtime.js"] --> n11["CNPCExtended"]
+  n4["dc_gui_runtime.js"] --> n6["html/dc_util/dc_gui_runtime.html"]
+  n3["dc_util_common.js"] --> n12["html/dc_util/dc_sound.html"]
   classDef script fill:#e8f2ff,stroke:#376b9f,color:#14273a
-  classDef set fill:#fff5dc,stroke:#ad7d17,color:#3b2a05
   classDef html fill:#e7f8ef,stroke:#2c8a54,color:#0d3320
   classDef mod fill:#fdecec,stroke:#b34b4b,color:#4a1515
   classDef data fill:#f0edff,stroke:#6f58b8,color:#241b4a
   class n0 script
-  class n1 set
+  class n1 script
   class n2 script
   class n3 script
   class n4 script
   class n5 script
-  class n6 script
-  class n7 html
-  class n8 data
-  class n9 script
-  class n10 set
+  class n6 html
+  class n7 data
+  class n8 script
+  class n9 data
+  class n10 mod
+  class n11 mod
+  class n12 html
+```
+
+## Full Direct Graph
+
+```mermaid
+flowchart LR
+  n0["dc_dialogue_trigger.js"] --> n1["dc_npc_core_module.js"]
+  n0["dc_dialogue_trigger.js"] --> n2["dc_cfg_checker.js"]
+  n0["dc_dialogue_trigger.js"] --> n3["dc_util_common.js"]
+  n0["dc_dialogue_trigger.js"] --> n4["dc_gui_runtime.js"]
+  n0["dc_dialogue_trigger.js"] --> n5["dc_dialogue_util.js"]
+  n0["dc_dialogue_trigger.js"] --> n6["html/dc_util/dc_gui_runtime.html"]
+  n0["dc_dialogue_trigger.js"] --> n7["customnpcs/dc_data/dc_dialogues/"]
+  n8["dc_item_editor.js"] --> n9["customnpcs/JSON/item/"]
+  n8["dc_item_editor.js"] --> n10["customnpcs/JSON/item/prefix/"]
+  n8["dc_item_editor.js"] --> n11["customnpcs/JSON/item/category_config.json"]
+  n8["dc_item_editor.js"] --> n12["customnpcs/JSON/item/category_presets/"]
+  n13["dc_npc_editor.js"] --> n14["CNPCExtended"]
+  n13["dc_npc_editor.js"] --> n15["html/dc_npc_editor.html"]
+  n13["dc_npc_editor.js"] --> n16["customnpcs/scripts/ecmascript/"]
+  n13["dc_npc_editor.js"] --> n17["customnpcs/dc_admins/"]
+  n5["dc_dialogue_util.js"] --> n2["dc_cfg_checker.js"]
+  n5["dc_dialogue_util.js"] --> n4["dc_gui_runtime.js"]
+  n5["dc_dialogue_util.js"] --> n18["dc_gecko_util.js"]
+  n5["dc_dialogue_util.js"] --> n19["customnpcs/dc_data/dc_gui/dialogue_gui.json"]
+  n5["dc_dialogue_util.js"] --> n7["customnpcs/dc_data/dc_dialogues/"]
+  n18["dc_gecko_util.js"] --> n20["CNPC-Gecko"]
+  n4["dc_gui_runtime.js"] --> n2["dc_cfg_checker.js"]
+  n4["dc_gui_runtime.js"] --> n3["dc_util_common.js"]
+  n4["dc_gui_runtime.js"] --> n14["CNPCExtended"]
+  n4["dc_gui_runtime.js"] --> n6["html/dc_util/dc_gui_runtime.html"]
+  n3["dc_util_common.js"] --> n21["html/dc_util/dc_sound.html"]
+  n22["dc_story_scroll.js"] --> n23["customnpcs/JSON/npc_dialogue/"]
+  n22["dc_story_scroll.js"] --> n24["customnpcs/JSON/npc_dialogue/&lt;npc_name&gt;.json"]
+  n25["dc_soullikemob.js"] --> n26["html/dc_soullikemob.html"]
+  n27["dc_trainer.js"] --> n28["html/dc_trainer.html"]
+  classDef script fill:#e8f2ff,stroke:#376b9f,color:#14273a
+  classDef html fill:#e7f8ef,stroke:#2c8a54,color:#0d3320
+  classDef mod fill:#fdecec,stroke:#b34b4b,color:#4a1515
+  classDef data fill:#f0edff,stroke:#6f58b8,color:#241b4a
+  class n0 script
+  class n1 script
+  class n2 script
+  class n3 script
+  class n4 script
+  class n5 script
+  class n6 html
+  class n7 data
+  class n8 script
+  class n9 data
+  class n10 data
   class n11 data
   class n12 data
-  class n13 data
-  class n14 data
-  class n15 script
-  class n16 set
-  class n17 mod
-  class n18 html
+  class n13 script
+  class n14 mod
+  class n15 html
+  class n16 data
+  class n17 data
+  class n18 script
   class n19 data
-  class n20 data
-  class n21 script
-  class n22 set
-  class n23 html
-  class n24 script
-  class n25 set
-  class n26 mod
+  class n20 mod
+  class n21 html
+  class n22 script
+  class n23 data
+  class n24 data
+  class n25 script
+  class n26 html
   class n27 script
-  class n28 set
-  class n29 script
-  class n30 set
-  class n31 script
-  class n32 data
-  class n33 script
-  class n34 script
-  class n35 set
-  class n36 data
-  class n37 data
-  class n38 script
-  class n39 set
-  class n40 html
-  class n41 script
-  class n42 script
-  class n43 script
-  class n44 set
-  class n45 html
-  class n46 script
-  class n47 script
+  class n28 html
 ```
 
 ## Expanded Dependencies
