@@ -692,13 +692,10 @@ result.uuid=String(npc.getUUID());
 return result;
 }
 function applyNpcModeOnly(player,npc,style){
-var uuid=String(npc.getUUID()),res,payload,raw,existing,scriptEnabled;
+var uuid=String(npc.getUUID()),res,payload;
 try{
 npc=getNpcByUuid(player,uuid)||npc;
-raw=getEntityNbtSafe(npc);
-existing=extractScriptTabsFromRaw(raw);
-scriptEnabled=(existing&&existing.scriptEnabled===false)?false:true;
-res=clearNpcScripts(npc,scriptEnabled);
+res=clearNpcScripts(npc,true);
 if(!res.ok)return {ok:false,uuid:uuid,error:res.error||"Script clear failed",styleOnly:true};
 refreshNpcClient(npc);
 setNpcScriptStyle(npc,style);
