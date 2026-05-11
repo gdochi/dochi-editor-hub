@@ -478,7 +478,8 @@ function cond_one(n, p, type, op, key, val, entry) {
   if (t === "tag") return cond_tag(n, p, op, key);
   if (t === "faction") return cond_faction(n, p, op, key, value);
   if (t === "adv") return cond_adv(n, p, op, key);
-  if (t === "ftb" && typeof cond_ftb === "function") return cond_ftb(n, p, op, key, value, entry && entry.task);
+  if (t === "ftb" && typeof cond_ftb === "function") return cond_ftb(n, p, op, key, value);
+  if (t === "ftb_task" && typeof cond_ftb === "function") return cond_ftb(n, p, op, key, value, entry && entry.task);
   if (t === "cobblemon_party" && typeof cond_cobblemon_party === "function") return cond_cobblemon_party(n, p, op, key, value);
   if (t === "cobbledollar" && typeof cond_cobbledollar === "function") return cond_cobbledollar(n, p, op, key, value);
   return { pass: false, msg: "UNKNOWN type " + type };

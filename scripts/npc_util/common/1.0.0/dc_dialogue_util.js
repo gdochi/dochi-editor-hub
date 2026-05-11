@@ -273,6 +273,7 @@ var DcDialogueUtilModule = (function(){
     if(type === "adv" && typeof cond_adv === "function") return !!cond_adv(npc, player, op, key, val).pass;
     if(type === "faction" && typeof cond_faction === "function") return !!cond_faction(npc, player, op, key, val).pass;
     if(type === "ftb" && typeof cond_ftb === "function") return !!cond_ftb(npc, player, op, key, val).pass;
+    if(type === "ftb_task" && typeof cond_ftb === "function") return !!cond_ftb(npc, player, op, key, val, cond.task).pass;
     if(type === "cobblemon_party" && typeof cond_cobblemon_party === "function") return !!cond_cobblemon_party(npc, player, op, key, val).pass;
     if(type === "cobbledollar" && typeof cond_cobbledollar === "function") return !!cond_cobbledollar(npc, player, op, key, val).pass;
     return false;

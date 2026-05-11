@@ -1,6 +1,6 @@
 var GUI_ID=7201,BTN_CLOSE=3;
 var TMP_DATA="npc_dialogue_book_data";
-var JSON_DIR="customnpcs/JSON/npc_dialogue/";
+var JSON_DIR="customnpcs/dc_data/npc_scroll_dialogue/";
 var SND_BUTTON={id:"minecraft:ui.button.click",vol:0.7,pit:1.0};
 
 function interact(e){
