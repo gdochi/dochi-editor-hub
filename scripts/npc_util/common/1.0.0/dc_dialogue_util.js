@@ -221,11 +221,14 @@ var DcDialogueUtilModule = (function(){
         continue;
       }
       if(a.store && typeof a.store === "object"){ out.push({ store: a.store }); continue; }
-      if(type === "store"){
+      if(a.storeData && typeof a.storeData === "object"){ out.push({ store: a.storeData }); continue; }
+      if(a.storedData && typeof a.storedData === "object"){ out.push({ store: a.storedData }); continue; }
+      if(type === "store" || type === "stored" || type === "storeddata" || type === "store_data" || type === "stored_data"){
         out.push({ store: {
-          key: String(a.key || ""),
-          op: String(a.storeOp || a.op || "set"),
-          value: a.value
+          key: String(a.key || a.id || a.name || ""),
+          op: String(a.storeOp || a.op || a.operator || "set"),
+          value: a.value,
+          scope: String(a.scope || a.storeScope || a.storeTarget || a.targetScope || a.target || a.targetType || "player")
         }});
         continue;
       }
@@ -501,10 +504,19 @@ var DcDialogueUtilModule = (function(){
   }
 
   function runRewardAction(player, npc, eventObj, action){
-    if(typeof rew_chk_applyAction !== "function"){
+    var ctx = { player: player, npc: npc, event: eventObj };
+    if(typeof rew_chk_applyAction === "function"){
+      return rew_chk_applyAction(ctx, action);
+    }
+    if(typeof dc_reward_applyAction === "function"){
+      return dc_reward_applyAction(ctx, action);
+    }
+    if(typeof DcRewardCheckerModule !== "undefined" && DcRewardCheckerModule && typeof DcRewardCheckerModule.applyAction === "function"){
+      return DcRewardCheckerModule.applyAction(ctx, action);
+    }
+    {
       throw new Error("dc_reward_checker.js must be loaded before dc_dialogue_util.js");
     }
-    return rew_chk_applyAction({ player: player, npc: npc, event: eventObj }, action);
   }
   function runChoiceNpcFx(eventObj, player, npc, choiceFx){
     if(!choiceFx || typeof choiceFx !== "object") return false;
