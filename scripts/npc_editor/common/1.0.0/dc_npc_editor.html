@@ -199,6 +199,37 @@ function setupLocaleSelect(){var select=byId("localeSelect"),options=LOCALE_OPTI
 function changeLocale(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;var select=byId("localeSelect");if(select)select.value=locale;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);setStatus(tr("npc_editor.language_updated","Language updated."),"status-ok");},true);}
 function normalizeAdminState(admin){admin=admin||{};return {initialized:!!admin.initialized,owner:admin.owner||{uuid:"",name:""},admins:Array.isArray(admin.admins)?admin.admins:[],players:Array.isArray(admin.players)?admin.players:[],keybind:String(admin.keybind||""),isOwner:!!admin.isOwner,isAdmin:!!admin.isAdmin,canOpen:admin.canOpen===true,canManageAdmins:admin.canManageAdmins===true,canEdit:admin.canEdit===true};}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function mcText(s){
+var raw=String(s==null?"":s),colors={0:"#000000",1:"#0000AA",2:"#00AA00",3:"#00AAAA",4:"#AA0000",5:"#AA00AA",6:"#FFAA00",7:"#AAAAAA",8:"#555555",9:"#5555FF",a:"#55FF55",b:"#55FFFF",c:"#FF5555",d:"#FF55FF",e:"#FFFF55",f:"#FFFFFF"},out="",buf="",state={color:"",bold:false,italic:false,underline:false,strike:false};
+function style(){var st=[];if(state.color)st.push("color:"+state.color);if(state.bold)st.push("font-weight:700");if(state.italic)st.push("font-style:italic");if(state.underline&&state.strike)st.push("text-decoration:underline line-through");else if(state.underline)st.push("text-decoration:underline");else if(state.strike)st.push("text-decoration:line-through");return st.join(";");}
+function flush(){var txt=esc(buf),st;if(!buf)return;st=style();out+=st?'<span style="'+st+'">'+txt+'</span>':txt;buf="";}
+function reset(){state={color:"",bold:false,italic:false,underline:false,strike:false};}
+for(var i=0;i<raw.length;i++){
+var ch=raw.charAt(i);
+if(ch==="§"&&i+1<raw.length){
+var code=raw.charAt(++i).toLowerCase();
+flush();
+if(code==="x"&&i+12<raw.length){
+var hex="",ok=true;
+for(var h=0;h<6;h++){
+if(raw.charAt(i+1+h*2)!=="§"||!/^[0-9a-f]$/i.test(raw.charAt(i+2+h*2))){ok=false;break;}
+hex+=raw.charAt(i+2+h*2);
+}
+if(ok){reset();state.color="#"+hex;i+=12;continue;}
+}
+if(colors[code]){reset();state.color=colors[code];}
+else if(code==="l")state.bold=true;
+else if(code==="o")state.italic=true;
+else if(code==="n")state.underline=true;
+else if(code==="m")state.strike=true;
+else if(code==="r")reset();
+continue;
+}
+buf+=ch;
+}
+flush();
+return out;
+}
 function setStatus(msg,cls){var el=byId("statusLine");el.textContent=trExact(msg||"");el.className="status-line "+(cls||"");}
 function showNotice(text,title){var modal=byId("noticeModal"),titleEl=byId("noticeTitle"),textEl=byId("noticeText");titleEl.textContent=trExact(title||"Warning");textEl.textContent=trExact(String(text||""));modal.classList.add("show");}
 function hideNotice(){var modal=byId("noticeModal");if(modal)modal.classList.remove("show");}
@@ -610,12 +641,12 @@ var card=document.createElement("div");
 card.className="npc-card"+(n.uuid===APP_STATE.selectedUuid?" active":"");
 card.onclick=function(){selectNpc(n.uuid);};
 card.innerHTML=
-'<div class="npc-name">'+esc(n.name||tr("npc_editor.no_name","(no name)"))+'</div>'
+'<div class="npc-name">'+mcText(n.name||tr("npc_editor.no_name","(no name)"))+'</div>'
 +(isDceNpc(n)?'<div class="npc-meta"><span class="badge">'+esc(tr("npc_editor.dce_npc","DCE NPC"))+'</span></div>':'')
-+'<div class="npc-meta">'+esc(tr("npc_editor.title_value","Title: {value}",{value:n.title||tr("npc_editor.none","None")}))+'</div>'
++'<div class="npc-meta">'+mcText(tr("npc_editor.title_value","Title: {value}",{value:n.title||tr("npc_editor.none","None")}))+'</div>'
 +'<div class="npc-meta">'+esc(tr("npc_editor.pos_value","Pos: {value}",{value:n.position||""}))+'</div>'
 +'<div class="npc-meta">'+esc(tr("npc_editor.distance_value","Distance: {value}",{value:formatDistanceValue(n)}))+'</div>'
-+'<div class="npc-meta">'+esc(tr("npc_editor.faction_value","Faction: {value}",{value:n.faction||tr("npc_editor.none","None")}))+'</div>';
++'<div class="npc-meta">'+mcText(tr("npc_editor.faction_value","Faction: {value}",{value:n.faction||tr("npc_editor.none","None")}))+'</div>';
 list.appendChild(card);
 });
 }
@@ -713,9 +744,9 @@ if(APP_STATE.activeView==="script")requestScript();
 }
 function renderSelectedNpc(){
 var box=byId("detailBox"),npc=getSelectedNpc(),canEdit=APP_STATE.admin.canEdit;
-byId("selectedLine").textContent=tr("npc_editor.selected_value","Selected: {value}",{
+byId("selectedLine").innerHTML=mcText(tr("npc_editor.selected_value","Selected: {value}",{
 value:npc?npc.name:tr("npc_editor.none_lower","none")
-});
+}));
 byId("tpBtn").disabled=!npc||!canEdit;
 byId("editBtn").disabled=!npc||!canEdit;
 byId("deleteBtn").disabled=!npc||!canEdit;
@@ -729,10 +760,10 @@ return;
 }
 box.className="";
 box.innerHTML=
-'<div class="detail-name">'+esc(npc.name||tr("npc_editor.no_name","(no name)"))+'</div>'
-+'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.faction","Faction"))+'</span><br><span class="badge">'+esc(npc.faction||tr("npc_editor.none","None"))+'</span></div>'
+'<div class="detail-name">'+mcText(npc.name||tr("npc_editor.no_name","(no name)"))+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.faction","Faction"))+'</span><br><span class="badge">'+mcText(npc.faction||tr("npc_editor.none","None"))+'</span></div>'
 +'<div class="detail-line"><span class="field-label">UUID</span><br>'+esc(npc.uuid||"")+'</div>'
-+'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.title","Title"))+'</span><br>'+esc(npc.title||tr("npc_editor.none","None"))+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.title","Title"))+'</span><br>'+mcText(npc.title||tr("npc_editor.none","None"))+'</div>'
 +'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.position","Position"))+'</span><br>'+esc(npc.position||"")+'</div>'
 +'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.distance","Distance"))+'</span><br>'+esc(formatDistanceValue(npc))+'</div>';
 }
