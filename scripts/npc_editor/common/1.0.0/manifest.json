@@ -39,6 +39,12 @@
         },
         {
           "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_installable_scripts/",
+          "required": true,
+          "note": "NPC Editor reads installable dcE script descriptors from this directory."
+        },
+        {
+          "type": "json_dir",
           "path": "customnpcs/dc_data/dc_lang/npc_editor/",
           "required": true,
           "note": "NPC editor language packs loaded by the HTML UI."

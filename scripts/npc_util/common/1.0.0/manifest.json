@@ -62,13 +62,13 @@
       "dependencies": [
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
           "required": true,
           "load_order": 2
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "path": "dc_lib/dc_npc_util/dc_util_common.js",
           "required": true,
           "load_order": 3
         },
@@ -91,25 +91,25 @@
       "dependencies": [
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
           "required": true,
           "load_order": 2
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "path": "dc_lib/dc_npc_util/dc_gui_runtime.js",
           "required": true,
           "load_order": 4
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_reward_checker.js",
+          "path": "dc_lib/dc_npc_util/dc_reward_checker.js",
           "required": true,
           "load_order": 5
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gecko_util.js",
+          "path": "dc_lib/dc_npc_util/dc_gecko_util.js",
           "required": false,
           "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
         },
@@ -133,37 +133,37 @@
       "dependencies": [
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
+          "path": "dc_lib/dc_npc_util/dc_npc_core_module.js",
           "required": true,
           "load_order": 1
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
           "required": true,
           "load_order": 2
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "path": "dc_lib/dc_npc_util/dc_util_common.js",
           "required": true,
           "load_order": 3
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "path": "dc_lib/dc_npc_util/dc_gui_runtime.js",
           "required": true,
           "load_order": 4
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_reward_checker.js",
+          "path": "dc_lib/dc_npc_util/dc_reward_checker.js",
           "required": true,
           "load_order": 5
         },
         {
           "type": "script",
-          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "path": "dc_lib/dc_npc_util/dc_dialogue_util.js",
           "required": true,
           "load_order": 6
         },

@@ -1,0 +1,19 @@
+{
+  "id": "dc_dialogue_trigger",
+  "name": "Dialogue Trigger",
+  "path": "dc_npc_util/dc_dialogue_trigger.js",
+  "prefix": "dc_dialogue",
+  "requires_json": true,
+  "json_root": "dc_data/dc_dialogues",
+  "script_deps": [
+    "dc_npc_util/dc_npc_core_module.js",
+    "dc_npc_util/dc_cfg_checker.js",
+    "dc_npc_util/dc_util_common.js",
+    "dc_npc_util/dc_gui_runtime.js",
+    "dc_npc_util/dc_reward_checker.js",
+    "dc_npc_util/dc_dialogue_util.js"
+  ],
+  "html_deps": [
+    "dc_util/dc_gui_runtime.html"
+  ]
+}

@@ -638,7 +638,7 @@ function excl_openOverlay(p, cfg) {
   try {
     var bridge = cnpcext.getClientBridge(p.getMCEntity());
     if (!bridge || typeof bridge.openOverlay !== "function") return false;
-    bridge.openOverlay("dc_battle_exclamation", "html/ds_battle_exclamation.html", 0, 0, 0, 0, JSON.stringify(cfg || {}));
+    bridge.openOverlay("dc_battle_exclamation", "html/dc_battle_exclamation.html", 0, 0, 0, 0, JSON.stringify(cfg || {}));
     return true;
   } catch (e) {}
   return false;
@@ -977,7 +977,7 @@ function seq_runStep(n, ctx, step) {
     return;
   }
   if (type === "html") {
-    if (typeof ds_ani_html === "function") ds_ani_html(ctx, step);
+    if (typeof dc_ani_html === "function") dc_ani_html(ctx, step);
     return;
   }
   if (type === "js") {
@@ -985,11 +985,11 @@ function seq_runStep(n, ctx, step) {
     return;
   }
   if (type === "dialogue") {
-    if (typeof ds_dialogue === "function") ds_dialogue(ctx, step);
+    if (typeof dc_dialogue === "function") dc_dialogue(ctx, step);
     return;
   }
   if (type === "gecko") {
-    if (typeof ds_ani_gecko === "function") ds_ani_gecko(ctx, step);
+    if (typeof dc_ani_gecko === "function") dc_ani_gecko(ctx, step);
     return;
   }
   if (type === "cutscene") {

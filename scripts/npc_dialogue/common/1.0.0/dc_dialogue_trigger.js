@@ -1,12 +1,12 @@
 // Simple dialogue trigger for dc_npc_core_module.js.
 // ScriptList order:
-// 1) dc_lib/ds_npc_util/dc_npc_core_module.js
-// 2) dc_lib/ds_npc_util/dc_cfg_checker.js
-// 3) dc_lib/ds_npc_util/dc_util_common.js
-// 4) dc_lib/ds_npc_util/dc_gui_runtime.js
-// 5) dc_lib/ds_npc_util/dc_reward_checker.js
-// 6) dc_lib/ds_npc_util/dc_dialogue_util.js
-// 7) dc_lib/ds_npc_util/dc_dialogue_trigger.js
+// 1) dc_lib/dc_npc_util/dc_npc_core_module.js
+// 2) dc_lib/dc_npc_util/dc_cfg_checker.js
+// 3) dc_lib/dc_npc_util/dc_util_common.js
+// 4) dc_lib/dc_npc_util/dc_gui_runtime.js
+// 5) dc_lib/dc_npc_util/dc_reward_checker.js
+// 6) dc_lib/dc_npc_util/dc_dialogue_util.js
+// 7) dc_lib/dc_npc_util/dc_dialogue_trigger.js
 
 var DcDialogueTriggerConfig = {
   enabled: true,

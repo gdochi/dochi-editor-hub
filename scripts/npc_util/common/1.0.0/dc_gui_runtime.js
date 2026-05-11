@@ -1,7 +1,7 @@
-﻿// GUI Maker runtime loader for CustomNPCs HTML GUIs.
+// GUI Maker runtime loader for CustomNPCs HTML GUIs.
 // Depends on shared util scripts (load BEFORE this file):
-// - dc_lib/ds_npc_util/dc_cfg_checker.js   (cfg_chk_*)
-// - dc_lib/ds_npc_util/dc_util_common.js   (util_toInt)
+// - dc_lib/dc_npc_util/dc_cfg_checker.js   (cfg_chk_*)
+// - dc_lib/dc_npc_util/dc_util_common.js   (util_toInt)
 
 var DcGuiRuntimeModule = (function () {
   var OVERLAY_NAME = "dc_gui_runtime";

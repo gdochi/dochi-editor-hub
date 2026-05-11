@@ -1,13 +1,13 @@
-﻿// Dialogue util for dc_gui_runtime.html
+// Dialogue util for dc_gui_runtime.html
 // - Loads dialogue JSON ({node:{text,choice}})
 // - Opens html GUI via openDcGuiRuntime()
 // - Handles htmlGuiEvent("choice"), dialogue navigation, and delegates reward/actions.
 //
 // Requires these loaded before:
-// - dc_lib/ds_npc_util/dc_cfg_checker.js   (cfg_chk_*)
-// - dc_lib/ds_npc_util/dc_gui_runtime.js   (openDcGuiRuntime)
-// - dc_lib/ds_npc_util/dc_reward_checker.js (rew_chk_applyAction)
-// - dc_lib/ds_npc_util/dc_gecko_util.js  (DcGeckoUtilModule, optional NPC/Gecko FX)
+// - dc_lib/dc_npc_util/dc_cfg_checker.js   (cfg_chk_*)
+// - dc_lib/dc_npc_util/dc_gui_runtime.js   (openDcGuiRuntime)
+// - dc_lib/dc_npc_util/dc_reward_checker.js (rew_chk_applyAction)
+// - dc_lib/dc_npc_util/dc_gecko_util.js  (DcGeckoUtilModule, optional NPC/Gecko FX)
 
 var DcDialogueUtilModule = (function(){
   var OVERLAY_NAME = "dc_gui_runtime";

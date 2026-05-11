@@ -1,4 +1,4 @@
-﻿// GeckoLib/CNPC helper for Dochi dialogue FX.
+// GeckoLib/CNPC helper for Dochi dialogue FX.
 // Uses CNPC-Gecko documented calls: setSkinTexture, setGecko*, createAnimBuilder, syncAnimationsFor.
 
 var DcGeckoUtilModule = (function(){

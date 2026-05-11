@@ -544,7 +544,7 @@ if(!d)return;
 debugStep("files","json list prefix="+d.prefix+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
 var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
 APP_STATE.picker.root=String(d.root||"");
-APP_STATE.picker.rootLabel=String(getDcJsonRootLabel(d.prefix||"dc"));
+APP_STATE.picker.rootLabel=String(d.label||getDcJsonRootLabel(d.prefix||"dc"));
 APP_STATE.picker.mode="dcJson";
 APP_STATE.picker.allFiles=files;
 APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);

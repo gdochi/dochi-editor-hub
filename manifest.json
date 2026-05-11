@@ -37,14 +37,14 @@
         "scripts/item_editor/forge_1_20_1/1.0.0/manifest.json"
       ]
     },
-    "dialogue:common": {
-      "package": "dialogue",
+    "npc_dialogue:common": {
+      "package": "npc_dialogue",
       "editor": "dialogue",
       "mc_version": "common",
-      "sub_path": "",
+      "sub_path": "dc_npc_util",
       "latest": "1.0.0",
       "versions": [
-        "scripts/dialogue/common/1.0.0/manifest.json"
+        "scripts/npc_dialogue/common/1.0.0/manifest.json"
       ]
     },
     "npc_editor:common": {
@@ -61,7 +61,7 @@
       "package": "npc_util",
       "editor": "npc_util",
       "mc_version": "common",
-      "sub_path": "ds_npc_util",
+      "sub_path": "dc_npc_util",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"
@@ -102,13 +102,13 @@
       ]
     },
     {
-      "package": "dialogue",
+      "package": "npc_dialogue",
       "editor": "dialogue",
       "mc_version": "common",
-      "sub_path": "",
+      "sub_path": "dc_npc_util",
       "latest": "1.0.0",
       "versions": [
-        "scripts/dialogue/common/1.0.0/manifest.json"
+        "scripts/npc_dialogue/common/1.0.0/manifest.json"
       ]
     },
     {
@@ -125,7 +125,7 @@
       "package": "npc_util",
       "editor": "npc_util",
       "mc_version": "common",
-      "sub_path": "ds_npc_util",
+      "sub_path": "dc_npc_util",
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"

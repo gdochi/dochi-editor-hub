@@ -839,9 +839,100 @@ var p=normalizeRelPath(path),parts=p.split("/");
 return parts[parts.length-1]||p;
 }
 function getDcEntrySpecs(){
-return [
-{id:"dc_dialogue_trigger",name:"Dialogue Trigger",path:"ds_npc_util/dc_dialogue_trigger.js",prefix:"dc_dialogue",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["dc_util/dc_gui_runtime.html"]}
-];
+return loadDcEntrySpecsFromFiles();
+}
+function findDcEntrySpecRoots(){
+var File=Java.type("java.io.File"),out=[],seen={},roots=findCustomNpcsRoots(),i;
+for(i=0;i<roots.length;i++)pushDirIfExists(out,seen,new File(roots[i],"dc_data/dc_installable_scripts"));
+return out;
+}
+function loadDcEntrySpecsFromFiles(){
+var roots=findDcEntrySpecRoots(),out=[],seen={},i;
+for(i=0;i<roots.length;i++)walkDcEntrySpecFiles(roots[i],roots[i],out,seen);
+out.sort(function(a,b){return String(a.name||a.path).localeCompare(String(b.name||b.path));});
+return out;
+}
+function walkDcEntrySpecFiles(root,dir,out,seen){
+var list=dir.listFiles(),i,file,name;
+if(!list)return;
+for(i=0;i<list.length;i++){
+file=list[i];
+if(file.isDirectory()){walkDcEntrySpecFiles(root,file,out,seen);continue;}
+name=String(file.getName()).toLowerCase();
+if(name.slice(-5)!==".json")continue;
+pushDcEntrySpecsFromFile(out,seen,file);
+}
+}
+function pushDcEntrySpecsFromFile(out,seen,file){
+var raw,obj;
+try{
+raw=readTextFile(file);
+obj=JSON.parse(raw);
+pushDcEntrySpecsFromValue(out,seen,obj,file);
+}catch(err){
+return;
+}
+}
+function pushDcEntrySpecsFromValue(out,seen,value,file){
+var i,list,spec,key;
+if(value instanceof Array){
+for(i=0;i<value.length;i++)pushDcEntrySpecsFromValue(out,seen,value[i],file);
+return;
+}
+if(value&&value.entries instanceof Array){
+list=value.entries;
+for(i=0;i<list.length;i++)pushDcEntrySpecsFromValue(out,seen,list[i],file);
+return;
+}
+spec=normalizeDcEntrySpec(value,file);
+if(!spec)return;
+key=normalizeRelPath(spec.path).toLowerCase();
+if(!key||seen[key])return;
+seen[key]=true;
+out.push(spec);
+}
+function normalizeDcEntrySpec(raw,file){
+var path,id,name,prefix,jsonRoot;
+if(!raw||typeof raw!=="object")return null;
+path=stripDcLibPrefix(raw.path||raw.script||raw.source||raw.file||"");
+path=normalizeRelPath(path);
+if(!path)return null;
+id=String(raw.id||fileNameOnly(path).replace(/\.js$/i,"")).replace(/^\s+|\s+$/g,"");
+name=String(raw.name||id||fileNameOnly(path)).replace(/^\s+|\s+$/g,"");
+prefix=String(raw.prefix||inferDcPrefix(path)||"").replace(/^\s+|\s+$/g,"");
+jsonRoot=normalizeRelPath(raw.json_root||raw.jsonRoot||raw.json_dir||raw.jsonDir||"");
+return {
+id:id,
+name:name,
+path:path,
+prefix:prefix,
+requiresJson:raw.requires_json===true||raw.requiresJson===true,
+jsonRoot:jsonRoot,
+scriptDeps:normalizeDcSpecPathList(raw.script_deps||raw.scriptDeps||raw.dependencies||raw.deps),
+htmlDeps:normalizeDcSpecPathList(raw.html_deps||raw.htmlDeps)
+};
+}
+function normalizeDcSpecPathList(list){
+var arr=list instanceof Array?list:[],out=[],i,item,path,type;
+for(i=0;i<arr.length;i++){
+item=arr[i];
+type="";
+if(typeof item==="string")path=item;
+else if(item&&typeof item==="object"){
+type=String(item.type||"").toLowerCase();
+if(type&&type!=="script"&&type!=="html"&&type!=="js")continue;
+path=item.path||item.script||item.file||item.source||"";
+}else path="";
+path=stripDcLibPrefix(path);
+path=normalizeRelPath(path);
+if(path)out.push(path);
+}
+return out;
+}
+function getDcEntrySpecForPrefix(prefix){
+var specs=getDcEntrySpecs(),i,wanted=String(prefix||"");
+for(i=0;i<specs.length;i++)if(String(specs[i].prefix||"")===wanted)return specs[i];
+return null;
 }
 function listDcInstallableScripts(){
 var scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(),out=[],i,candidate,primaryRoot="";
@@ -876,7 +967,7 @@ for(i=0;i<htmlDeps.length;i++){
 path=normalizeRelPath(htmlDeps[i]);
 if(!pathExistsInRoots(htmlRoots,path))missing.push("html:"+path);
 }
-return {id:String(spec.id||spec.path),name:String(spec.name||fileNameOnly(spec.path)),path:normalizeRelPath(spec.path),prefix:String(spec.prefix||inferDcPrefix(spec.path)),requiresJson:spec.requiresJson===true,scriptDeps:scriptDeps,htmlDeps:htmlDeps,applyScripts:applyScripts,available:missing.length<1,missing:missing};
+return {id:String(spec.id||spec.path),name:String(spec.name||fileNameOnly(spec.path)),path:normalizeRelPath(spec.path),prefix:String(spec.prefix||inferDcPrefix(spec.path)),requiresJson:spec.requiresJson===true,jsonRoot:normalizeRelPath(spec.jsonRoot||""),scriptDeps:scriptDeps,htmlDeps:htmlDeps,applyScripts:applyScripts,available:missing.length<1,missing:missing};
 }
 function copyStringArray(list){
 var arr=list instanceof Array?list:[],out=[],i,p;
@@ -1622,7 +1713,7 @@ function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");
 var found=listDcJsonFiles(prefix),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s;
 if(query){for(i=0;i<files.length;i++){s=files[i];if(String(s).toLowerCase().indexOf(query)>=0)out.push(s);}}else out=files;
-pushBrowser(e.player,"npcDcJsonFileList",{ok:!found.error,root:root,prefix:prefix,files:out,error:found.error||""});
+pushBrowser(e.player,"npcDcJsonFileList",{ok:!found.error,root:root,label:getDcJsonRootLabel(prefix),prefix:prefix,files:out,error:found.error||""});
 }
 function listDcJsonFiles(prefix){
 var root=resolveDcJsonRoot(prefix),out=[],seen={},checked,rootPath;
@@ -1659,25 +1750,50 @@ return {ok:false,error:"Invalid dialogue JSON: "+rel+" / "+String(err&&err.messa
 }
 }
 function resolveDcJsonRoot(prefix){
-var File=Java.type("java.io.File"),roots=findCustomNpcsRoots(),segments=getDcJsonSegments(prefix),i,root;
+var File=Java.type("java.io.File"),roots=findCustomNpcsRoots(),segments=getDcJsonSegments(prefix),i,j,root;
 if(!roots.length||!segments)return null;
 for(i=0;i<roots.length;i++){
 root=new File(roots[i],segments[0]);
-if(segments.length>1)root=new File(root,segments[1]);
+for(j=1;j<segments.length;j++)root=new File(root,segments[j]);
 if(!root.exists())root.mkdirs();
 if(root.exists()&&root.isDirectory())return root;
 }
 root=new File(roots[0],segments[0]);
-if(segments.length>1)root=new File(root,segments[1]);
+for(j=1;j<segments.length;j++)root=new File(root,segments[j]);
 if(!root.exists())root.mkdirs();
 return root;
 }
 function getDcJsonSegments(prefix){
+var spec=getDcEntrySpecForPrefix(prefix),segments;
+if(spec&&spec.jsonRoot){
+segments=splitDcJsonRoot(spec.jsonRoot);
+if(segments&&segments.length)return segments;
+}
 if(prefix==="dc_dialogue")return ["dc_data","dc_dialogues"];
-if(prefix==="dc_trainer")return ["dc_trainers","spec"];
+if(prefix==="dc_trainer")return ["dc_data","dc_trainers","spec"];
 if(prefix==="dc_soulMob")return ["dc_mob","soulmob"];
 if(prefix==="dc_taczMob")return ["dc_mob","taczmob"];
 return null;
+}
+function getDcJsonRootLabel(prefix){
+var spec=getDcEntrySpecForPrefix(prefix);
+if(spec&&spec.jsonRoot)return spec.jsonRoot;
+if(prefix==="dc_dialogue")return "dc_data/dc_dialogues";
+if(prefix==="dc_trainer")return "dc_data/dc_trainers/spec";
+if(prefix==="dc_soulMob")return "dc_mob/soulmob";
+if(prefix==="dc_taczMob")return "dc_mob/taczmob";
+return String(prefix||"dc_json");
+}
+function splitDcJsonRoot(path){
+var p=normalizeRelPath(path),parts,out=[],i;
+if(!p)return null;
+parts=p.split("/");
+for(i=0;i<parts.length;i++){
+if(!parts[i])continue;
+if(i===0&&parts[i].toLowerCase()==="customnpcs")continue;
+out.push(parts[i]);
+}
+return out;
 }
 function walkJsonFiles(root,dir,out,seen){
 var list=dir.listFiles(),i,f,rel;
