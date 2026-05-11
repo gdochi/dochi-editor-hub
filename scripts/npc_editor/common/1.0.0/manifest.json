@@ -86,6 +86,12 @@
       "install_as": "dc_data/dc_lang/npc_editor/ru_ru.json",
       "type": "json",
       "dependencies": []
+    },
+    {
+      "source": "dc_gui/sample_gui.json",
+      "install_as": "dc_data/dc_gui/sample_gui.json",
+      "type": "json",
+      "dependencies": []
     }
   ]
 }

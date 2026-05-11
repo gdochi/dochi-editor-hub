@@ -11,7 +11,7 @@
 
 var DcDialogueUtilModule = (function(){
   var OVERLAY_NAME = "dc_gui_runtime";
-  var DEFAULT_GUI_JSON = "customnpcs/dc_data/dc_gui/dialogue_gui.json";
+  var DEFAULT_GUI_JSON = "customnpcs/dc_data/dc_gui/sample_gui.json";
   var McComponent = null;
   var McText = null;
 

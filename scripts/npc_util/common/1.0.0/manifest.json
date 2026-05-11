@@ -115,7 +115,7 @@
         },
         {
           "type": "json",
-          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
+          "path": "customnpcs/dc_data/dc_gui/sample_gui.json",
           "required": true,
           "note": "Default GUI template when guiJsonPath is empty."
         },
@@ -190,6 +190,12 @@
       "source": "dc_sound.html",
       "install_as": "dc_util/dc_sound.html",
       "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "../../../npc_editor/common/1.0.0/dc_gui/sample_gui.json",
+      "install_as": "dc_data/dc_gui/sample_gui.json",
+      "type": "json",
       "dependencies": []
     }
   ]

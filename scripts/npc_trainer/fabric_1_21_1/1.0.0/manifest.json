@@ -127,7 +127,7 @@
         },
         {
           "type": "json",
-          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
+          "path": "customnpcs/dc_data/dc_gui/sample_gui.json",
           "required": false,
           "note": "Default GUI template used by battle dialogue."
         }
@@ -160,6 +160,12 @@
     {
       "source": "dc_installable_scripts/dc_npc_trainer.json",
       "install_as": "dc_data/dc_installable_scripts/dc_npc_trainer.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "../../../npc_editor/common/1.0.0/dc_gui/sample_gui.json",
+      "install_as": "dc_data/dc_gui/sample_gui.json",
       "type": "json",
       "dependencies": []
     }

@@ -1070,13 +1070,13 @@ function bd_dialogueFullPath(rel){
 }
 function bd_guiFullPath(offset){
   var clean = String(offset || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
-  if(!clean) return "customnpcs/dc_data/dc_gui/dialogue_gui.json";
+  if(!clean) return "customnpcs/dc_data/dc_gui/sample_gui.json";
   if(clean.toLowerCase().indexOf("customnpcs/") === 0) return clean;
   if(clean.toLowerCase().indexOf("dc_data/") === 0) return "customnpcs/" + clean;
   if(clean.toLowerCase().indexOf("dc_gui/") === 0) return "customnpcs/dc_data/" + clean;
   if(clean.toLowerCase().endsWith(".json")) return "customnpcs/dc_data/dc_gui/" + clean;
   // keys like "dialogue_gui_default" -> treat as default file
-  return "customnpcs/dc_data/dc_gui/dialogue_gui.json";
+  return "customnpcs/dc_data/dc_gui/sample_gui.json";
 }
 function bd_resolveGuiPath(pack, cfg){
   var src = String(cfg && cfg.guiSource || "default").trim().toLowerCase();
@@ -1089,9 +1089,9 @@ function bd_resolveGuiPath(pack, cfg){
     var enabled = gc && gc.battleDialogueGuiGlobalEnabled === true;
     var go = String(gc && gc.battleDialogueGuiGlobalOffset || "").trim();
     if(enabled && go) return bd_guiFullPath(go);
-    return bd_guiFullPath("dialogue_gui.json");
+    return bd_guiFullPath("sample_gui.json");
   }
-  return bd_guiFullPath(offset || "dialogue_gui.json");
+  return bd_guiFullPath(offset || "sample_gui.json");
 }
 function bd_readJson(path){
   if(!path) return null;
