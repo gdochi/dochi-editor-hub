@@ -11,6 +11,7 @@ STYLE_KEY:"npc_browser_script_style",
 DC_SELECTION_KEY:"npc_browser_dc_selection",
 DOCHI_LOCK_KEY:"npc_browser_dochi_lock",
 DIALOGUE_JSON_PATH_KEY:"dc_dialogue_json_path",
+TRAINER_SPEC_PATH_KEY:"dc_trainer_spec_path",
 CACHE_MAP_KEY:"npc_browser_cache_map",
 CACHE_LIST_KEY:"npc_browser_cache_list",
 CACHE_RANGE_KEY:"npc_browser_scan_range",
@@ -1613,11 +1614,23 @@ var sel=normalizeDcSelection(selection||{});
 if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){
 clearStoredDataKey(store,CFG.DC_SELECTION_KEY);
 clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
+clearStoredDataKey(store,CFG.TRAINER_SPEC_PATH_KEY);
 return;
 }
 store.put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
 if(sel.prefix==="dc_dialogue"&&sel.jsonPath)store.put(CFG.DIALOGUE_JSON_PATH_KEY,String(sel.jsonPath||""));
 else clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
+if(sel.prefix==="dc_trainer"&&sel.jsonPath)store.put(CFG.TRAINER_SPEC_PATH_KEY,trainerSpecStoredPath(sel.jsonPath));
+else clearStoredDataKey(store,CFG.TRAINER_SPEC_PATH_KEY);
+}
+function trainerSpecStoredPath(jsonPath){
+var p=normalizeRelPath(jsonPath),lower;
+if(!p)return "";
+lower=p.toLowerCase();
+if(lower.indexOf("customnpcs/dc_data/dc_trainers/spec/")===0)return p;
+if(lower.indexOf("dc_data/dc_trainers/spec/")===0)return "customnpcs/"+p;
+if(lower.indexOf("dc_trainers/spec/")===0)return "customnpcs/dc_data/"+p;
+return "customnpcs/dc_data/dc_trainers/spec/"+p;
 }
 function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");
@@ -1675,7 +1688,7 @@ return root;
 }
 function getDcJsonSegments(prefix){
 if(prefix==="dc_dialogue")return ["dc_data","dc_dialogues"];
-if(prefix==="dc_trainer")return ["dc_trainers","spec"];
+if(prefix==="dc_trainer")return ["dc_data","dc_trainers/spec"];
 if(prefix==="dc_soulMob")return ["dc_mob","soulmob"];
 if(prefix==="dc_taczMob")return ["dc_mob","taczmob"];
 return null;
