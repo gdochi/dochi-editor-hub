@@ -11,8 +11,8 @@
     }
     html,body{width:100%;height:100%}
     body{margin:0;overflow:hidden;background:transparent;font-family:Segoe UI, Arial, sans-serif}
-    #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-    #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:relative;transform:scale(var(--stage-scale, 1));transform-origin:center center}
+    #viewport{position:fixed;inset:0;display:block;overflow:hidden}
+    #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:relative;transform:none;transform-origin:top left}
     #stageBg{position:absolute;inset:0;background:#000;overflow:hidden}
     #stageBg::before{content:"";position:absolute;inset:0;background:var(--bg-overlay, transparent);opacity:var(--bg-overlay-opacity, 0);pointer-events:none}
     #stageBgImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:cover;opacity:var(--bg-img-opacity, 1);filter:blur(var(--bg-blur, 0px));transform:scale(1.03)}
@@ -201,15 +201,26 @@
       return { w: Math.max(160, w), h: Math.max(90, h) };
     }
 
+    function getViewportSize(base){
+      const screen = INIT && INIT.clientScreen && typeof INIT.clientScreen === "object" ? INIT.clientScreen : null;
+      const sw = screen ? Number(screen.screenWidth || screen.width || 0) : 0;
+      const sh = screen ? Number(screen.screenHeight || screen.height || 0) : 0;
+      const ww = Number(window.innerWidth || document.documentElement.clientWidth || 0);
+      const wh = Number(window.innerHeight || document.documentElement.clientHeight || 0);
+      return {
+        w: Math.max(160, Math.floor(sw || ww || base.w)),
+        h: Math.max(90, Math.floor(sh || wh || base.h))
+      };
+    }
+
     function setScale(){
       const { w: bw, h: bh } = getBaseResolution();
-      const aw = Math.max(160, Math.floor(window.innerWidth || bw));
-      const ah = Math.max(90, Math.floor(window.innerHeight || bh));
-      const s = Math.min(aw / bw, ah / bh);
-      document.documentElement.style.setProperty("--stage-w", String(bw));
-      document.documentElement.style.setProperty("--stage-h", String(bh));
-      document.documentElement.style.setProperty("--stage-scale", String(Math.max(0.25, Math.min(3, s))));
-      document.documentElement.style.setProperty("--ui-scale", "1");
+      const actual = getViewportSize({ w:bw, h:bh });
+      const s = Math.min(actual.w / bw, actual.h / bh);
+      document.documentElement.style.setProperty("--stage-w", String(actual.w));
+      document.documentElement.style.setProperty("--stage-h", String(actual.h));
+      document.documentElement.style.setProperty("--stage-scale", "1");
+      document.documentElement.style.setProperty("--ui-scale", String(Math.max(0.25, Math.min(3, s))));
     }
     function readImageCrop(source, prefix){
       const src = source && typeof source === "object" ? source : {};
