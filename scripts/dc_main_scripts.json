@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-11T03:53:40.361Z",
+  "generated_at": "2026-05-11T05:58:50.824Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -171,53 +171,6 @@
         },
         {
           "path": "html/dc_util/dc_gui_runtime.html",
-          "required": true
-        }
-      ]
-    },
-    {
-      "id": "scroll_dialogue",
-      "package": "scroll_dialogue",
-      "script": "dc_story_scroll.js",
-      "versions": [
-        {
-          "mc_version": "common",
-          "version": "1.0.0",
-          "manifest": "scroll_dialogue/common/1.0.0/manifest.json",
-          "source_path": "scroll_dialogue/common/1.0.0/dc_story_scroll.js"
-        }
-      ],
-      "script_dependencies": [],
-      "html_dependencies": []
-    },
-    {
-      "id": "soullikemob",
-      "package": "soullikemob",
-      "script": "dc_soullikemob.js",
-      "versions": [
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.0",
-          "manifest": "soullikemob/forge_1_20_1/1.0.0/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.0/dc_soullikemob.js"
-        },
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.1",
-          "manifest": "soullikemob/forge_1_20_1/1.0.1/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.1/dc_soullikemob.js"
-        },
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.2",
-          "manifest": "soullikemob/forge_1_20_1/1.0.2/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.2/dc_soullikemob.js"
-        }
-      ],
-      "script_dependencies": [],
-      "html_dependencies": [
-        {
-          "path": "html/dc_soullikemob.html",
           "required": true
         }
       ]

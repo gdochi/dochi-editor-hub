@@ -15,19 +15,7 @@
         "scripts/npc_trainer/fabric_1_21_1/1.0.0/manifest.json"
       ]
     },
-    "soullikemob:forge_1_20_1": {
-      "package": "soullikemob",
-      "editor": "soullikemob",
-      "mc_version": "forge_1_20_1",
-      "sub_path": "",
-      "latest": "1.0.2",
-      "versions": [
-        "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
-        "scripts/soullikemob/forge_1_20_1/1.0.1/manifest.json",
-        "scripts/soullikemob/forge_1_20_1/1.0.2/manifest.json"
-      ]
-    },
-      "item_editor:forge_1_20_1": {
+    "item_editor:forge_1_20_1": {
       "package": "item_editor",
       "editor": "item_editor",
       "mc_version": "forge_1_20_1",
@@ -45,16 +33,6 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/item_editor/fabric_1_21_1/1.0.0/manifest.json"
-      ]
-    },
-    "scroll_dialogue:common": {
-      "package": "scroll_dialogue",
-      "editor": "scroll_dialogue",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/scroll_dialogue/common/1.0.0/manifest.json"
       ]
     },
     "npc_dialogue:common": {
@@ -100,18 +78,6 @@
       ]
     },
     {
-      "package": "soullikemob",
-      "editor": "soullikemob",
-      "mc_version": "forge_1_20_1",
-      "sub_path": "",
-      "latest": "1.0.2",
-      "versions": [
-        "scripts/soullikemob/forge_1_20_1/1.0.0/manifest.json",
-        "scripts/soullikemob/forge_1_20_1/1.0.1/manifest.json",
-        "scripts/soullikemob/forge_1_20_1/1.0.2/manifest.json"
-      ]
-    },
-    {
       "package": "item_editor",
       "editor": "item_editor",
       "mc_version": "forge_1_20_1",
@@ -129,16 +95,6 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/item_editor/fabric_1_21_1/1.0.0/manifest.json"
-      ]
-    },
-    {
-      "package": "scroll_dialogue",
-      "editor": "scroll_dialogue",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/scroll_dialogue/common/1.0.0/manifest.json"
       ]
     },
     {
