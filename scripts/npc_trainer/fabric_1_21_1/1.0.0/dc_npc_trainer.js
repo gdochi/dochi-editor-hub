@@ -1108,17 +1108,17 @@ function bd_readJson(path){
   }
 }
 function bd_buildBindings(raw){
-  var node = raw && raw.node && typeof raw.node === "object" ? raw.node : raw;
+  var node = raw && raw.nodeName != null && raw.node && typeof raw.node === "object" ? raw.node : null;
   var out = { text: [], choice: [] };
   if(node){
-    var t = node.text != null ? node.text : (node.lines != null ? node.lines : null);
+    var t = node.text != null ? node.text : null;
     if(Array.isArray(t)){
       for(var i=0;i<t.length;i++) out.text.push(String(t[i] || ""));
     }else if(typeof t === "string"){
       out.text.push(String(t || ""));
     }
   }
-  var choices = node && Array.isArray(node.choice) ? node.choice : (node && Array.isArray(node.choices) ? node.choices : []);
+  var choices = node && Array.isArray(node.choice) ? node.choice : [];
   for(var j=0;j<choices.length;j++){
     var ch = choices[j] || {};
     var rawActions = Array.isArray(ch.actions) ? ch.actions : [];
@@ -1126,38 +1126,33 @@ function bd_buildBindings(raw){
     for(var k=0;k<rawActions.length;k++){
       var a = rawActions[k] || {};
       if(!a || typeof a !== "object") continue;
-      var rawType = String(a.type || a.action || "").toLowerCase();
-      if(a.close === true || rawType === "close"){
+      var rawType = String(a.type || "").toLowerCase();
+      if(rawType === "close"){
         normActions.push({ close: true });
         continue;
       }
-      var cmd = a.command != null ? a.command : (rawType === "command" ? a.value : null);
+      var cmd = rawType === "command" ? a.value : null;
       if(cmd){
         normActions.push({ command: String(cmd) });
         continue;
       }
-      var go = a.goto != null ? a.goto : (rawType === "goto" ? (a.target != null ? a.target : a.value) : null);
+      var go = rawType === "goto" ? a.value : null;
       if(go != null){
-        var linkMode = String(a.linkMode || a.link || "internal").toLowerCase();
-        if(linkMode === "external_json") linkMode = "external";
-        if(linkMode === "internal_node") linkMode = "internal";
-        normActions.push({ goto: String(linkMode === "external" ? (a.filePath || go) : go), linkMode: linkMode, filePath: String(a.filePath || "") });
-        continue;
-      }
-      if(a.store && typeof a.store === "object"){
-        normActions.push({ store:a.store });
+        var linkMode = String(a.linkMode || "internal").toLowerCase();
+        var filePath = String(a.filePath || "");
+        normActions.push({ goto: String(linkMode === "external" ? filePath : go), linkMode: linkMode, filePath: filePath });
         continue;
       }
       if(rawType === "store"){
         normActions.push({ store:{
           key:String(a.key || ""),
-          op:String(a.storeOp || a.op || "set"),
+          op:String(a.storeOp || "set"),
           value:a.value
         } });
         continue;
       }
       if(rawType === "tag"){
-        normActions.push({ tag:{ key:String(a.key || a.tag || ""), op:String(a.op || "add") } });
+        normActions.push({ tag:{ key:String(a.key || ""), op:String(a.op || "add") } });
         continue;
       }
       if(rawType === "ftb_task"){
@@ -1173,7 +1168,7 @@ function bd_buildBindings(raw){
         continue;
       }
       if(rawType === "cobbledollar" || rawType === "cobbledollar_add" || rawType === "cobbledollar_take"){
-        normActions.push({ cobbledollar:{ op:rawType === "cobbledollar_take" ? "take" : String(a.moneyOp || a.op || "add"), amount:Number(a.amount || 0) } });
+        normActions.push({ cobbledollar:{ op:rawType === "cobbledollar_take" ? "take" : String(a.moneyOp || "add"), amount:Number(a.amount || 0) } });
         continue;
       }
     }
@@ -1234,10 +1229,9 @@ function bd_handleChoice(n, p, payload){
   if(session && String(payload.sessionId || "") !== session) return false;
   var active = bd_getActive(n);
   if(!active || !active.cfg) return false;
-    var actions = [];
+  var actions = [];
   try{
     if(payload.data && Array.isArray(payload.data.actions)) actions = payload.data.actions;
-    else if(Array.isArray(payload.actions)) actions = payload.actions;
   }catch(e0){ actions = []; }
   var wantedGoto = String(active.cfg.choiceGoto || "cobblemon_battle").trim();
   for(var i=0;i<actions.length;i++){

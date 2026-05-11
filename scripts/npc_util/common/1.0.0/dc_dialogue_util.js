@@ -108,7 +108,7 @@ var DcDialogueUtilModule = (function(){
 
   function unwrapNode(raw){
     if(!raw || typeof raw !== "object") return null;
-    return (raw.node && typeof raw.node === "object") ? raw.node : raw;
+    return (raw.nodeName != null && raw.node && typeof raw.node === "object") ? raw.node : null;
   }
 
   function baseSubPath(rel){
@@ -121,20 +121,9 @@ var DcDialogueUtilModule = (function(){
     return String(name || "").replace(/\.json$/i, "");
   }
 
-  function stripNumericPrefix(name){
-    return stripJsonSuffix(name).replace(/^\d+[_ -]+/, "");
-  }
-
   function rawNodeId(raw){
     if(!raw || typeof raw !== "object") return "";
-    if(raw.nodeId != null) return String(raw.nodeId);
     if(raw.nodeName != null) return String(raw.nodeName);
-    if(raw.id != null) return String(raw.id);
-    if(raw.name != null) return String(raw.name);
-    if(raw.node && typeof raw.node === "object"){
-      if(raw.node.id != null) return String(raw.node.id);
-      if(raw.node.name != null) return String(raw.node.name);
-    }
     return "";
   }
 
@@ -151,7 +140,7 @@ var DcDialogueUtilModule = (function(){
         if(!f || !f.isFile || !f.isFile()) continue;
         var name = String(f.getName ? f.getName() : "");
         if(!/\.json$/i.test(name)) continue;
-        if(stripJsonSuffix(name).toLowerCase() === wanted || stripNumericPrefix(name).toLowerCase() === wanted){
+        if(stripJsonSuffix(name).toLowerCase() === wanted){
           return String(baseRel || "") + name;
         }
       }
@@ -192,8 +181,8 @@ var DcDialogueUtilModule = (function(){
       return fileExists(requestedPath) ? requestedPath : DEFAULT_GUI_JSON;
     }
     var gui = raw && raw.gui && typeof raw.gui === "object" ? raw.gui : {};
-    var source = String((raw && raw.guiSource) || gui.guiSource || "default").toLowerCase();
-    var offset = String((raw && raw.guiOffset) || gui.guiOffset || "").trim();
+    var source = String(gui.guiSource || "default").toLowerCase();
+    var offset = String(gui.guiOffset || "").trim();
     if(source === "custom" && offset){
       var customPath = normalizeGuiPath(offset);
       return fileExists(customPath) ? customPath : DEFAULT_GUI_JSON;
@@ -207,31 +196,28 @@ var DcDialogueUtilModule = (function(){
     for(var i=0;i<arr.length;i++){
       var a = arr[i];
       if(!a || typeof a !== "object") continue;
-      var type = String(a.type || a.action || "").toLowerCase();
-      if(a.close === true || type === "close"){ out.push({ close:true }); continue; }
-      if(a.command != null || type === "command"){ out.push({ command: String(a.command != null ? a.command : a.value) }); continue; }
-      if(a.goto != null || type === "goto"){
-        var linkMode = String(a.linkMode || a.link || "internal").toLowerCase();
-        var target = a.goto != null ? a.goto : (a.target != null ? a.target : a.value);
-        var filePath = String(a.filePath || a.path || "");
-        if(linkMode === "external_json") linkMode = "external";
-        if(linkMode === "internal_node") linkMode = "internal";
-        if(linkMode === "external") target = filePath || target;
+      var type = String(a.type || "").toLowerCase();
+      if(type === "close"){ out.push({ close:true }); continue; }
+      if(type === "command"){ out.push({ command: String(a.value) }); continue; }
+      if(type === "goto"){
+        var linkMode = String(a.linkMode || "internal").toLowerCase();
+        var target = a.value;
+        var filePath = String(a.filePath || "");
+        if(linkMode === "external") target = filePath;
         out.push({ goto: String(target || ""), linkMode: linkMode, filePath: filePath });
         continue;
       }
-      if(a.store && typeof a.store === "object"){ out.push({ store: a.store }); continue; }
       if(type === "store"){
         out.push({ store: {
           key: String(a.key || ""),
-          op: String(a.storeOp || a.op || "set"),
+          op: String(a.storeOp || "set"),
           value: a.value
         }});
         continue;
       }
       if(type === "tag"){
         out.push({ tag: {
-          key: String(a.key || a.tag || ""),
+          key: String(a.key || ""),
           op: String(a.op || "add")
         }});
         continue;
@@ -249,12 +235,11 @@ var DcDialogueUtilModule = (function(){
       }
       if(type === "cobbledollar" || type === "cobbledollar_add" || type === "cobbledollar_take"){
         out.push({ cobbledollar: {
-          op: type === "cobbledollar_take" ? "take" : String(a.moneyOp || a.op || "add"),
+          op: type === "cobbledollar_take" ? "take" : String(a.moneyOp || "add"),
           amount: Number(a.amount || 0)
         }});
         continue;
       }
-      if(a.advancement && typeof a.advancement === "object"){ out.push({ advancement: a.advancement }); continue; }
     }
     return out;
   }
@@ -319,17 +304,17 @@ var DcDialogueUtilModule = (function(){
     var node = unwrapNode(raw);
     var out = { text: [], choice: [], textFx: null };
     if(node){
-      var t = node.text != null ? node.text : (node.lines != null ? node.lines : null);
-      var textIsKey = node.textTranslationKey === true || node.textIsTranslationKey === true;
+      var t = node.text != null ? node.text : null;
+      var textIsKey = node.textTranslationKey === true;
       if(Array.isArray(t)){ for(var i=0;i<t.length;i++) out.text.push(maybeTranslate(t[i], textIsKey)); }
       else if(typeof t === "string"){ out.text.push(maybeTranslate(t, textIsKey)); }
       if(node.textFx && typeof node.textFx === "object") out.textFx = node.textFx;
     }
-    var choices = node && Array.isArray(node.choice) ? node.choice : (node && Array.isArray(node.choices) ? node.choices : []);
+    var choices = node && Array.isArray(node.choice) ? node.choice : [];
     for(var j=0;j<choices.length;j++){
       var ch = choices[j] || {};
       if(!evalConditions(player, npc, ch)) continue;
-      var labelIsKey = ch.labelTranslationKey === true || ch.labelIsTranslationKey === true;
+      var labelIsKey = ch.labelTranslationKey === true;
       out.choice.push({
         label: maybeTranslate(ch.label, labelIsKey),
         role: String(ch.role || ""),
@@ -556,7 +541,6 @@ var DcDialogueUtilModule = (function(){
       var dataObj = payload ? payload.data : null;
       if(typeof dataObj === "string") dataObj = JSON.parse(String(dataObj));
       if(dataObj && Array.isArray(dataObj.actions)) actions = dataObj.actions;
-      else if(payload && Array.isArray(payload.actions)) actions = payload.actions;
     }catch(e){ actions = []; }
 
     var returnGoto = String(active.returnGoto || "");

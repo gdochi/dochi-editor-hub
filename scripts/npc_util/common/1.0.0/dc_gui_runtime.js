@@ -127,31 +127,27 @@ function normalizeEntityTargetType(value) {
   function fxAssetPath(fx, primaryKey) {
     if (!fx || typeof fx !== "object") return "";
     var asset = fx.asset && typeof fx.asset === "object" ? fx.asset : null;
-    var path = String(fx[primaryKey] || fx.assetFilePath || fx.runtimePath || fx.url || "").trim();
-    if (!path && asset) {
-      var sub = String(asset.subPath || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-      var file = String(asset.fileName || "").replace(/\\/g, "/").replace(/^\/+/, "");
-      path = sub && file ? (sub + "/" + file) : file;
-    }
+    var path = String(asset && asset.path || "").trim();
     return path.replace(/\\/g, "/").replace(/^\/+/, "");
   }
 
   function readFxImageCrop(fx) {
     if (!fx || typeof fx !== "object") return { enabled:false, x:0, y:0, w:0, h:0, sourceW:0, sourceH:0 };
-    var direct = fx.imageCrop && typeof fx.imageCrop === "object" ? fx.imageCrop : (fx.crop && typeof fx.crop === "object" ? fx.crop : null);
-    var raw = direct || fx;
-    var enabled = direct ? raw.enabled !== false : (fx.cropEnabled === true || String(fx.cropEnabled || "").toLowerCase() === "true");
-    var w = Number(raw.w != null ? raw.w : (raw.cropW != null ? raw.cropW : raw.width)) || 0;
-    var h = Number(raw.h != null ? raw.h : (raw.cropH != null ? raw.cropH : raw.height)) || 0;
+    var render = fx.render && typeof fx.render === "object" ? fx.render : {};
+    var raw = render.crop && typeof render.crop === "object" ? render.crop : null;
+    if(!raw) return { enabled:false, x:0, y:0, w:0, h:0, sourceW:0, sourceH:0 };
+    var enabled = raw.enabled !== false;
+    var w = Number(raw.w || 0) || 0;
+    var h = Number(raw.h || 0) || 0;
     if (!enabled || w <= 0 || h <= 0) return { enabled:false, x:0, y:0, w:0, h:0, sourceW:0, sourceH:0 };
     return {
       enabled:true,
-      x:Number(raw.x != null ? raw.x : raw.cropX) || 0,
-      y:Number(raw.y != null ? raw.y : raw.cropY) || 0,
+      x:Number(raw.x || 0) || 0,
+      y:Number(raw.y || 0) || 0,
       w:w,
       h:h,
-      sourceW:Number(raw.sourceW || raw.sourceWidth || 0) || 0,
-      sourceH:Number(raw.sourceH || raw.sourceHeight || 0) || 0
+      sourceW:Number(raw.sourceW || 0) || 0,
+      sourceH:Number(raw.sourceH || 0) || 0
     };
   }
 
@@ -173,17 +169,18 @@ function normalizeEntityTargetType(value) {
         else if (t === "dialog") imgEl.dialogImagePath = imgPath;
 
         var cropObj = readFxImageCrop(imgFx);
+        var render = imgFx.render && typeof imgFx.render === "object" ? imgFx.render : {};
         if (t === "image") {
           imgEl.imageCrop = cropObj;
-          if (imgFx.imageScale != null) imgEl.imageScale = Number(imgFx.imageScale) || imgEl.imageScale;
-          if (imgFx.imageInsetX != null) imgEl.imageInsetX = Number(imgFx.imageInsetX) || 0;
-          if (imgFx.imageOffsetX != null) imgEl.imageOffsetX = Number(imgFx.imageOffsetX) || 0;
-          if (imgFx.imageOffsetY != null) imgEl.imageOffsetY = Number(imgFx.imageOffsetY) || 0;
+          if (render.scale != null) imgEl.imageScale = Number(render.scale) || imgEl.imageScale;
+          if (render.sidePadding != null) imgEl.imageInsetX = Number(render.sidePadding) || 0;
+          if (render.offsetX != null) imgEl.imageOffsetX = Number(render.offsetX) || 0;
+          if (render.offsetY != null) imgEl.imageOffsetY = Number(render.offsetY) || 0;
         } else if (t === "dialog") {
           imgEl.dialogImageCrop = cropObj;
-          if (imgFx.imageScale != null) imgEl.dialogImageScale = Number(imgFx.imageScale) || imgEl.dialogImageScale;
-          if (imgFx.imageOffsetX != null) imgEl.dialogImageOffsetX = Number(imgFx.imageOffsetX) || 0;
-          if (imgFx.imageOffsetY != null) imgEl.dialogImageOffsetY = Number(imgFx.imageOffsetY) || 0;
+          if (render.scale != null) imgEl.dialogImageScale = Number(render.scale) || imgEl.dialogImageScale;
+          if (render.offsetX != null) imgEl.dialogImageOffsetX = Number(render.offsetX) || 0;
+          if (render.offsetY != null) imgEl.dialogImageOffsetY = Number(render.offsetY) || 0;
         }
       }
     }

@@ -215,12 +215,12 @@
       const src = source && typeof source === "object" ? source : {};
       const direct = src[String(prefix || "image") + "Crop"];
       if(!direct || typeof direct !== "object") return null;
-      const x = Math.max(0, Number(direct.x != null ? direct.x : direct.cropX) || 0);
-      const y = Math.max(0, Number(direct.y != null ? direct.y : direct.cropY) || 0);
-      const w = Math.max(0, Number(direct.w != null ? direct.w : (direct.width != null ? direct.width : direct.cropW)) || 0);
-      const h = Math.max(0, Number(direct.h != null ? direct.h : (direct.height != null ? direct.height : direct.cropH)) || 0);
+      const x = Math.max(0, Number(direct.x || 0) || 0);
+      const y = Math.max(0, Number(direct.y || 0) || 0);
+      const w = Math.max(0, Number(direct.w || 0) || 0);
+      const h = Math.max(0, Number(direct.h || 0) || 0);
       if(direct.enabled === false || w <= 0 || h <= 0) return null;
-      return { x:x, y:y, w:w, h:h, sourceW:Math.max(0, Number(direct.sourceW || direct.sourceWidth || 0) || 0), sourceH:Math.max(0, Number(direct.sourceH || direct.sourceHeight || 0) || 0) };
+      return { x:x, y:y, w:w, h:h, sourceW:Math.max(0, Number(direct.sourceW || 0) || 0), sourceH:Math.max(0, Number(direct.sourceH || 0) || 0) };
     }
 
     function applyCropBackground(node, path, crop, options){
@@ -271,8 +271,7 @@
       const imgOpacity = clamp(bg.backgroundImageOpacity != null ? (Number(bg.backgroundImageOpacity) / 100) : 1, 0, 1);
       const blur = clamp(bg.backgroundBlur || 0, 0, 40);
 
-      const imgPath =
-        String(bg.backgroundAsset && bg.backgroundAsset.runtimePath || bg.backgroundImagePath || "").trim();
+      const imgPath = String(bg.backgroundImagePath || "").trim();
 
       const stageBg = document.getElementById("stageBg");
       const stageBgImg = document.getElementById("stageBgImg");
@@ -298,16 +297,14 @@
     }
 
     function getChoices(){
-      const direct = INIT.choice || INIT.choices || BIND.choice || BIND.choices;
+      const direct = BIND.choice || INIT.choice;
       const list = Array.isArray(direct) ? direct : [];
       const out = [];
       for(let i=0;i<list.length;i++){
         const item = list[i];
-        if(typeof item === "string"){
-          out.push({ label: item, index: i, role: "", data: null });
-        }else if(item && typeof item === "object"){
-          const role = String(item.role || item.action || item.key || item.id || "");
-          const data = (item.data != null) ? item.data : (item.payload != null ? item.payload : null);
+        if(item && typeof item === "object"){
+          const role = String(item.role || "");
+          const data = item.data != null ? item.data : null;
           out.push({ label: String(item.label || ""), index: i, role: role, data: data });
         }else{
           out.push({ label: "", index: i, role: "", data: null });
@@ -317,7 +314,7 @@
     }
 
     function getDialogLines(){
-      const direct = INIT.text || INIT.dialogLines || BIND.text || BIND.dialogLines || (BIND.dialog && (BIND.dialog.lines || BIND.dialog.text));
+      const direct = BIND.text || INIT.text;
       if(Array.isArray(direct)) return direct.map(v => String(v ?? ""));
       if(typeof direct === "string") return [direct];
       return [];
@@ -667,7 +664,7 @@ prev.addEventListener('click', function(ev){
       indicator.textContent = indicatorShape.text;
       indicator.style.setProperty("--cursor-speed", String(blink) + 's');
 
-      const dialogImagePath = String(item.dialogImagePath || item.dialogImageAsset && item.dialogImageAsset.runtimePath || "").trim();
+      const dialogImagePath = String(item.dialogImagePath || "").trim();
       if(dialogImagePath){
         const media = document.createElement("div");
         media.className = "mediaImg";
@@ -825,8 +822,8 @@ prev.addEventListener('click', function(ev){
                 sessionId: String((INIT && INIT.sessionId) || ''),
                 index: Number(btn.dataset.choiceIndex || "0"),
                 label: String((ch && ch.label) || ""),
-                role: String((ch && (ch.role || ch.action || ch.key || ch.id)) || ""),
-                data: (ch && (ch.data || ch.payload))
+                role: String((ch && ch.role) || ""),
+                data: ch ? ch.data : null
               };
               window.cnpc.sendEvent("choice", payload);
             }
@@ -979,12 +976,7 @@ var stopPagerEv = function(ev){
     function fxImageRuntimePath(fx){
       if(!fx || typeof fx !== "object") return "";
       const asset = fx.asset && typeof fx.asset === "object" ? fx.asset : null;
-      let path = String(fx.assetFilePath || fx.runtimePath || fx.url || "").trim();
-      if(!path && asset){
-        const sub = String(asset.subPath || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-        const file = String(asset.fileName || "").replace(/\\/g, "/").replace(/^\/+/, "");
-        path = sub && file ? (sub + "/" + file) : file;
-      }
+      let path = String(asset && asset.path || "").trim();
       return path.replace(/\\/g, "/").replace(/^\/+/, "");
     }
 
@@ -1003,35 +995,37 @@ var stopPagerEv = function(ev){
       if(!images.length) return elements;
       const out = elements.map((item) => item && typeof item === "object" ? Object.assign({}, item) : item);
       const readFxCrop = function(fx){
-        const direct = fx && typeof fx.imageCrop === "object" ? fx.imageCrop : (fx && typeof fx.crop === "object" ? fx.crop : null);
-        const raw = direct || fx || {};
-        const enabled = direct ? raw.enabled !== false : (fx.cropEnabled === true || String(fx.cropEnabled || "").toLowerCase() === "true");
-        const w = Math.max(0, Number(raw.w != null ? raw.w : (raw.cropW != null ? raw.cropW : raw.width)) || 0);
-        const h = Math.max(0, Number(raw.h != null ? raw.h : (raw.cropH != null ? raw.cropH : raw.height)) || 0);
+        const render = fx && typeof fx.render === "object" ? fx.render : {};
+        const raw = render.crop && typeof render.crop === "object" ? render.crop : null;
+        if(!raw) return null;
+        const enabled = raw.enabled !== false;
+        const w = Math.max(0, Number(raw.w || 0) || 0);
+        const h = Math.max(0, Number(raw.h || 0) || 0);
         if(!enabled || w <= 0 || h <= 0) return null;
         return {
           enabled:true,
-          x:Number(raw.x != null ? raw.x : raw.cropX) || 0,
-          y:Number(raw.y != null ? raw.y : raw.cropY) || 0,
+          x:Number(raw.x || 0) || 0,
+          y:Number(raw.y || 0) || 0,
           w:w,
           h:h,
-          sourceW:Math.max(0, Number(raw.sourceW || raw.sourceWidth || 0) || 0),
-          sourceH:Math.max(0, Number(raw.sourceH || raw.sourceHeight || 0) || 0)
+          sourceW:Math.max(0, Number(raw.sourceW || 0) || 0),
+          sourceH:Math.max(0, Number(raw.sourceH || 0) || 0)
         };
       };
       const applyFxLayout = function(item, fx, type){
         const crop = readFxCrop(fx);
+        const render = fx && typeof fx.render === "object" ? fx.render : {};
         if(type === "image"){
           if(crop) item.imageCrop = crop;
-          if(fx.imageScale != null) item.imageScale = Number(fx.imageScale) || item.imageScale;
-          if(fx.imageInsetX != null) item.imageInsetX = Number(fx.imageInsetX) || 0;
-          if(fx.imageOffsetX != null) item.imageOffsetX = Number(fx.imageOffsetX) || 0;
-          if(fx.imageOffsetY != null) item.imageOffsetY = Number(fx.imageOffsetY) || 0;
+          if(render.scale != null) item.imageScale = Number(render.scale) || item.imageScale;
+          if(render.sidePadding != null) item.imageInsetX = Number(render.sidePadding) || 0;
+          if(render.offsetX != null) item.imageOffsetX = Number(render.offsetX) || 0;
+          if(render.offsetY != null) item.imageOffsetY = Number(render.offsetY) || 0;
         }else if(type === "dialog"){
           if(crop) item.dialogImageCrop = crop;
-          if(fx.imageScale != null) item.dialogImageScale = Number(fx.imageScale) || item.dialogImageScale;
-          if(fx.imageOffsetX != null) item.dialogImageOffsetX = Number(fx.imageOffsetX) || 0;
-          if(fx.imageOffsetY != null) item.dialogImageOffsetY = Number(fx.imageOffsetY) || 0;
+          if(render.scale != null) item.dialogImageScale = Number(render.scale) || item.dialogImageScale;
+          if(render.offsetX != null) item.dialogImageOffsetX = Number(render.offsetX) || 0;
+          if(render.offsetY != null) item.dialogImageOffsetY = Number(render.offsetY) || 0;
         }
       };
       for(let i=0;i<images.length;i++){
@@ -1052,7 +1046,7 @@ var stopPagerEv = function(ev){
     }
 
     function render(){
-      DCLOG("render()", { w: window.innerWidth, h: window.innerHeight, elements: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0, choices: (INIT.choice||INIT.choices||BIND.choice||BIND.choices||[]).length });
+      DCLOG("render()", { w: window.innerWidth, h: window.innerHeight, elements: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0, choices: (BIND.choice||INIT.choice||[]).length });
       clearRuntimeTimers();
       setScale();
       setBackground();
@@ -1083,7 +1077,7 @@ var stopPagerEv = function(ev){
           continue;
         }
         if(type === "image"){
-          const path = String(item.imagePath || item.imageAsset && item.imageAsset.runtimePath || "").trim();
+          const path = String(item.imagePath || "").trim();
           renderImage(stage, item, path);
           continue;
         }
@@ -1143,8 +1137,6 @@ var stopPagerEv = function(ev){
   </script>
 </body>
 </html>
-
-
 
 
 

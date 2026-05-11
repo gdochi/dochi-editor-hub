@@ -938,35 +938,29 @@ out.push(spec);
 function normalizeDcEntrySpec(raw,file){
 var path,id,name,prefix,jsonRoot;
 if(!raw||typeof raw!=="object")return null;
-path=stripDcLibPrefix(raw.path||raw.script||raw.source||raw.file||"");
+path=stripDcLibPrefix(raw.path||"");
 path=normalizeRelPath(path);
 if(!path)return null;
 id=String(raw.id||fileNameOnly(path).replace(/\.js$/i,"")).replace(/^\s+|\s+$/g,"");
 name=String(raw.name||id||fileNameOnly(path)).replace(/^\s+|\s+$/g,"");
 prefix=String(raw.prefix||inferDcPrefix(path)||"").replace(/^\s+|\s+$/g,"");
-jsonRoot=normalizeRelPath(raw.json_root||raw.jsonRoot||raw.json_dir||raw.jsonDir||"");
+jsonRoot=normalizeRelPath(raw.json_root||"");
 return {
 id:id,
 name:name,
 path:path,
 prefix:prefix,
-requiresJson:raw.requires_json===true||raw.requiresJson===true,
+requiresJson:raw.requires_json===true,
 jsonRoot:jsonRoot,
-scriptDeps:normalizeDcSpecPathList(raw.script_deps||raw.scriptDeps||raw.dependencies||raw.deps),
-htmlDeps:normalizeDcSpecPathList(raw.html_deps||raw.htmlDeps)
+scriptDeps:normalizeDcSpecPathList(raw.script_deps),
+htmlDeps:normalizeDcSpecPathList(raw.html_deps)
 };
 }
 function normalizeDcSpecPathList(list){
-var arr=list instanceof Array?list:[],out=[],i,item,path,type;
+var arr=list instanceof Array?list:[],out=[],i,item,path;
 for(i=0;i<arr.length;i++){
 item=arr[i];
-type="";
-if(typeof item==="string")path=item;
-else if(item&&typeof item==="object"){
-type=String(item.type||"").toLowerCase();
-if(type&&type!=="script"&&type!=="html"&&type!=="js")continue;
-path=item.path||item.script||item.file||item.source||"";
-}else path="";
+path=typeof item==="string"?item:"";
 path=stripDcLibPrefix(path);
 path=normalizeRelPath(path);
 if(path)out.push(path);
@@ -1049,7 +1043,7 @@ if(candidate.requiresJson){
 jsons=listDcJsonFiles(sel.prefix);
 if(jsons.error)return {ok:false,error:jsons.error};
 if(!listContainsPath(jsons.files,sel.jsonPath)){
-if(sel.prefix==="dc_dialogue")return {ok:false,error:"Dialogue Trigger requires a JSON file with type=start: "+sel.jsonPath};
+if(sel.prefix==="dc_dialogue")return {ok:false,error:"Dialogue Trigger requires a JSON file with node.type=start: "+sel.jsonPath};
 return {ok:false,error:"Selected JSON file is not installed: "+sel.jsonPath};
 }
 }

@@ -1,12 +1,12 @@
 {
   "guiType": "dialogue",
+  "id": "sample_dialogue_gui",
   "globalStyleBase": "none",
   "themeMix": {
     "pixel": 0,
     "medieval": 0,
     "cyber": 0
   },
-  "name": "sample_dialogue_gui",
   "stage": {
     "width": 1280,
     "height": 720,
@@ -24,10 +24,6 @@
     "backgroundFit": "cover",
     "backgroundImage": "",
     "backgroundImagePath": "",
-    "backgroundAsset": {
-      "previewSrc": "",
-      "runtimePath": ""
-    },
     "placementMode": "snap",
     "grid": {
       "width": 32,
@@ -105,10 +101,6 @@
       "speaker": "",
       "dialogImage": "",
       "dialogImagePath": "",
-      "dialogImageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "dialogImageScale": 100,
       "dialogImageFit": "cover",
       "dialogImageOffsetX": 0,
@@ -116,10 +108,6 @@
       "dialogImageSoftness": 0,
       "image": "",
       "imagePath": "",
-      "imageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "imageScale": 100,
       "imageFit": "contain",
       "imageOffsetX": 0,
@@ -245,10 +233,6 @@
       "speaker": "",
       "dialogImage": "",
       "dialogImagePath": "",
-      "dialogImageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "dialogImageScale": 100,
       "dialogImageFit": "cover",
       "dialogImageOffsetX": 0,
@@ -256,10 +240,6 @@
       "dialogImageSoftness": 0,
       "image": "",
       "imagePath": "",
-      "imageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "imageScale": 100,
       "imageFit": "contain",
       "imageOffsetX": 0,
@@ -385,10 +365,6 @@
       "speaker": "NPC",
       "dialogImage": "",
       "dialogImagePath": "",
-      "dialogImageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "dialogImageScale": 100,
       "dialogImageFit": "cover",
       "dialogImageOffsetX": 0,
@@ -396,10 +372,6 @@
       "dialogImageSoftness": 0,
       "image": "",
       "imagePath": "",
-      "imageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "imageScale": 100,
       "imageFit": "contain",
       "imageOffsetX": 0,
@@ -529,10 +501,6 @@
       "speaker": "",
       "dialogImage": "",
       "dialogImagePath": "",
-      "dialogImageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "dialogImageScale": 100,
       "dialogImageFit": "cover",
       "dialogImageOffsetX": 0,
@@ -540,10 +508,6 @@
       "dialogImageSoftness": 0,
       "image": "",
       "imagePath": "",
-      "imageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "imageScale": 100,
       "imageFit": "contain",
       "imageOffsetX": 0,
@@ -669,10 +633,6 @@
       "speaker": "",
       "dialogImage": "",
       "dialogImagePath": "",
-      "dialogImageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "dialogImageScale": 100,
       "dialogImageFit": "cover",
       "dialogImageOffsetX": 0,
@@ -680,10 +640,6 @@
       "dialogImageSoftness": 0,
       "image": "",
       "imagePath": "",
-      "imageAsset": {
-        "previewSrc": "",
-        "runtimePath": ""
-      },
       "imageScale": 100,
       "imageFit": "contain",
       "imageOffsetX": 0,

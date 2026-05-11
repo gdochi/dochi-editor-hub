@@ -10,6 +10,7 @@
     {
       "source": "dc_dialogue_trigger.js",
       "install_as": "dc_dialogue_trigger.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "script",

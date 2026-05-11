@@ -10,6 +10,7 @@
     {
       "source": "dc_npc_trainer.js",
       "install_as": "dc_npc_trainer.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "script",

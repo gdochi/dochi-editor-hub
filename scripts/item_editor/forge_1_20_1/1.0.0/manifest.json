@@ -10,6 +10,7 @@
     {
       "source": "dc_item_editor.js",
       "install_as": "dc_item_editor.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "json_dir",

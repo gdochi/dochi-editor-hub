@@ -10,16 +10,19 @@
     {
       "source": "dc_npc_core_module.js",
       "install_as": "dc_npc_core_module.js",
+      "type": "script",
       "dependencies": []
     },
     {
       "source": "dc_cfg_checker.js",
       "install_as": "dc_cfg_checker.js",
+      "type": "script",
       "dependencies": []
     },
     {
       "source": "dc_util_common.js",
       "install_as": "dc_util_common.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "html",
@@ -32,21 +35,25 @@
     {
       "source": "dc_cond_checker.js",
       "install_as": "dc_cond_checker.js",
+      "type": "script",
       "dependencies": []
     },
     {
       "source": "dc_reward_checker.js",
       "install_as": "dc_reward_checker.js",
+      "type": "script",
       "dependencies": []
     },
     {
       "source": "dc_sequence_core.js",
       "install_as": "dc_sequence_core.js",
+      "type": "script",
       "dependencies": []
     },
     {
       "source": "dc_gecko_util.js",
       "install_as": "dc_gecko_util.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "mod",
@@ -59,6 +66,7 @@
     {
       "source": "dc_gui_runtime.js",
       "install_as": "dc_gui_runtime.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "script",
@@ -88,6 +96,7 @@
     {
       "source": "dc_dialogue_util.js",
       "install_as": "dc_dialogue_util.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "script",
@@ -130,6 +139,7 @@
     {
       "source": "dc_dialogue_trigger.js",
       "install_as": "dc_dialogue_trigger.js",
+      "type": "script",
       "dependencies": [
         {
           "type": "script",
