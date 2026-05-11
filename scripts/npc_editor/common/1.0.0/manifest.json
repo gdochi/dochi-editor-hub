@@ -6,6 +6,9 @@
   "mc_version": "common",
   "description": "NPC editor package sample shared for Forge and Fabric",
   "entry": "dc_npc_editor.js",
+  "player_scripts": [
+    "dc_npc_editor.js"
+  ],
   "files": [
     {
       "source": "dc_npc_editor.js",

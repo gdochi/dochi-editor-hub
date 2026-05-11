@@ -10,6 +10,8 @@ Local package library for Dochi script distribution.
 - Each version folder contains its own `manifest.json`.
 - Source files may keep versioned names.
 - Installed files can use fixed names through `install_as`.
+- Only packages that must be registered in `scripts/player_scripts.json` declare `player_scripts`.
+- `player_scripts` entries are relative to the package install root; for example `dc_npc_editor.js` becomes `dc_lib/dc_npc_editor.js`.
 
 ## Example
 
