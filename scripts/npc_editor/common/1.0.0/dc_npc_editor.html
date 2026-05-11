@@ -71,7 +71,18 @@ input,select,textarea{width:100%;background:rgba(9,12,18,.78);border:1px solid #
   position:relative;
 }
 .admin-flyout.field{
-  z-index:9999 !important;
+  z-index:30000 !important;
+}
+body.admin-flyout-open #entitySlot{
+  visibility:hidden !important;
+}
+body.admin-flyout-open .entity-view .ghost{
+  display:none !important;
+}
+body.script-active::before,
+.panel{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
 }
 
 </style>
@@ -570,10 +581,11 @@ function syncKeybindSelection(value){var normalized=String(value||""),opt=findKe
 function selectKeybindValue(value){syncKeybindSelection(value);setStatus("Key selected. Press Save Key to apply it.","status-ok");}
 function toggleKeybindPanel(ev){var panel=byId("keybindPanel");if(ev)ev.stopPropagation();panel.classList.toggle("show");if(panel.classList.contains("show"))positionKeybindPanel();}
 function closeKeybindPanel(){byId("keybindPanel").classList.remove("show");}
-function positionAdminFlyout(){var panel=byId("adminPanel"),btn=byId("adminFlyoutBtn"),rect,left,top,maxLeft,minLeft,panelWidth;if(!panel||!btn)return;rect=btn.getBoundingClientRect();top=rect.bottom+8;minLeft=12;panelWidth=Math.max(panel.offsetWidth||0,250);left=rect.left-panelWidth-8;panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
+function setEntityPreviewSuppressed(suppressed){var slot=byId("entitySlot");if(!slot)return;if(suppressed){slot.setAttribute("data-mc-entity","0");slot.style.visibility="hidden";return;}slot.style.visibility="";updateEntityPreview(getSelectedNpc());}
+function positionAdminFlyout(){var panel=byId("adminPanel"),btn=byId("adminFlyoutBtn"),rect,left,top,maxLeft,minLeft,panelWidth,panelHeight;if(!panel||!btn)return;if(panel.parentNode!==document.body)document.body.appendChild(panel);rect=btn.getBoundingClientRect();minLeft=12;panelWidth=Math.min(Math.max(panel.offsetWidth||420,250),Math.max(250,window.innerWidth-minLeft*2));maxLeft=Math.max(minLeft,window.innerWidth-panelWidth-minLeft);left=rect.left-panelWidth-8;if(left<minLeft)left=rect.left;left=Math.max(minLeft,Math.min(left,maxLeft));top=rect.bottom+8;panelHeight=panel.offsetHeight||0;if(panelHeight>0)top=Math.max(12,Math.min(top,window.innerHeight-panelHeight-12));panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
 function positionKeybindPanel(){var panel=byId("keybindPanel"),btn=byId("keybindTrigger"),rect,left,top,maxWidth;if(!panel||!btn)return;rect=btn.getBoundingClientRect();maxWidth=Math.min(1040,window.innerWidth-36);panel.style.width=maxWidth+"px";left=Math.max(12,Math.min(rect.left,window.innerWidth-maxWidth-12));top=rect.bottom+8;panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
-function toggleAdminFlyout(ev){var panel=byId("adminPanel"),willOpen;if(ev)ev.stopPropagation();willOpen=!panel.classList.contains("show");if(willOpen){renderAdminState();panel.classList.add("show");positionAdminFlyout();return;}closeAdminFlyout();closeKeybindPanel();}
-function closeAdminFlyout(){byId("adminPanel").classList.remove("show");}
+function toggleAdminFlyout(ev){var panel=byId("adminPanel"),willOpen;if(ev)ev.stopPropagation();willOpen=!panel.classList.contains("show");if(willOpen){if(panel.parentNode!==document.body)document.body.appendChild(panel);renderAdminState();document.body.classList.add("admin-flyout-open");setEntityPreviewSuppressed(true);panel.classList.add("show");positionAdminFlyout();return;}closeAdminFlyout();closeKeybindPanel();}
+function closeAdminFlyout(){var panel=byId("adminPanel");if(panel)panel.classList.remove("show");document.body.classList.remove("admin-flyout-open");setEntityPreviewSuppressed(false);}
 function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adminFlyoutBtn"),keyPanel=byId("keybindPanel"),target=ev.target;if(target&&target.id==="dcFlyoutCloseBtn"){clearDcSelectionOnly();return;}if(keyPanel&&keyPanel.contains(target))return;if(admin&&adminBtn&&!admin.contains(target)&&!adminBtn.contains(target)){closeAdminFlyout();closeKeybindPanel();return;}if(keyPanel&&!keyPanel.contains(target))closeKeybindPanel();}
 function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);}
 function renderAdminList(){var box=byId("adminListBox"),admin=APP_STATE.admin,list=Array.isArray(admin.admins)?admin.admins:[];box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_admins_registered","No admins registered."))+'</div>';return;}list.forEach(function(entry){var row=document.createElement("div"),meta=document.createElement("div");row.className="loaded-item";meta.className="file-name";meta.innerHTML='<div>'+esc(entry.name||"(unknown)")+'</div><div class="small">'+esc(entry.uuid||"")+"</div>";row.appendChild(meta);if(admin.canManageAdmins&&entry.uuid!==String(admin.owner&&admin.owner.uuid||"")){var btn=document.createElement("button");btn.type="button";btn.className="icon-btn danger";btn.textContent=tr("npc_editor.remove","Remove");btn.onclick=function(){removeAdmin(entry.uuid);};row.appendChild(btn);}box.appendChild(row);});}
@@ -780,6 +792,13 @@ box.innerHTML='<div class="field-label">'+esc(tr("npc_editor.script_mode","Scrip
 }
 function updateEntityPreview(npc){
 var slot=byId("entitySlot"),ghost=byId("entityGhost");
+if(document.body.classList.contains("admin-flyout-open")){
+slot.setAttribute("data-mc-entity","0");
+slot.style.visibility="hidden";
+ghost.style.display="none";
+return;
+}
+slot.style.visibility="";
 if(!npc||!npc.hasPreview||npc.previewSlot==null||npc.previewSlot<0){
 slot.setAttribute("data-mc-entity","0");
 ghost.style.display="flex";
