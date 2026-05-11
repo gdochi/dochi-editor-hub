@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>NPC Browser</title>
+<style>
+:root{--bg:rgba(14,17,24,.72);--panel:rgba(24,28,38,.82);--panel2:rgba(30,35,46,.84);--line:#3e4861;--line2:#55627f;--text:#ececf1;--muted:#a8adc2;--accent:#3b6fd8;--accentText:#b6caf6;--danger:#a93b3b;--danger2:#8a2f2f}
+*{box-sizing:border-box}html,body{width:100%;height:100%}body{margin:0;background:transparent;color:var(--text);font:14px/1.45 Arial,sans-serif;overflow:hidden;position:relative}body.script-active::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(6,9,15,.42),rgba(6,9,15,.52));backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);pointer-events:none;z-index:0}#app{position:relative;z-index:1}#right .panel>.topbar{width:min(100%,1180px);margin-right:auto}
+button,input,select,textarea{font-family:inherit}button{height:38px;padding:0 14px;border:none;border-radius:8px;background:#5c6478;color:#fff;cursor:pointer;font-weight:bold}button:hover{background:#71798e}button:disabled{opacity:.55;cursor:default}
+input,select,textarea{width:100%;background:rgba(9,12,18,.78);border:1px solid #5e667a;color:#fff;border-radius:8px;padding:10px 12px}textarea{resize:vertical}
+#app{display:flex;width:100vw;height:100vh}#left{width:430px;min-width:390px;border-right:1px solid rgba(90,100,126,.45);padding:14px;overflow:auto}#right{flex:1;min-width:0;padding:14px;overflow:auto}
+.panel{background:var(--panel);border:1px solid rgba(85,98,127,.75);border-radius:14px;padding:14px;backdrop-filter:blur(4px)}.panel+.panel{margin-top:12px}.section-title,.field-label{font-size:12px;letter-spacing:.35px;color:var(--accentText);text-transform:uppercase;font-weight:bold}.topbar{display:flex;gap:12px;align-items:flex-start;justify-content:flex-start;flex-wrap:wrap;margin-bottom:14px;overflow:visible;position:relative}.topbar-card{display:inline-flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px solid rgba(85,98,127,.92);border-radius:16px;background:linear-gradient(180deg,rgba(18,21,28,1),rgba(10,13,18,1));box-shadow:0 12px 24px rgba(0,0,0,.18);align-self:flex-start;flex:0 0 auto;width:max-content;max-width:100%;min-width:0}.topbar-cardHead{display:flex;align-items:center;justify-content:flex-start;gap:10px}.topbar-cardLabel{font-size:11px;font-weight:900;letter-spacing:.28px;text-transform:uppercase;color:var(--accentTextSoft,#a8c0ff)}.topbar-cardBody{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;justify-content:flex-start;width:max-content;max-width:100%;min-width:0}.topbar-opacity{flex:0 0 260px;min-width:220px}.topbar-opacity .opacity-wrap{grid-template-columns:1fr 64px}.topbar-scriptBody{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;justify-content:flex-start;min-height:0;width:max-content;max-width:100%}.topbar-script-controls{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;justify-content:flex-start}.topbar-script-card .topbar-cardBody{align-items:flex-start}.detailSummary{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;padding:12px 14px;border:1px solid rgba(85,98,127,.75);border-radius:12px;background:linear-gradient(180deg,rgba(28,32,42,.95),rgba(19,22,29,.95))}.detailSummaryInfo{display:flex;flex-direction:column;gap:4px;min-width:0}.detailSummaryMeta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:180px}.sub{font-size:13px;line-height:1.5;color:var(--muted)}.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.grow{flex:1}.w120{width:120px;flex:0 0 120px}.w160{width:160px;flex:0 0 160px}.small{font-size:12px;color:var(--muted)}.badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:#223a67;color:#dce8ff;font-size:12px;font-weight:bold}.result-bar,.status-line{margin:10px 0 12px;font-size:12px;color:var(--muted)}#npcList{display:flex;flex-direction:column;gap:10px}.npc-card{padding:20px 26px;border:1px solid #4b5366;border-radius:16px;background:var(--panel2);cursor:pointer;min-height:190px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}.npc-card:hover{border-color:#6d7a98}.npc-card.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(59,111,216,.25) inset}.npc-name{font-size:18px;font-weight:bold;color:#fff}.npc-meta{font-size:13px;line-height:1.6;color:#d7d9e3;margin-top:4px;word-break:break-word}.empty{padding:14px;border:1px dashed #566079;border-radius:10px;background:rgba(18,22,31,.72);font-size:13px;color:#9ea4b9}.tab-row{display:flex;gap:10px;flex-wrap:wrap}.tab-btn.active{background:var(--accent)}.view{display:none}.view.show{display:block}.workspace-shell{padding-top:14px;border-top:1px solid rgba(80,90,114,.65)}.detail-shell{max-width:760px;padding:16px;border:1px solid #46506a;border-radius:14px;background:rgba(23,27,35,.74)}
+#npcList{display:flex;flex-direction:column;gap:10px}.npc-card{padding:18px;border:1px solid #4b5366;border-radius:16px;background:var(--panel2);cursor:pointer;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}.npc-card:hover{border-color:#6d7a98}.npc-card.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(59,111,216,.25) inset}.npc-name{font-size:18px;font-weight:bold;color:#fff}.npc-meta{font-size:13px;line-height:1.6;color:#d7d9e3;margin-top:4px;word-break:break-word}.empty{padding:14px;border:1px dashed #566079;border-radius:10px;background:rgba(18,22,31,.72);font-size:13px;color:#9ea4b9}.tab-row{display:flex;gap:10px;flex-wrap:wrap}.tab-btn.active{background:var(--accent)}.view{display:none}.view.show{display:block}.workspace-shell{padding-top:14px;border-top:1px solid rgba(80,90,114,.65)}.detail-shell{max-width:760px;padding:16px;border:1px solid #46506a;border-radius:14px;background:rgba(23,27,35,.74)}.detail-top{display:grid;grid-template-columns:240px 1fr;gap:14px;align-items:start}.entity-column{display:flex;flex-direction:column;gap:10px}.entity-control-row{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:10px;align-items:stretch}.entity-mode-box,.entity-actions-box{padding:10px 12px;border:1px solid #46506a;border-radius:12px;background:rgba(16,20,28,.76)}.entity-mode-box .badge{margin-top:6px}.entity-action-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}.entity-action-list button{width:100%;height:34px;padding:0 10px}.entity-view{height:300px;border:1px solid #46506a;border-radius:12px;background:rgba(9,13,20,.42);position:relative;overflow:hidden}.entity-view .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7f8ba6;font-size:12px;pointer-events:none}.detail-name{font-size:22px;font-weight:bold;margin-bottom:12px}.detail-line{font-size:13px;line-height:1.55;color:#ddd;margin-bottom:10px;word-break:break-word}.btn-row{display:flex;gap:10px;flex-wrap:wrap}.btn-danger{background:var(--danger)}.btn-danger:hover{background:var(--danger2)}
+.script-layout{display:flex;gap:12px;min-height:600px}.script-left{width:340px;min-width:300px;display:flex;flex-direction:column;gap:12px}.script-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stat-box{padding:10px 12px;border:1px solid #46506a;border-radius:10px;background:rgba(16,20,28,.76)}.stat-num{font-size:18px;font-weight:bold;color:#fff;margin-top:4px}#scriptTabList{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}.script-tab-card{padding:12px;border:1px solid #46506a;border-radius:10px;background:rgba(16,20,28,.76);cursor:pointer}.script-tab-card:hover{border-color:#6d7a98}.script-tab-card.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(59,111,216,.25) inset}.script-tab-top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}.script-tab-name{font-size:14px;font-weight:bold;color:#fff}.script-tab-badges{display:flex;gap:6px;flex-wrap:wrap}.mini-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:#2c3340;color:#d9e3fb;font-size:11px;font-weight:bold}.editor-panel{background:rgba(16,20,28,.76);border:1px solid #46506a;border-radius:12px;padding:12px}.inline-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.loaded-list{display:flex;flex-direction:column;gap:8px}.loaded-item{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 10px;border:1px solid #46506a;border-radius:10px;background:rgba(16,20,28,.76);font-size:13px;line-height:1.45;color:#dbe0ef;word-break:break-word}.file-name{flex:1;min-width:0;word-break:break-word}.icon-btn{height:30px;padding:0 10px;border-radius:8px;font-size:12px}.icon-btn.danger{background:#7f3434}.icon-btn.danger:hover{background:#954242}.code-editor{background:rgba(8,11,18,.88);border:1px solid #49526a;border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.45;min-height:380px;overflow:auto;font-family:Consolas,Menlo,monospace}.toggle-row{display:flex;align-items:center;gap:8px}.checkbox{width:auto}.status-ok{color:#bce6c7}.status-err{color:#ffc0c0}.status-warn{color:#ffd998}.opacity-wrap{display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:center}
+.style-switch{display:flex;gap:8px}.style-btn{flex:0 0 auto;min-width:88px}.style-btn.active{background:var(--accent)}.row.control-row{align-items:center;gap:8px;flex-wrap:wrap}.topbar-controls{display:flex;gap:12px;align-items:center}.topbar-controls button{min-width:90px}.topbar-category{font-size:11px;font-weight:800;letter-spacing:.28px;text-transform:uppercase;color:var(--accent-text-soft);padding-top:4px;white-space:nowrap}.topbar-divider{width:1px;align-self:stretch;background:rgba(255,255,255,.08);margin:0 2px}.topbar-script-group{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-left:auto}.topbar-script-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.script-utility-btn{min-width:126px}.admin-toggle{display:inline-flex;align-items:center;gap:6px;position:relative}.admin-toggle button{min-width:94px}.admin-flyout.field{display:none;position:fixed;top:0;left:0;z-index:9999 !important;width:min(420px,calc(100vw - 36px));max-height:min(72vh,740px);overflow:auto;padding:14px;border:1px solid #3f4656;border-radius:14px;background:linear-gradient(180deg,rgba(22,26,36,.98),rgba(18,21,29,.98));box-shadow:0 14px 30px rgba(0,0,0,.35)}.admin-flyout.show{display:flex;flex-direction:column}.loaded-item .small{font-size:11px}#npcList{margin-top:6px}.npc-card{padding:22px 24px;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:10px}.key-picker{position:relative}.key-trigger{width:100%;justify-content:flex-start;text-align:left;background:rgba(9,12,18,.78);border:1px solid #5e667a;color:#fff}.key-trigger:hover{background:#232833}.key-trigger::after{content:"";margin-left:auto;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #cdd4e7}.keyboard-panel{display:none;position:fixed;z-index:520;width:min(920px,calc(100vw - 36px));max-width:calc(100vw - 24px);max-height:min(70vh,720px);overflow:auto;padding:16px;border:1px solid #505767;border-radius:18px;background:linear-gradient(180deg,#2b2d33,#24262b);box-shadow:0 14px 32px rgba(0,0,0,.35)}.keyboard-panel.show{display:flex;flex-direction:column}.keyboard-panel .keycap{text-transform:uppercase;letter-spacing:.45px;}.keyboard-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.keyboard-screen{flex:1;min-width:0;height:38px;padding:0 12px;border:1px solid #4e5563;border-radius:10px;background:#191b20;color:#eef1f8;display:flex;align-items:center;font-weight:bold}.keyboard-close{height:38px;padding:0 12px;background:#4f5567}.keyboard-grid{display:flex;flex-direction:column;gap:8px}.keyboard-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:6px}.keycap{height:52px;border:1px solid #505564;border-radius:10px;background:linear-gradient(180deg,#4b4f56,#3e4249);color:#fdf5e7;text-shadow:0 1px 4px rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;user-select:none;padding:0 6px;font-size:14px}.keycap:hover{background:linear-gradient(180deg,#59606a,#454a54)}.keycap.active{border-color:#88acff;background:linear-gradient(180deg,#506b98,#3f5780)}.keycap.w1{grid-column:span 1}.keycap.w1_5{grid-column:span 2}.keycap.w1_75{grid-column:span 3}.keycap.w2{grid-column:span 3}.keycap.w2_25{grid-column:span 4}.keycap.w2_75{grid-column:span 5}.keycap.w6{grid-column:span 8}.keycap.disabled-key{background:linear-gradient(180deg,#5d5447,#4c4338)}.key-gap{pointer-events:none}.keyboard-row.offset-1{padding-left:10px}.keyboard-row.offset-2{padding-left:22px}.keyboard-row.offset-3{padding-left:34px}
+.topbar-actions-card .topbar-cardBody{width:max-content}.topbar-action-list{display:flex;flex-direction:row;gap:8px;align-items:center;width:max-content}.topbar-action-list button{width:auto;min-width:82px;height:38px;padding:0 12px}
+.picker-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.picker-modal.show{display:flex}.picker-panel{width:min(920px,92vw);max-height:82vh;overflow:hidden;display:flex;flex-direction:column;background:rgba(22,26,36,.96);border:1px solid var(--line2);border-radius:14px;padding:14px}.picker-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.picker-split{display:grid;grid-template-columns:280px 1fr;gap:12px;margin-top:10px;min-height:340px}.picker-pane{border:1px solid #434a59;border-radius:10px;background:#1d2027;overflow:auto;min-height:340px;max-height:56vh}.picker-list{overflow:auto;min-height:340px;max-height:56vh}.picker-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #313846;cursor:pointer}.picker-item:hover{background:#283041}.picker-item:last-child{border-bottom:none}.picker-item.active{background:#32405a}.picker-icon{width:22px;text-align:center;font-size:15px}.picker-item.dir .picker-icon{color:#f0c15b}.picker-item.file .picker-icon{color:#9dc0ff}.picker-name{flex:1;min-width:0;word-break:break-word}.picker-meta{font-size:11px;color:#9aa3bb}.tree-node{padding:8px 10px;border-bottom:1px solid #313846;cursor:pointer;user-select:none}.tree-node:hover{background:#283041}.tree-node.active{background:#32405a}.tree-label{display:flex;align-items:center;gap:8px}.tree-children{margin-left:18px}.tree-caret{width:12px;text-align:center;color:#9aa3bb}
+.notice-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.58);z-index:12000}.notice-modal.show{display:flex}.notice-box{width:min(560px,92vw);padding:18px;border:1px solid rgba(85,98,127,.85);border-radius:16px;background:linear-gradient(180deg,rgba(22,26,36,.98),rgba(16,20,28,.98));box-shadow:0 18px 36px rgba(0,0,0,.45)}.notice-title{font-size:20px;font-weight:800;color:#fff}.notice-text{margin-top:10px;color:#d7dce9;line-height:1.6;white-space:pre-wrap}.notice-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.confirm-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.62);z-index:12001}.confirm-modal.show{display:flex}.confirm-box{width:min(560px,92vw);padding:18px;border:1px solid rgba(85,98,127,.9);border-radius:16px;background:linear-gradient(180deg,rgba(22,26,36,.99),rgba(16,20,28,.99));box-shadow:0 18px 36px rgba(0,0,0,.48)}.confirm-title{font-size:20px;font-weight:800;color:#fff}.confirm-text{margin-top:10px;color:#d7dce9;line-height:1.6;white-space:pre-wrap}.confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.dc-overlay{display:none;position:relative;z-index:30;padding:0;overflow:visible;background:transparent;min-height:calc(100vh - 220px);max-height:none;width:100%}
+.dc-shell{width:100%;margin:0;display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 220px);padding:0}
+.dc-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:16px 18px;border:1px solid rgba(99,108,133,.72);border-radius:18px;background:linear-gradient(180deg,rgba(18,22,31,.96),rgba(14,18,26,.96));box-shadow:0 12px 32px rgba(0,0,0,.24)}
+.dc-hero-main{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dc-title{font-size:26px;line-height:1.08;font-weight:800;color:#fff;letter-spacing:.2px}
+.dc-sub{max-width:780px;color:var(--muted)}
+.dc-hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:180px}.dc-hero-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.dc-hero-actions button{min-width:116px}
+.dc-hero-badge{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 14px;border-radius:999px;background:#223a67;color:#dce8ff;font-size:12px;font-weight:800;letter-spacing:.3px}
+.dc-main{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-height:0;flex:1}
+.dc-list-panel{min-height:520px;padding:16px;border:1px solid rgba(85,98,127,.72);border-radius:18px;background:rgba(20,24,33,.86);box-shadow:0 10px 22px rgba(0,0,0,.16)}
+.dc-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.dc-section-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dc-section-title .field-label{margin-bottom:0}
+.dc-section-actions{display:flex;gap:8px;align-items:center;flex:0 0 auto}
+.dc-flyout{display:none;position:absolute;top:0;right:0;width:min(560px,44vw);max-width:calc(100% - 26px);max-height:calc(100vh - 250px);overflow:auto;padding:16px;border:1px solid rgba(101,116,148,.88);border-radius:18px;background:linear-gradient(180deg,rgba(22,27,38,.98),rgba(15,19,28,.98));box-shadow:0 22px 48px rgba(0,0,0,.42);z-index:5}
+.dc-flyout.show{display:flex;flex-direction:column;gap:12px}
+.dc-flyout-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(85,98,127,.55)}
+.dc-flyout-title{font-size:18px;font-weight:800;color:#fff;word-break:break-word}
+.dc-flyout-body{display:flex;flex-direction:column;gap:12px}
+.dc-card{padding:14px;border:1px solid rgba(85,98,127,.72);border-radius:14px;background:rgba(23,27,36,.82)}
+.dc-card .field-label{margin-bottom:8px}
+.dc-card .small{margin-top:8px;line-height:1.5}
+.dc-pills{display:flex;flex-wrap:wrap;gap:8px}
+.dc-panel-note{color:var(--muted);font-size:12px;line-height:1.5}
+.dc-selection-stack{display:flex;flex-direction:column;gap:8px}
+.dc-action-row{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:auto}
+.dc-badge-lg{min-height:32px;height:auto;padding:8px 14px;border-radius:12px}
+.dc-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto}
+.dc-entry-list{max-height:none;min-height:390px}
+.dc-list.compact{max-height:220px}
+.dc-list-header{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.dc-list-header .small{margin-top:0}
+.dc-install-row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:13px 14px;border:1px solid #46506a;border-radius:12px;background:rgba(16,20,28,.76);cursor:pointer}
+.dc-install-row:hover{border-color:#6d7a98}
+.dc-install-row.active{border-color:var(--accent);background:rgba(22,31,49,.92);box-shadow:0 0 0 2px rgba(59,111,216,.78) inset,0 0 0 1px rgba(88,135,255,.35)}
+.dc-json-row.active{border-color:#4f8cff;box-shadow:0 0 0 2px rgba(79,140,255,.92) inset,0 0 0 1px rgba(79,140,255,.35)}
+.dc-install-row.disabled{cursor:not-allowed;opacity:.58;border-color:#5b3d43;background:rgba(40,22,28,.72)}
+.dc-install-row.disabled:hover{border-color:#6b4650}
+.dc-install-main{min-width:0;flex:1}
+.dc-install-title{font-weight:bold;color:#fff;word-break:break-word}
+.dc-install-meta{font-size:11px;color:var(--muted);word-break:break-word}
+.dc-install-missing{margin-top:4px;font-size:11px;color:#ffb5b5;word-break:break-word}
+.dc-install-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:#223a67;color:#dce8ff;font-size:11px;font-weight:800;white-space:nowrap;flex:0 0 auto}
+@media (max-width:1180px){.dc-hero{flex-direction:column}.dc-hero-side{align-items:flex-start}.dc-flyout{position:relative;width:100%;max-width:none;max-height:none}.dc-action-row{justify-content:flex-start}}
+@media (max-width:1280px){body{overflow:auto}#app{display:block;height:auto}#left,#right{width:100%;min-width:0;border-right:none;border-bottom:1px solid rgba(90,100,126,.45)}.script-layout{display:block;min-height:0}.script-left{width:100%;min-width:0;margin-bottom:12px}.detail-shell{max-width:none}.detail-top{grid-template-columns:1fr}.picker-split{grid-template-columns:1fr}}
+
+/* z-index fixes */
+#left{
+  position:relative;
+}
+#right{
+  position:relative;
+}
+.admin-flyout.field{
+  z-index:9999 !important;
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+<div id="left"><div class="panel"><div class="field" style="margin-bottom:12px"><div class="field-label">Scan Range</div><div class="row control-row" style="align-items:center"><div class="field grow" style="min-width:220px"><input id="scanRangeInput" type="range" min="8" max="128" step="4" value="48"></div><div class="field w120"><input id="scanRangeNumber" type="number" min="8" max="128" step="4" value="48"></div></div></div><div class="topbar" style="margin-bottom:8px"><div><div class="section-title">NPC Browser</div><div class="sub">Nearby NPC editor. Cached in player tempdata for this session.</div></div></div><div class="row"><div class="field grow"><div class="field-label">Name</div><input id="nameInput" type="text" placeholder="NPC name"></div><div class="field w160"><div class="field-label">Faction</div><select id="factionSelect"></select></div></div><div class="result-bar" id="resultBar">Results: 0</div><div id="npcList"></div></div></div>
+<div id="right"><div class="panel"><div class="topbar" style="margin-bottom:8px"><div class="topbar-card topbar-general-card"><div class="topbar-cardHead"><div class="topbar-cardLabel">General</div></div><div class="topbar-cardBody"><div class="tab-row"><button type="button" class="tab-btn active" id="detailTabBtn" title="Show the NPC detail panel.">Detail</button></div><div class="topbar-controls"><button type="button" id="refreshBtn" title="Refresh NPC cache and script state.">Refresh</button><div class="admin-toggle"><button type="button" id="adminFlyoutBtn" title="Open admin access and keybind settings.">Admin</button><div id="adminPanel" class="field admin-flyout"><div class="field-label">Admin</div><div id="adminSetupBox" class="empty" style="display:none"><div>Main admin is not registered yet.</div><div class="btn-row" style="margin-top:10px"><button type="button" id="bootstrapAdminBtn">Register Owner</button></div></div><div id="adminManageBox" class="editor-panel" style="display:none;padding:10px;margin-top:6px"><div class="small" id="adminOwnerLine">Owner: -</div><div class="small" id="adminRoleLine">Role: -</div><div class="field" style="margin-top:10px"><div class="field-label">Open Key</div><div class="row"><div class="field grow key-picker"><button type="button" id="keybindTrigger" class="key-trigger">Disabled</button></div><button type="button" id="keybindSaveBtn">Save Key</button></div></div><div class="field" style="margin-top:10px"><div class="field-label">Admins</div><div id="adminListBox" class="loaded-list"><div class="empty">No admins.</div></div></div><div class="field" id="adminEditBox" style="margin-top:10px;display:none"><div class="field-label">Add Admin</div><div class="row"><div class="field grow"><select id="adminPlayerSelect"></select></div><button type="button" id="adminAddBtn">Add</button><button type="button" class="btn-danger" id="adminResetBtn">Reset Admins</button></div></div></div></div></div></div></div></div><div class="topbar-card topbar-language-card"><div class="topbar-cardHead"><div class="topbar-cardLabel">Language</div></div><div class="topbar-cardBody"><select id="localeSelect" style="width:160px"></select></div></div><div class="topbar-card topbar-script-card"><div class="topbar-cardHead"><div class="topbar-cardLabel">Script Mode</div></div><div class="topbar-cardBody"><div class="topbar-scriptBody"><div class="topbar-controls topbar-script-controls" id="topbarScriptActions"></div></div></div></div><div class="topbar-card topbar-actions-card"><div class="topbar-cardHead"><div class="topbar-cardLabel">Actions</div></div><div class="topbar-cardBody"><div class="topbar-action-list"><button type="button" id="tpBtn">TP</button><button type="button" id="editBtn">Edit</button><button type="button" class="btn-danger" id="deleteBtn">Delete</button></div></div></div></div></div><div class="workspace-shell"><div id="detailView" class="view show"><div class="detail-shell"><div class="detailSummary"><div class="detailSummaryInfo"><div class="small" id="selectedLine">Selected: none</div><div class="status-line" id="statusLine"></div></div></div><div class="detail-top"><div class="entity-column"><div class="entity-view"><div id="entitySlot" data-mc-entity="0" style="width:100%;height:100%"></div><div id="entityGhost" class="ghost">Preview updates on refresh/open</div></div><div id="entityModeBox" class="entity-mode-box"><div class="field-label">Script Mode</div><div class="small">-</div></div></div><div id="detailBox" class="empty">Select an NPC to view its details.</div></div></div></div><div id="scriptView" class="view"><div class="script-layout"><div class="script-left"><div class="field"><div class="field-label">Script Summary</div><div class="summary-grid"><div class="stat-box"><div class="small">Tabs</div><div class="stat-num" id="statTabs">0</div></div><div class="stat-box"><div class="small">JS Files</div><div class="stat-num" id="statFiles">0</div></div><div class="stat-box"><div class="small">Inline</div><div class="stat-num" id="statInline">0</div></div></div></div><div class="field"><div class="field-label">Per Tab</div><div id="scriptTabList"><div class="empty">Open the Script tab to load data from the cached NPC object.</div></div></div></div><div class="script-right"><div class="editor-panel"><div class="inline-head"><div class="field-label">Tab Editor</div><div id="scriptMetaLine" class="small">No tab selected</div></div><div class="row" style="margin-top:10px"><label class="toggle-row"><input class="checkbox" id="scriptEnabledCheckbox" type="checkbox"> <span>Script Enabled</span></label><button type="button" id="applyScriptBtn">Apply</button><button type="button" id="reloadScriptBtn">Reload</button></div><div class="small" style="margin-top:6px">Apply writes Scripts and ScriptEnabled using the cached nearby NPC reference.</div><div class="field" style="margin-top:10px"><div class="field-label">Loaded JS Files</div><div id="loadedFilesBox" class="loaded-list"><div class="empty">No tab selected.</div></div></div><div class="field" style="margin-top:10px"><div class="field-label">Script File</div><div class="row"><div class="field grow"><input id="newFileInput" type="text" placeholder="Choose a file from the browser" readonly></div><button type="button" id="addFileBtn">Add</button><button type="button" id="browseFileBtn">Browse</button></div></div><div class="field" style="margin-top:10px"><div class="field-label">Inline Code</div><textarea id="inlineEditor" class="code-editor" spellcheck="false"></textarea></div></div></div></div></div></div></div></div></div>
+
+<div id="keybindPanel" class="keyboard-panel"><div class="keyboard-top"><div id="keybindScreen" class="keyboard-screen">Disabled</div><button type="button" id="keybindCloseBtn" class="keyboard-close">Close</button></div><div id="keybindKeyboard" class="keyboard-grid"></div></div><div id="filePickerModal" class="picker-modal"><div class="picker-panel"><div class="picker-head"><div><div class="field-label">Script File Browser</div><div class="small" id="pickerRootLine">customnpcs/scripts/ecmascript</div><div class="small" id="pickerPathLine">/</div></div><div class="btn-row"><button type="button" id="pickerAddBtn">Add</button><button type="button" id="pickerUpBtn">Up</button><button type="button" id="pickerCloseBtn">Close</button></div></div><div class="row" style="margin-top:10px"><div class="field grow"><input id="pickerSearchInput" type="text" placeholder="Search current folder"></div><button type="button" id="pickerRefreshBtn">Refresh</button></div><div class="picker-split"><div id="pickerTree" class="picker-pane"><div class="empty">Loading folders...</div></div><div id="pickerList" class="picker-pane picker-list"><div class="empty">Loading files...</div></div></div></div></div>
+<div id="noticeModal" class="notice-modal"><div class="notice-box"><div id="noticeTitle" class="notice-title">Warning</div><div id="noticeText" class="notice-text"></div><div class="notice-actions"><button type="button" id="noticeOkBtn">OK</button></div></div></div>
+<div id="confirmModal" class="confirm-modal"><div class="confirm-box"><div id="confirmTitle" class="confirm-title">Confirm</div><div id="confirmText" class="confirm-text"></div><div class="confirm-actions"><button type="button" id="confirmYesBtn">Yes</button><button type="button" id="confirmNoBtn">No</button></div></div></div>
+<script>
+var RAW=window.cnpc.initData||{};try{if(RAW&&RAW.charAt)RAW=JSON.parse(RAW);}catch(rawErr){window.cnpc.sendEvent("debug",{step:"raw_parse",msg:String(rawErr&&rawErr.message||rawErr)});throw rawErr;}
+var DEBUG=RAW.debug===true;
+var I18N=(RAW.i18n&&RAW.i18n.messages)||{},I18N_READY=true,I18N_APPLYING=false,I18N_OBSERVER=null,I18N_LOAD_ERROR=String((RAW.i18n&&RAW.i18n.error)||RAW.i18nError||""),I18N_LOCALE=normalizeLocale((RAW.i18n&&RAW.i18n.locale)||RAW.locale||"en_us"),I18N_WAITING=null,I18N_REQUEST_ID=0;
+var I18N_EXACT_KEYS={
+"Scan Range":"npc_editor.scan_range","NPC Browser":"npc_editor.npc_browser","Nearby NPC editor. Cached in player tempdata for this session.":"npc_editor.npc_browser_desc","Name":"npc_editor.name","Faction":"npc_editor.faction","General":"npc_editor.general","Detail":"npc_editor.detail","Refresh":"npc_editor.refresh","Admin":"npc_editor.admin","Main admin is not registered yet.":"npc_editor.admin_not_registered","Register Owner":"npc_editor.register_owner","Open Key":"npc_editor.open_key","Disabled":"npc_editor.disabled","Save Key":"npc_editor.save_key","Admins":"npc_editor.admins","No admins.":"npc_editor.no_admins","No admins registered.":"npc_editor.no_admins_registered","Add Admin":"npc_editor.add_admin","Add":"npc_editor.add","Reset Admins":"npc_editor.reset_admins","Script":"npc_editor.script_mode","Script Mode":"npc_editor.script_mode","DCE":"npc_editor.dce","{value} blocks":"npc_editor.distance_blocks","Selected NPC":"npc_editor.selected_npc","Selected: none":"npc_editor.selected_none","Preview and controls stay below.":"npc_editor.preview_controls_below","Preview updates on refresh/open":"npc_editor.preview_updates","Select an NPC to view its details.":"npc_editor.select_npc_details","TP":"npc_editor.tp","Edit":"npc_editor.edit","Delete":"npc_editor.delete","Script Summary":"npc_editor.script_summary","Tabs":"npc_editor.tabs","JS Files":"npc_editor.js_files","Inline":"npc_editor.inline","Per Tab":"npc_editor.per_tab","Open the Script tab to load data from the cached NPC object.":"npc_editor.open_script_tab_hint","Tab Editor":"npc_editor.tab_editor","No tab selected":"npc_editor.no_tab_selected","No tab selected.":"npc_editor.no_tab_selected_period","Script Style":"npc_editor.script_style","Script Enabled":"npc_editor.script_enabled","Apply":"npc_editor.apply","Reload":"npc_editor.reload","Apply writes Scripts and ScriptEnabled using the cached nearby NPC reference.":"npc_editor.apply_writes_hint","Loaded JS Files":"npc_editor.loaded_js_files","Script File":"npc_editor.script_file","Inline Code":"npc_editor.inline_code","Close":"npc_editor.close","Cancel":"npc_editor.cancel","Script File Browser":"npc_editor.script_file_browser","Up":"npc_editor.up","Loading folders...":"npc_editor.loading_folders","Loading files...":"npc_editor.loading_files","Warning":"npc_editor.warning","OK":"npc_editor.ok","Confirm":"npc_editor.confirm","Yes":"npc_editor.yes","No":"npc_editor.no","All":"npc_editor.all","None":"npc_editor.none","Title":"npc_editor.title","Position":"npc_editor.position","Distance":"npc_editor.distance","Style":"npc_editor.style","Dochi Lock":"npc_editor.dochi_lock","LOCKED":"npc_editor.locked","unlocked":"npc_editor.unlocked","Remove":"npc_editor.remove","Select player":"npc_editor.select_player","DC Editor Hub":"npc_editor.dc_hub","Installable script apply":"npc_editor.installable_apply","Pick an entry from the list. Details open in a side panel.":"npc_editor.dc_pick_entry","Only entries whose required JS and HTML files exist can be applied.":"npc_editor.dc_requirements_note","Installable Scripts":"npc_editor.installable_scripts","Choose one entry. Disabled entries show the missing requirement directly in the list.":"npc_editor.installable_scripts_desc","Back to General":"npc_editor.back_general","Loading installable scripts...":"npc_editor.loading_installable","Selection":"npc_editor.selection","No selection":"npc_editor.no_selection","No selection yet.":"npc_editor.no_selection_yet","Entry":"npc_editor.entry","Applied ScriptList":"npc_editor.applied_scriptlist","Matching JSON":"npc_editor.matching_json","Actions":"npc_editor.actions","Apply to NPC":"npc_editor.apply_to_npc","No installable dcE scripts found.":"npc_editor.no_installable","Select a script to load matching JSON paths.":"npc_editor.select_script_json_paths","This entry does not require JSON.":"npc_editor.no_json_required","Select a script first.":"npc_editor.select_script_first_period","No matching JSON files found.":"npc_editor.no_matching_json","folder":"npc_editor.folder","double click to select":"npc_editor.double_click_select","double click to add":"npc_editor.double_click_add","Nothing to display.":"npc_editor.nothing_display","Select":"npc_editor.select","Ready":"npc_editor.ready","Missing requirements":"npc_editor.missing_requirements","Select JSON":"npc_editor.select_json","Reload installable list":"npc_editor.reload_installable","not set":"npc_editor.not_set","will lock on apply":"npc_editor.will_lock_apply","Dochi locked":"npc_editor.dochi_locked"};
+var I18N_ATTR_KEYS={"NPC name":"npc_editor.npc_name_placeholder","Show the NPC detail panel.":"npc_editor.detail_title","Refresh NPC cache and script state.":"npc_editor.refresh_title","Open admin access and keybind settings.":"npc_editor.admin_title","Switch back to regular CNPC script editing.":"npc_editor.general_style_title","Choose a file from the browser":"npc_editor.choose_file_placeholder","Search current folder":"npc_editor.search_folder_placeholder","Choose an installable script":"npc_editor.choose_installable_placeholder","Choose spec JSON":"npc_editor.choose_json_placeholder","Switch into dcE mode for dc_lib and JSON pairing.":"npc_editor.dce_title","general = regular CNPC Script and ScriptList editing mode.":"npc_editor.style_desc_general","dcE = Warning: DC lib scripts and JSON pairing mode.":"npc_editor.style_desc_dce_warning","dcE = Dochi locked. Update only through this NPC Editor dcE panel.":"npc_editor.style_desc_dce_locked"};
+I18N_EXACT_KEYS["dcE mode locks the regular script list and switches this editor into DC pairing mode.\n\nMove to dcE mode?"]="npc_editor.dce_confirm";
+I18N_EXACT_KEYS["Switch this NPC to General mode?\n\nThis clears the NPC Scripts, ScriptList, and disables ScriptEnabled. Continue?"]="npc_editor.general_mode_confirm";
+I18N_EXACT_KEYS["Switch this NPC to DCE mode?\n\nThis clears the NPC Scripts, ScriptList, and disables ScriptEnabled. dc_lib scripts are applied later from DC Editor Hub. Continue?"]="npc_editor.dce_mode_confirm";
+I18N_EXACT_KEYS["Language"]="npc_editor.language";
+I18N_EXACT_KEYS["Language updated."]="npc_editor.language_updated";
+function normalizeLocale(locale){locale=String(locale||"en_us").toLowerCase().replace("-","_");return locale||"en_us";}
+function debugStep(step,msg){if(DEBUG)window.cnpc.sendEvent("debug",{step:String(step||"event"),msg:String(msg||"")});}
+function i18nKeyCount(){return Object.keys(I18N||{}).length;}
+debugStep("script","start locale="+I18N_LOCALE+" keys="+i18nKeyCount()+" initError="+I18N_LOAD_ERROR);
+function tr(key,fallback,vars){
+var s=I18N[key];
+if(s==null)s=fallback!=null?String(fallback):String(key);
+if(vars){
+Object.keys(vars).forEach(function(k){
+s=s.replace(new RegExp("\\{"+k+"\\}","g"),String(vars[k]));
+});
+}
+return s;
+}
+function trExact(text){
+var key=I18N_EXACT_KEYS[String(text||"")];
+return key?tr(key,text):text;
+}
+function loadI18n(done,persist){
+if(i18nKeyCount()>0){
+debugStep("i18n","using initData keys="+i18nKeyCount());
+if(done)done();
+return;
+}
+I18N_READY=false;
+I18N_WAITING=done||null;
+I18N_REQUEST_ID++;
+debugStep("i18n","request server pack "+I18N_LOCALE);
+sendEvt("npc_i18n_request",{locale:I18N_LOCALE,persist:persist===true});
+(function(id,locale){
+setTimeout(function(){
+if(I18N_READY||I18N_REQUEST_ID!==id)return;
+I18N_LOAD_ERROR="server language pack timeout: "+locale;
+debugStep("i18n",I18N_LOAD_ERROR);
+I18N_READY=true;
+finishI18nLoad();
+},1800);
+})(I18N_REQUEST_ID,I18N_LOCALE);
+}
+function finishI18nLoad(){
+var done=I18N_WAITING;
+I18N_WAITING=null;
+if(done)done();
+}
+function receiveI18nPack(data){
+data=parsePayload(data);
+if(!data)return;
+I18N_REQUEST_ID++;
+I18N_LOCALE=normalizeLocale(data.locale||I18N_LOCALE);
+if(byId("localeSelect"))byId("localeSelect").value=I18N_LOCALE;
+if(data.error){
+I18N={};
+I18N_LOAD_ERROR=String(data.error);
+debugStep("i18n","server pack error "+I18N_LOAD_ERROR);
+}else{
+I18N=data.messages||{};
+I18N_LOAD_ERROR="";
+debugStep("i18n","server pack loaded "+I18N_LOCALE+" keys="+i18nKeyCount());
+}
+I18N_READY=true;
+finishI18nLoad();
+}
+function applyI18n(root){var el,walker,node,attr,i,attrs=["placeholder","title","value"];if(!I18N_READY||!root||I18N_APPLYING)return;I18N_APPLYING=true;el=root.nodeType===1?root:root.parentNode;if(el){if(el.nodeType===1){for(i=0;i<attrs.length;i++){attr=attrs[i];if(el.hasAttribute&&el.hasAttribute(attr))translateAttr(el,attr);}Array.prototype.forEach.call(el.querySelectorAll("[placeholder],[title],[value]"),function(n){for(var j=0;j<attrs.length;j++)translateAttr(n,attrs[j]);});}walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var p=n.parentNode,tag=p&&p.tagName;return tag==="SCRIPT"||tag==="STYLE"||tag==="TEXTAREA"?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;}});while(node=walker.nextNode())translateTextNode(node);}I18N_APPLYING=false;}
+function translateAttr(el,attr){
+var originAttr="data-i18n-origin-"+attr,v=el.getAttribute(attr),origin,key,next;
+if(v==null)return;
+origin=el.getAttribute(originAttr);
+if(origin==null){
+origin=v;
+el.setAttribute(originAttr,origin);
+}
+key=I18N_ATTR_KEYS[origin]||I18N_EXACT_KEYS[origin];
+if(!key)return;
+next=tr(key,origin);
+if(el.getAttribute(attr)!==next)el.setAttribute(attr,next);
+}
+function translateTextNode(node){
+var raw=node.nodeValue,trim=String(raw).trim(),key,idx,next;
+if(!trim&&!node._i18nOrigin)return;
+if(!node._i18nOrigin){
+key=I18N_EXACT_KEYS[trim];
+if(!key)return;
+idx=raw.indexOf(trim);
+node._i18nOrigin=trim;
+node._i18nPre=idx>0?raw.substring(0,idx):"";
+node._i18nPost=idx>=0?raw.substring(idx+trim.length):"";
+}
+key=I18N_EXACT_KEYS[node._i18nOrigin];
+if(!key)return;
+next=String(node._i18nPre||"")+tr(key,node._i18nOrigin)+String(node._i18nPost||"");
+if(node.nodeValue!==next)node.nodeValue=next;
+}
+function startI18nObserver(){if(I18N_OBSERVER||!window.MutationObserver)return;I18N_OBSERVER=new MutationObserver(function(list){if(I18N_APPLYING)return;list.forEach(function(m){if(m.type==="characterData")applyI18n(m.target.parentNode);else applyI18n(m.target);});});I18N_OBSERVER.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title","value"]});}
+function maybeReloadI18n(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");});}
+var KEY_OPTIONS=[{value:"",label:"Disabled",className:"disabled-key w2_25"},{value:"290",label:"F1",className:"w1"},{value:"291",label:"F2",className:"w1"},{value:"292",label:"F3",className:"w1"},{value:"293",label:"F4",className:"w1"},{value:"294",label:"F5",className:"w1"},{value:"295",label:"F6",className:"w1"},{value:"296",label:"F7",className:"w1"},{value:"297",label:"F8",className:"w1"},{value:"298",label:"F9",className:"w1"},{value:"299",label:"F10",className:"w1"},{value:"300",label:"F11",className:"w1"},{value:"301",label:"F12",className:"w1"},{value:"81",label:"Q",className:"w1"},{value:"87",label:"W",className:"w1"},{value:"69",label:"E",className:"w1"},{value:"82",label:"R",className:"w1"},{value:"84",label:"T",className:"w1"},{value:"89",label:"Y",className:"w1"},{value:"85",label:"U",className:"w1"},{value:"73",label:"I",className:"w1"},{value:"79",label:"O",className:"w1"},{value:"80",label:"P",className:"w1"},{value:"91",label:"[",className:"w1"},{value:"93",label:"]",className:"w1"},{value:"65",label:"A",className:"w1"},{value:"83",label:"S",className:"w1"},{value:"68",label:"D",className:"w1"},{value:"70",label:"F",className:"w1"},{value:"71",label:"G",className:"w1"},{value:"72",label:"H",className:"w1"},{value:"74",label:"J",className:"w1"},{value:"75",label:"K",className:"w1"},{value:"76",label:"L",className:"w1"},{value:"59",label:";",className:"w1"},{value:"39",label:"'",className:"w1"},{value:"90",label:"Z",className:"w1"},{value:"88",label:"X",className:"w1"},{value:"67",label:"C",className:"w1"},{value:"86",label:"V",className:"w1"},{value:"66",label:"B",className:"w1"},{value:"78",label:"N",className:"w1"},{value:"77",label:"M",className:"w1"},{value:"44",label:",",className:"w1"},{value:"46",label:".",className:"w1"},];
+var KEY_LAYOUT=[{className:"keyboard-row",keys:[{value:"",label:"Disabled",className:"disabled-key w2_25"},"290","291","292","293","294","295","296","297","298","299","300","301"]},{className:"keyboard-row offset-1",keys:["81","87","69","82","84","89","85","73","79","80","91","93"]},{className:"keyboard-row offset-2",keys:["65","83","68","70","71","72","74","75","76","59","39"]},{className:"keyboard-row offset-3",keys:["90","88","67","86","66","78","77","44","46"]}];
+var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:"",scanRange:Number(RAW.scanRange||48),admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""},generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
+var LOCALE_OPTIONS=Array.isArray(RAW.localeOptions)?RAW.localeOptions:[];
+function byId(id){return document.getElementById(id);}
+function setupLocaleSelect(){var select=byId("localeSelect"),options=LOCALE_OPTIONS.slice(),seen={},current=normalizeLocale(I18N_LOCALE),hasCurrent=false;if(!select)return;if(!options.length)options=[{locale:"en_us",label:"English"},{locale:"ko_kr",label:"Korea"},{locale:"ja_jp",label:"Japan"},{locale:"zh_cn",label:"China"},{locale:"ru_ru",label:"Russia"}];select.innerHTML="";options.forEach(function(opt){var locale=normalizeLocale(opt.locale||"");if(!locale||seen[locale])return;seen[locale]=true;if(locale===current)hasCurrent=true;appendOption(select,locale,opt.label||locale);});if(!hasCurrent)appendOption(select,current,current);select.value=current;select.onchange=function(){changeLocale(this.value);};}
+function changeLocale(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;var select=byId("localeSelect");if(select)select.value=locale;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);setStatus(tr("npc_editor.language_updated","Language updated."),"status-ok");},true);}
+function normalizeAdminState(admin){admin=admin||{};return {initialized:!!admin.initialized,owner:admin.owner||{uuid:"",name:""},admins:Array.isArray(admin.admins)?admin.admins:[],players:Array.isArray(admin.players)?admin.players:[],keybind:String(admin.keybind||""),isOwner:!!admin.isOwner,isAdmin:!!admin.isAdmin,canOpen:admin.canOpen===true,canManageAdmins:admin.canManageAdmins===true,canEdit:admin.canEdit===true};}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function setStatus(msg,cls){var el=byId("statusLine");el.textContent=trExact(msg||"");el.className="status-line "+(cls||"");}
+function showNotice(text,title){var modal=byId("noticeModal"),titleEl=byId("noticeTitle"),textEl=byId("noticeText");titleEl.textContent=trExact(title||"Warning");textEl.textContent=trExact(String(text||""));modal.classList.add("show");}
+function hideNotice(){var modal=byId("noticeModal");if(modal)modal.classList.remove("show");}
+function showConfirm(text,title,onYes,onNo){var modal=byId("confirmModal"),titleEl=byId("confirmTitle"),textEl=byId("confirmText"),yesBtn=byId("confirmYesBtn"),noBtn=byId("confirmNoBtn");titleEl.textContent=trExact(title||"Confirm");textEl.textContent=trExact(String(text||""));yesBtn.onclick=function(){hideConfirm();if(onYes)onYes();};noBtn.onclick=function(){hideConfirm();if(onNo)onNo();};modal.classList.add("show");}
+function hideConfirm(){var modal=byId("confirmModal");if(modal)modal.classList.remove("show");}
+function sendEvt(name,data){
+debugStep("event","send "+String(name));
+window.cnpc.sendEvent(name,data||{});
+}
+function parsePayload(data){if(data&&data.charAt)return JSON.parse(data);return data||null;}
+function normalizeFileItem(v){if(v&&v.path!=null)return v;return {path:String(v||""),name:lastSeg(v||"")};}
+function defaultDochiLock(){return {locked:false,mode:"general",scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};}
+function isDceNpc(npc){var lock=normalizeDochiLock((npc&&npc.dochiLock)||{locked:!!(npc&&npc.dochiLocked)});return lock.locked||String((npc&&npc.scriptStyle)||"general")==="dcE";}
+function sendNpcModeChange(style){
+var npc=getSelectedNpc();
+if(!npc){setStatus("No NPC selected.","status-err");return;}
+sendEvt("npc_script_apply",{uuid:npc.uuid,scriptStyle:style,confirmGeneralConvert:style==="general",styleOnly:true});
+setStatus(style==="dcE"?"Sent DCE mode request.":"Sent general mode request.","status-warn");
+}
+function requestGeneralScriptMode(){
+var npc=getSelectedNpc();
+if(!npc){setStatus("No NPC selected.","status-err");return;}
+if(!isDceNpc(npc)){setStatus("NPC is already in General mode.","status-ok");return;}
+showConfirm("Switch this NPC to General mode?\n\nThis clears the NPC Scripts, ScriptList, and disables ScriptEnabled. Continue?","Warning",function(){
+sendNpcModeChange("general");
+});
+}
+function setSelectedNpcDceMode(){
+var npc=getSelectedNpc();
+if(!npc){setStatus("No NPC selected.","status-err");return;}
+if(isDceNpc(npc)){setStatus("NPC is already in DCE mode.","status-ok");return;}
+showConfirm("Switch this NPC to DCE mode?\n\nThis clears the NPC Scripts, ScriptList, and disables ScriptEnabled. dc_lib scripts are applied later from DC Editor Hub. Continue?","Warning",function(){
+sendNpcModeChange("dcE");
+});
+}
+function normalizeDochiLock(lock){var paths=[],raw;lock=lock||{};raw=Array.isArray(lock.scriptPaths)?lock.scriptPaths:[];raw.forEach(function(v){v=String(v||"");if(v)paths.push(v);});if(!paths.length&&lock.scriptPath)paths.push(String(lock.scriptPath));return {locked:lock.locked===true,mode:String(lock.mode||"general"),scriptPath:String(lock.scriptPath||""),scriptPaths:paths,jsonPath:String(lock.jsonPath||""),prefix:String(lock.prefix||"")};}
+function init(){
+debugStep("init","begin npcs="+APP_STATE.npcs.length+" admin="+APP_STATE.admin.initialized);
+ensureDcEditorPanel();
+ensureDcListBackButton();
+ensureTopbarScriptActions();
+bind();
+setupLocaleSelect();
+listenServer();
+renderAdminState();
+rebuildFactionSelect();
+syncScanRange(APP_STATE.scanRange);
+applyFilter();
+requestRefresh();
+setTimeout(requestRefresh,700);
+clearScriptState("");
+updateStyleUi();
+renderKeyboardPicker();
+if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
+APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
+applyFilter();
+}
+applyI18n(document.body);
+startI18nObserver();
+if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");
+debugStep("init","done");
+}
+function bind(){
+byId("nameInput").addEventListener("input",applyFilter);
+byId("adminFlyoutBtn").onclick=toggleAdminFlyout;
+byId("bootstrapAdminBtn").onclick=function(){sendEvt("admin_bootstrap",{});};
+byId("adminAddBtn").onclick=submitAdminAdd;
+byId("adminResetBtn").onclick=resetAdmins;
+byId("keybindSaveBtn").onclick=saveKeybind;
+byId("keybindTrigger").onclick=toggleKeybindPanel;
+byId("keybindCloseBtn").onclick=closeKeybindPanel;
+document.addEventListener("click",handleDocumentClick);
+window.addEventListener("resize",function(){
+if(byId("adminPanel").classList.contains("show"))positionAdminFlyout();
+if(byId("keybindPanel").classList.contains("show"))positionKeybindPanel();
+if(byId("dcEditorPanel")&&byId("dcEditorPanel").classList.contains("show"))positionDcEditorPanel();
+});
+byId("factionSelect").addEventListener("change",applyFilter);
+byId("refreshBtn").onclick=requestRefresh;
+byId("detailTabBtn").onclick=function(){setActiveView("detail");};
+byId("scriptTabBtn").onclick=requestGeneralScriptMode;
+if(byId("topbarDceBtn")){
+byId("topbarDceBtn").onclick=function(){
+if(this.disabled)return;
+setSelectedNpcDceMode();
+};
+}
+if(byId("noticeOkBtn"))byId("noticeOkBtn").onclick=hideNotice;
+if(byId("noticeModal")){
+byId("noticeModal").onclick=function(e){
+if(e.target===byId("noticeModal"))hideNotice();
+};
+}
+if(byId("confirmYesBtn")){
+byId("confirmYesBtn").onclick=function(){
+hideConfirm();
+};
+}
+if(byId("confirmNoBtn"))byId("confirmNoBtn").onclick=hideConfirm;
+if(byId("confirmModal")){
+byId("confirmModal").onclick=function(e){
+if(e.target===byId("confirmModal"))hideConfirm();
+};
+}
+byId("tpBtn").onclick=doTp;
+byId("editBtn").onclick=editSelectedNpc;
+byId("deleteBtn").onclick=doDelete;
+byId("applyScriptBtn").onclick=applyScriptChanges;
+byId("reloadScriptBtn").onclick=function(){requestScript();};
+byId("addFileBtn").onclick=function(){addSelectedFileFromInput(false);};
+byId("browseFileBtn").onclick=openFilePicker;
+byId("pickerAddBtn").onclick=function(){addSelectedFileFromInput(true);};
+byId("pickerCloseBtn").onclick=closeFilePicker;
+byId("pickerUpBtn").onclick=pickerGoUp;
+byId("pickerRefreshBtn").onclick=function(){
+if(String(APP_STATE.picker.mode||"general")==="dcJson"){
+requestDcJsonFileList(detectDcPrefixFromSelection(),String(byId("pickerSearchInput").value||""));
+}else{
+requestScriptFileList(APP_STATE.picker.mode);
+}
+};
+byId("pickerSearchInput").addEventListener("input",renderPickerState);
+byId("inlineEditor").addEventListener("input",onEditorChange);
+byId("scriptEnabledCheckbox").addEventListener("change",onEditorChange);
+if(byId("dcScriptBrowseBtn"))byId("dcScriptBrowseBtn").onclick=openDcScriptPicker;
+if(byId("dcJsonBrowseBtn"))byId("dcJsonBrowseBtn").onclick=openDcJsonPicker;
+if(byId("dcSaveBtn"))byId("dcSaveBtn").onclick=saveDcSelection;
+if(byId("dcPanelCloseBtn"))byId("dcPanelCloseBtn").onclick=cancelDcEditor;
+byId("scanRangeInput").addEventListener("input",function(){syncScanRange(this.value);});
+byId("scanRangeNumber").addEventListener("input",function(){syncScanRange(this.value);});
+}
+function ensureDcEditorPanel(){
+var right=document.querySelector(".script-right"),old=document.getElementById("dcEditorPanel");
+if(!right||old)return;
+right.style.position="relative";
+var host=document.createElement("div");
+host.id="dcEditorPanel";
+host.className="editor-panel dc-overlay";
+host.innerHTML=[
+'<div class="dc-shell">',
+'<div class="dc-hero">',
+'<div class="dc-hero-main">',
+'<div class="section-title">DC Editor Hub</div>',
+'<div class="dc-title">Installable script apply</div>',
+'<div id="dcMetaLine" class="dc-sub">Pick an entry from the list. Details open in a side panel.</div>',
+'</div>',
+'<div class="dc-hero-side">',
+'<div id="dcPrefixBadge" class="hero-badge dc-hero-badge">none</div>',
+'<div class="dc-hero-actions">',
+'<button type="button" id="dcSaveBtn">Apply to NPC</button>',
+'<button type="button" id="dcPanelCloseBtn">Cancel</button>',
+'</div>',
+'</div>',
+'</div>',
+'<div class="dc-main">',
+'<section class="dc-list-panel">',
+'<div class="dc-section-head">',
+'<div class="dc-section-title">',
+'<div class="field-label">Installable Scripts</div>',
+'<div class="dc-panel-note">Choose one entry. Disabled entries show the missing requirement directly in the list.</div>',
+'</div>',
+'<div class="dc-section-actions"><button type="button" id="dcScriptBrowseBtn">Browse</button></div>',
+'</div>',
+'<div class="dc-list dc-entry-list" id="dcInstalledScriptsBox"><div class="empty">Loading installable scripts...</div></div>',
+'</section>',
+'<aside id="dcDetailFlyout" class="dc-flyout">',
+'<div class="dc-flyout-head">',
+'<div>',
+'<div class="field-label">Selection</div>',
+'<div id="dcFlyoutTitle" class="dc-flyout-title">No selection</div>',
+'<div class="small" id="dcStateHint">No selection yet.</div>',
+'</div>',
+'<button type="button" id="dcFlyoutCloseBtn">Close</button>',
+'</div>',
+'<div class="dc-flyout-body">',
+'<div class="dc-card">',
+'<div class="field-label">Entry</div>',
+'<input id="dcScriptPathInput" type="text" readonly placeholder="Choose an installable script">',
+'<div style="margin-top:8px"><span id="dcPrefixInfo" class="badge dc-badge-lg">none</span></div>',
+'</div>',
+'<div class="dc-card">',
+'<div class="field-label">Applied ScriptList</div>',
+'<div id="dcSelectionBox" class="loaded-list dc-selection-stack"><div class="empty">No selection yet.</div></div>',
+'</div>',
+'<div class="dc-card">',
+'<div class="dc-list-header"><div class="field-label">Matching JSON</div><button type="button" id="dcJsonBrowseBtn">Browse</button></div>',
+'<div class="dc-list" id="dcMatchedJsonBox"><div class="empty">Select a script to load matching JSON paths.</div></div>',
+'<input id="dcJsonPathInput" type="text" readonly placeholder="Choose spec JSON" style="margin-top:10px">',
+'</div>',
+'</div>',
+'</aside>',
+'</div>',
+'</div>'
+].join("");
+right.appendChild(host);
+}
+function ensureTopbarScriptActions(){
+var box=byId("topbarScriptActions"),scriptBtn=byId("scriptTabBtn"),dce;
+if(!box||box.dataset.ready==="1")return;
+box.dataset.ready="1";
+if(!scriptBtn){
+scriptBtn=document.createElement("button");
+scriptBtn.type="button";
+scriptBtn.id="scriptTabBtn";
+scriptBtn.className="tab-btn";
+scriptBtn.textContent="General";
+}
+scriptBtn.title="Set the selected NPC to General script mode.";
+box.appendChild(scriptBtn);
+if(!byId("topbarDceBtn")){
+dce=document.createElement("button");
+dce.type="button";
+dce.id="topbarDceBtn";
+dce.className="secondary script-utility-btn";
+dce.title="Set the selected NPC to DCE script mode.";
+dce.textContent="DCE";
+box.appendChild(dce);
+}
+}
+function ensureDcListBackButton(){
+var btn=byId("dcListBackBtn");
+if(btn&&btn.parentNode)btn.parentNode.removeChild(btn);
+}
+function positionDcEditorPanel(){}
+function listenServer(){
+window.cnpc.onEvent("npcI18nPack",function(d){receiveI18nPack(d);});
+window.cnpc.onEvent("npcListUpdate",function(d){
+d=parsePayload(d);
+if(!d)return;
+debugStep("npc","update received npcs="+(Array.isArray(d.npcs)?d.npcs.length:"not-array"));
+if(d.locale)maybeReloadI18n(d.locale);
+if(Array.isArray(d.localeOptions)){LOCALE_OPTIONS=d.localeOptions;setupLocaleSelect();}
+APP_STATE.npcs=Array.isArray(d.npcs)?d.npcs:[];
+APP_STATE.factions=Array.isArray(d.factions)?d.factions:[];
+APP_STATE.admin=normalizeAdminState(d.admin);
+if(d.scanRange!=null)syncScanRange(d.scanRange);
+if(APP_STATE.selectedUuid&&!APP_STATE.npcs.some(function(n){return n.uuid===APP_STATE.selectedUuid;})){
+APP_STATE.selectedUuid="";
+clearScriptState("");
+}
+if(!APP_STATE.selectedUuid&&APP_STATE.npcs.length)APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
+syncScriptShellToNpc(getSelectedNpc());
+rebuildFactionSelect();
+applyFilter();
+renderAdminState();
+setStatus("NPC cache refreshed.","status-ok");
+});
+window.cnpc.onEvent("adminState",function(d){
+d=parsePayload(d);
+if(!d)return;
+debugStep("admin","state received initialized="+d.initialized+" canEdit="+d.canEdit);
+APP_STATE.admin=normalizeAdminState(d);
+renderAdminState();
+if(APP_STATE.admin.initialized&&!APP_STATE.npcs.length)requestRefresh();
+});
+window.cnpc.onEvent("adminBootstrapResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+setStatus(d.ok?"Owner registered.":"Owner registration failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
+sendEvt("admin_refresh",{});
+});
+window.cnpc.onEvent("adminActionResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+setStatus(d.ok?"Admin list updated.":"Admin update failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
+sendEvt("admin_refresh",{});
+});
+window.cnpc.onEvent("npcScriptData",function(d){
+d=parsePayload(d);
+if(!d)return;
+renderScriptData(d);
+});
+window.cnpc.onEvent("npcScriptApplyResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+setStatus(d.ok?(d.styleOnly?"Script mode updated.":"Script apply completed."):"Script apply failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
+if(d.ok){
+applyNpcScriptApplyResult(d);
+if(!d.styleOnly)requestScript();
+}
+});
+window.cnpc.onEvent("npcActionResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+setStatus(d.ok?"Action complete: "+d.action:"Action failed: "+(d.error||d.action),d.ok?"status-ok":"status-err");
+if(d.ok&&d.action==="delete"){
+APP_STATE.selectedUuid="";
+clearScriptState("");
+requestRefresh();
+}
+});
+window.cnpc.onEvent("npcScriptFileList",function(d){
+d=parsePayload(d);
+if(!d)return;
+debugStep("files","script list mode="+d.mode+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
+var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
+APP_STATE.picker.root=String(d.root||"");
+APP_STATE.picker.rootLabel=String(d.label||APP_STATE.picker.rootLabel||"ecmascript");
+APP_STATE.picker.mode=String(d.mode||APP_STATE.picker.mode||"general");
+APP_STATE.picker.allFiles=files;
+APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
+if(String(d.mode||"")==="dcE"){
+APP_STATE.script.dcBrowser.scripts=files;
+APP_STATE.script.dcBrowser.scriptsLoaded=true;
+renderDcInstalledScripts();
+}
+renderPickerState();
+});
+window.cnpc.onEvent("npcDcJsonFileList",function(d){
+d=parsePayload(d);
+if(!d)return;
+debugStep("files","json list prefix="+d.prefix+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
+var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
+APP_STATE.picker.root=String(d.root||"");
+APP_STATE.picker.rootLabel=String(getDcJsonRootLabel(d.prefix||"dc"));
+APP_STATE.picker.mode="dcJson";
+APP_STATE.picker.allFiles=files;
+APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
+APP_STATE.script.dcBrowser.jsons=files;
+APP_STATE.script.dcBrowser.jsonLoaded=true;
+APP_STATE.script.dcBrowser.jsonPrefix=String(d.prefix||"");
+renderDcMatchedJson();
+renderPickerState();
+});
+}
+function renderKeyboardPicker(){var box=byId("keybindKeyboard");box.innerHTML="";KEY_LAYOUT.forEach(function(row){var rowEl=document.createElement("div");rowEl.className=row.className||"keyboard-row";(row.keys||[]).forEach(function(item){var opt=(item&&item.value!=null)?item:findKeyOption(item),btn;if(item===null){var gap=document.createElement("div");gap.className="key-gap";rowEl.appendChild(gap);return;}btn=document.createElement("button");btn.type="button";btn.className="keycap "+(opt.className||"w1");btn.textContent=opt.label;if(opt.value!=null){btn.dataset.value=opt.value;btn.onclick=function(){selectKeybindValue(opt.value);};}rowEl.appendChild(btn);});box.appendChild(rowEl);});}
+function findKeyOption(value){var i;for(i=0;i<KEY_OPTIONS.length;i++)if(KEY_OPTIONS[i].value===value)return KEY_OPTIONS[i];return {value:String(value||""),label:String(value||"")};}
+function syncKeybindSelection(value){var normalized=String(value||""),opt=findKeyOption(normalized),trigger=byId("keybindTrigger"),screen=byId("keybindScreen"),label=opt.label||"Disabled";trigger.textContent=trExact(label);screen.textContent=trExact(label);Array.prototype.forEach.call(document.querySelectorAll(".keycap"),function(btn){btn.classList.toggle("active",String(btn.dataset.value||"")===normalized);});trigger.dataset.value=normalized;}
+function selectKeybindValue(value){syncKeybindSelection(value);setStatus("Key selected. Press Save Key to apply it.","status-ok");}
+function toggleKeybindPanel(ev){var panel=byId("keybindPanel");if(ev)ev.stopPropagation();panel.classList.toggle("show");if(panel.classList.contains("show"))positionKeybindPanel();}
+function closeKeybindPanel(){byId("keybindPanel").classList.remove("show");}
+function positionAdminFlyout(){var panel=byId("adminPanel"),btn=byId("adminFlyoutBtn"),rect,left,top,maxLeft,minLeft,panelWidth;if(!panel||!btn)return;rect=btn.getBoundingClientRect();top=rect.bottom+8;minLeft=12;panelWidth=Math.max(panel.offsetWidth||0,250);left=rect.left-panelWidth-8;panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
+function positionKeybindPanel(){var panel=byId("keybindPanel"),btn=byId("keybindTrigger"),rect,left,top,maxWidth;if(!panel||!btn)return;rect=btn.getBoundingClientRect();maxWidth=Math.min(1040,window.innerWidth-36);panel.style.width=maxWidth+"px";left=Math.max(12,Math.min(rect.left,window.innerWidth-maxWidth-12));top=rect.bottom+8;panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
+function toggleAdminFlyout(ev){var panel=byId("adminPanel"),willOpen;if(ev)ev.stopPropagation();willOpen=!panel.classList.contains("show");if(willOpen){renderAdminState();panel.classList.add("show");positionAdminFlyout();return;}closeAdminFlyout();closeKeybindPanel();}
+function closeAdminFlyout(){byId("adminPanel").classList.remove("show");}
+function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adminFlyoutBtn"),keyPanel=byId("keybindPanel"),target=ev.target;if(target&&target.id==="dcFlyoutCloseBtn"){clearDcSelectionOnly();return;}if(keyPanel&&keyPanel.contains(target))return;if(admin&&adminBtn&&!admin.contains(target)&&!adminBtn.contains(target)){closeAdminFlyout();closeKeybindPanel();return;}if(keyPanel&&!keyPanel.contains(target))closeKeybindPanel();}
+function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);}
+function renderAdminList(){var box=byId("adminListBox"),admin=APP_STATE.admin,list=Array.isArray(admin.admins)?admin.admins:[];box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_admins_registered","No admins registered."))+'</div>';return;}list.forEach(function(entry){var row=document.createElement("div"),meta=document.createElement("div");row.className="loaded-item";meta.className="file-name";meta.innerHTML='<div>'+esc(entry.name||"(unknown)")+'</div><div class="small">'+esc(entry.uuid||"")+"</div>";row.appendChild(meta);if(admin.canManageAdmins&&entry.uuid!==String(admin.owner&&admin.owner.uuid||"")){var btn=document.createElement("button");btn.type="button";btn.className="icon-btn danger";btn.textContent=tr("npc_editor.remove","Remove");btn.onclick=function(){removeAdmin(entry.uuid);};row.appendChild(btn);}box.appendChild(row);});}
+function renderAdminPlayerOptions(){var select=byId("adminPlayerSelect"),admin=APP_STATE.admin,players=(admin.players||[]).filter(function(p){return !admin.admins.some(function(a){return a.uuid===p.uuid;});});select.innerHTML="";appendOption(select,"","Select player");players.forEach(function(p){appendOption(select,p.uuid,p.name+" ("+p.uuid+")");});}
+function submitAdminAdd(){var select=byId("adminPlayerSelect"),uuid=String(select.value||""),player=findAdminPlayer(uuid);if(!uuid||!player){setStatus("Select a player first.","status-warn");return;}sendEvt("admin_add",{name:String(player.name||""),uuid:uuid});}
+function resetAdmins(){if(window.confirm("Delete admin.json and reset all admin access?"))sendEvt("admin_reset",{});}
+function removeAdmin(uuid){if(!uuid)return;sendEvt("admin_remove",{uuid:String(uuid)});}
+function saveKeybind(){sendEvt("keybind_save",{key:String(byId("keybindTrigger").dataset.value||"").trim()});}
+function findAdminPlayer(uuid){var i,list=APP_STATE.admin.players||[];for(i=0;i<list.length;i++)if(String(list[i].uuid||"")===String(uuid||""))return list[i];return null;}
+function formatAdminEntry(entry){entry=entry||{};if(entry.name&&entry.uuid)return entry.name+" ("+entry.uuid+")";return entry.name||entry.uuid||"-";}
+function getAdminRoleLabel(admin){if(!admin.initialized)return "Setup pending";if(admin.isOwner)return "Owner";if(admin.isAdmin)return "Admin";if(admin.canOpen)return "Viewer";return "No access";}
+function setEditorAccess(enabled){["tpBtn","editBtn","deleteBtn","applyScriptBtn","reloadScriptBtn","addFileBtn","browseFileBtn","pickerAddBtn","scriptEnabledCheckbox","inlineEditor","scriptTabBtn","topbarDceBtn","dcScriptBrowseBtn","dcJsonBrowseBtn","dcSaveBtn","dcPanelCloseBtn","dcListBackBtn","dcFlyoutCloseBtn"].forEach(function(id){var el=byId(id);if(el)el.disabled=!enabled;});updateTopbarModeButtons();}
+
+function syncScanRange(v){
+var n=Math.max(8,Math.min(128,Number(v)||48));
+n=Math.round(n/4)*4;
+APP_STATE.scanRange=n;
+byId("scanRangeInput").value=n;
+byId("scanRangeNumber").value=n;
+}
+
+function requestRefresh(){
+debugStep("npc","request refresh range="+APP_STATE.scanRange);
+sendEvt("npc_refresh",{range:APP_STATE.scanRange});
+}
+function buildFactions(list){
+var map={},arr=[];
+list.forEach(function(n){
+if(n.faction&&!map[n.faction]){
+map[n.faction]=true;
+arr.push(n.faction);
+}
+});
+arr.sort();
+return arr;
+}
+function rebuildFactionSelect(){
+var sel=byId("factionSelect"),keep=sel.value||"",opt,source;
+sel.innerHTML="";
+opt=document.createElement("option");
+opt.value="";
+opt.textContent=tr("npc_editor.all","All");
+sel.appendChild(opt);
+source=APP_STATE.factions.length?APP_STATE.factions:buildFactions(APP_STATE.npcs);
+source.forEach(function(f){
+var o=document.createElement("option");
+o.value=f;
+o.textContent=f;
+sel.appendChild(o);
+});
+sel.value=keep;
+}
+function applyFilter(){
+var name=String(byId("nameInput").value||"").toLowerCase();
+var faction=String(byId("factionSelect").value||"");
+APP_STATE.filtered=APP_STATE.npcs.filter(function(n){
+if(name&&String(n.name||"").toLowerCase().indexOf(name)===-1)return false;
+if(faction&&String(n.faction||"")!==faction)return false;
+return true;
+});
+renderNpcList();
+renderSelectedNpc();
+}
+function renderNpcList(){
+var list=byId("npcList");
+list.innerHTML="";
+byId("resultBar").textContent=tr("npc_editor.results_count","Results: {count}",{count:APP_STATE.filtered.length});
+if(!APP_STATE.filtered.length){
+list.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_nearby_npcs","No nearby NPCs cached in range."))+'</div>';
+return;
+}
+APP_STATE.filtered.forEach(function(n){
+var card=document.createElement("div");
+card.className="npc-card"+(n.uuid===APP_STATE.selectedUuid?" active":"");
+card.onclick=function(){selectNpc(n.uuid);};
+card.innerHTML=
+'<div class="npc-name">'+esc(n.name||tr("npc_editor.no_name","(no name)"))+'</div>'
++(isDceNpc(n)?'<div class="npc-meta"><span class="badge">'+esc(tr("npc_editor.dce_npc","DCE NPC"))+'</span></div>':'')
++'<div class="npc-meta">'+esc(tr("npc_editor.title_value","Title: {value}",{value:n.title||tr("npc_editor.none","None")}))+'</div>'
++'<div class="npc-meta">'+esc(tr("npc_editor.pos_value","Pos: {value}",{value:n.position||""}))+'</div>'
++'<div class="npc-meta">'+esc(tr("npc_editor.distance_value","Distance: {value}",{value:formatDistanceValue(n)}))+'</div>'
++'<div class="npc-meta">'+esc(tr("npc_editor.faction_value","Faction: {value}",{value:n.faction||tr("npc_editor.none","None")}))+'</div>';
+list.appendChild(card);
+});
+}
+function getSelectedNpc(){
+var i;
+for(i=0;i<APP_STATE.npcs.length;i++){
+if(APP_STATE.npcs[i].uuid===APP_STATE.selectedUuid)return APP_STATE.npcs[i];
+}
+return null;
+}
+function findNpcByUuid(uuid){
+var i;
+for(i=0;i<APP_STATE.npcs.length;i++)if(String(APP_STATE.npcs[i].uuid||"")===String(uuid||""))return APP_STATE.npcs[i];
+return null;
+}
+function modeFromNpc(npc){
+return isDceNpc(npc)?"dcE":"general";
+}
+function syncScriptShellToNpc(npc){
+var lock=normalizeDochiLock((npc&&npc.dochiLock)||{}),mode=modeFromNpc(npc);
+APP_STATE.script.generalConvertConfirmed=false;
+APP_STATE.script.pendingStyle=mode;
+APP_STATE.script.pendingUuid=npc?String(npc.uuid||""):"";
+APP_STATE.script.data.scriptStyle=mode;
+APP_STATE.script.data.dochiLock=mode==="dcE"?lock:defaultDochiLock();
+if(mode==="dcE"){
+APP_STATE.script.dcSelection=normalizeDcSelection(lock);
+}else{
+APP_STATE.script.dcSelection={scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};
+}
+}
+function applyNpcScriptApplyResult(d){
+var uuid=String(d.uuid||APP_STATE.selectedUuid||""),lock=normalizeDochiLock(d.dochiLock||{}),mode=String(d.scriptStyle||"general"),npc=findNpcByUuid(uuid);
+if(lock.locked)mode="dcE";
+if(mode!=="dcE")lock=defaultDochiLock();
+APP_STATE.script.pendingStyle=mode;
+APP_STATE.script.pendingUuid=uuid;
+APP_STATE.script.generalConvertConfirmed=false;
+APP_STATE.script.data.scriptStyle=mode;
+APP_STATE.script.data.dochiLock=lock;
+if(d.dcSelection){
+APP_STATE.script.dcSelection=normalizeDcSelection(d.dcSelection);
+}else if(mode==="general"){
+APP_STATE.script.dcSelection={scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};
+}
+if(npc){
+npc.scriptStyle=mode;
+npc.dochiLock=lock;
+npc.dochiLocked=lock.locked;
+}
+renderNpcList();
+renderSelectedNpc();
+if(Array.isArray(d.tabs))renderScriptData(d);
+else renderScriptState("");
+}
+function getNpcModeLabel(npc){
+return isDceNpc(npc)?tr("npc_editor.dce","DCE"):tr("npc_editor.general","General");
+}
+function formatDistanceValue(npc){
+var value=Number(npc&&npc.distance);
+if(isNaN(value))return String(npc&&npc.distanceText||"-");
+return tr("npc_editor.distance_blocks","{value} blocks",{value:String(Math.round(value*10)/10)});
+}
+function renderEntityMode(npc){
+var box=byId("entityModeBox");
+if(!box)return;
+if(!npc){
+box.innerHTML='<div class="field-label">'+esc(tr("npc_editor.script_mode","Script Mode"))+'</div><div class="small">-</div>';
+return;
+}
+box.innerHTML='<div class="field-label">'+esc(tr("npc_editor.script_mode","Script Mode"))+'</div><span class="badge">'+esc(getNpcModeLabel(npc))+'</span>';
+}
+function updateEntityPreview(npc){
+var slot=byId("entitySlot"),ghost=byId("entityGhost");
+if(!npc||!npc.hasPreview||npc.previewSlot==null||npc.previewSlot<0){
+slot.setAttribute("data-mc-entity","0");
+ghost.style.display="flex";
+return;
+}
+slot.setAttribute("data-mc-entity",String(npc.previewSlot));
+ghost.style.display="none";
+}
+function selectNpc(uuid){
+APP_STATE.selectedUuid=uuid;
+syncScriptShellToNpc(getSelectedNpc());
+APP_STATE.script.data.tabs=[];
+APP_STATE.script.data.flatFiles=[];
+APP_STATE.script.data.flatInline=[];
+APP_STATE.script.selectedTab=1;
+if(APP_STATE.activeView==="script")renderScriptState("");
+renderNpcList();
+renderSelectedNpc();
+updateTopbarModeButtons();
+if(APP_STATE.activeView==="script")requestScript();
+}
+function renderSelectedNpc(){
+var box=byId("detailBox"),npc=getSelectedNpc(),canEdit=APP_STATE.admin.canEdit;
+byId("selectedLine").textContent=tr("npc_editor.selected_value","Selected: {value}",{
+value:npc?npc.name:tr("npc_editor.none_lower","none")
+});
+byId("tpBtn").disabled=!npc||!canEdit;
+byId("editBtn").disabled=!npc||!canEdit;
+byId("deleteBtn").disabled=!npc||!canEdit;
+updateEntityPreview(npc);
+renderEntityMode(npc);
+updateTopbarModeButtons();
+if(!npc){
+box.className="empty";
+box.innerHTML=esc(tr("npc_editor.select_npc_details","Select an NPC to view its details."));
+return;
+}
+box.className="";
+box.innerHTML=
+'<div class="detail-name">'+esc(npc.name||tr("npc_editor.no_name","(no name)"))+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.faction","Faction"))+'</span><br><span class="badge">'+esc(npc.faction||tr("npc_editor.none","None"))+'</span></div>'
++'<div class="detail-line"><span class="field-label">UUID</span><br>'+esc(npc.uuid||"")+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.title","Title"))+'</span><br>'+esc(npc.title||tr("npc_editor.none","None"))+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.position","Position"))+'</span><br>'+esc(npc.position||"")+'</div>'
++'<div class="detail-line"><span class="field-label">'+esc(tr("npc_editor.distance","Distance"))+'</span><br>'+esc(formatDistanceValue(npc))+'</div>';
+}
+function doTp(){
+var npc=getSelectedNpc();
+if(npc)sendEvt("npc_tp",{uuid:npc.uuid});
+}
+function doDelete(){
+var npc=getSelectedNpc();
+if(npc)sendEvt("npc_delete",{uuid:npc.uuid});
+}
+function editSelectedNpc(){
+var npc=getSelectedNpc();
+if(!npc){
+setStatus("No NPC selected.","status-err");
+return;
+}
+APP_STATE.script.generalConvertConfirmed=false;
+syncScriptShellToNpc(npc);
+setActiveView("script");
+updateStyleUi();
+}
+function setActiveView(name){
+APP_STATE.activeView=name;
+document.body.classList.toggle("script-active",name==="script");
+byId("detailTabBtn").classList.toggle("active",name==="detail");
+byId("detailView").classList.toggle("show",name==="detail");
+byId("scriptView").classList.toggle("show",name==="script");
+updateTopbarModeButtons();
+if(name==="script")requestScript();
+}
+function clearScriptState(msg){
+APP_STATE.script.data={scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()};
+APP_STATE.script.pendingStyle="general";
+APP_STATE.script.pendingUuid="";
+APP_STATE.script.generalConvertConfirmed=false;
+APP_STATE.script.selectedTab=1;
+APP_STATE.script.dcSelection={scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};
+APP_STATE.script.dcBrowser={scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:""};
+renderScriptState(msg||"");
+}
+function requestScript(){
+var npc=getSelectedNpc();
+if(!npc){
+clearScriptState("");
+return;
+}
+sendEvt("npc_script_info",{uuid:npc.uuid});
+}
+function renderScriptData(d){
+var tabs=Array.isArray(d.tabs)?d.tabs:[],lock=normalizeDochiLock(d.dochiLock),dataUuid=String(d.uuid||APP_STATE.selectedUuid||""),samePending=String(APP_STATE.script.pendingUuid||"")===dataUuid;
+var confirmed=APP_STATE.script.generalConvertConfirmed===true&&lock.locked;
+var keepDce=samePending&&APP_STATE.script.pendingStyle==="dcE"&&!lock.locked&&String(d.scriptStyle||"general")!=="dcE";
+APP_STATE.script.data={
+scriptEnabled:(d.scriptEnabled===true||d.scriptEnabled===false)?d.scriptEnabled:true,
+tabs:tabs,
+flatFiles:Array.isArray(d.flatFiles)?d.flatFiles:[],
+flatInline:Array.isArray(d.flatInline)?d.flatInline:[],
+scriptStyle:(lock.locked&&!confirmed)?"dcE":String(d.scriptStyle||"general"),
+dochiLock:lock
+};
+APP_STATE.script.pendingStyle=confirmed?"general":(keepDce?"dcE":APP_STATE.script.data.scriptStyle);
+APP_STATE.script.pendingUuid=dataUuid;
+if(keepDce)APP_STATE.script.data.scriptStyle="dcE";
+if(confirmed)APP_STATE.script.data.scriptStyle="general";
+APP_STATE.script.generalConvertConfirmed=confirmed;
+APP_STATE.script.dcSelection=normalizeDcSelection(d.dcSelection||APP_STATE.script.dcSelection||{});
+if(tabs.length&&!tabs.some(function(t){return Number(t.tab)===Number(APP_STATE.script.selectedTab);})){
+APP_STATE.script.selectedTab=Number(tabs[0].tab||1);
+}
+if(d.ok===false&&d.error)setStatus(d.error,"status-err");
+renderScriptState("");
+}
+function countScriptFiles(tabs){var c=0;tabs.forEach(function(t){c+=(t.files?t.files.length:0);});return c;}
+function countInlineScripts(tabs){var c=0;tabs.forEach(function(t){if(t.inlineScript)c++;});return c;}
+function renderScriptState(msg){var data=APP_STATE.script.data;byId("scriptEnabledCheckbox").checked=!!data.scriptEnabled;byId("statTabs").textContent=String(data.tabs.length);byId("statFiles").textContent=String(countScriptFiles(data.tabs));byId("statInline").textContent=String(countInlineScripts(data.tabs));renderScriptTabList();renderSelectedScriptTab(msg||"");updateStyleUi();renderDcEditorState();}
+function renderScriptTabList(){var list=byId("scriptTabList"),tabs=APP_STATE.script.data.tabs;list.innerHTML="";if(!tabs.length){list.innerHTML='<div class="empty">No script data found.</div>';return;}tabs.forEach(function(tab){var el=document.createElement("div"),filePreview="";el.className="script-tab-card"+(Number(tab.tab)===Number(APP_STATE.script.selectedTab)?" active":"");el.onclick=function(){APP_STATE.script.selectedTab=Number(tab.tab);renderScriptTabList();renderSelectedScriptTab("");};if(tab.files&&tab.files.length){filePreview='<div class="loaded-list">'+tab.files.map(function(v){return '<div class="loaded-item"><div class="file-name">'+esc(v)+'</div></div>';}).join("")+'</div>';}else filePreview='<div class="small">No JS files</div>';el.innerHTML='<div class="script-tab-top"><div class="script-tab-name">Tab '+esc(tab.tab)+'</div><div class="script-tab-badges"><span class="mini-badge">FILES '+esc(tab.files?tab.files.length:0)+'</span><span class="mini-badge">INLINE '+esc(tab.inlineScript?1:0)+'</span></div></div>'+filePreview;list.appendChild(el);});}
+function getSelectedScriptTab(){var tabs=APP_STATE.script.data.tabs;for(var i=0;i<tabs.length;i++)if(Number(tabs[i].tab)===Number(APP_STATE.script.selectedTab))return tabs[i];return null;}
+function renderSelectedScriptTab(msg){var tab=getSelectedScriptTab(),meta=byId("scriptMetaLine"),inlineEditor=byId("inlineEditor"),loadedBox=byId("loadedFilesBox"),lock=normalizeDochiLock(APP_STATE.script.data.dochiLock);if(!tab){meta.textContent=lock.locked?"DOCHI LOCKED / No tab selected":"No tab selected";inlineEditor.value=msg||"";loadedBox.innerHTML='<div class="empty">'+(msg||"No tab selected.")+'</div>';return;}meta.textContent=(lock.locked?"DOCHI LOCKED / ":"")+"Global "+(APP_STATE.script.data.scriptEnabled?"ENABLED":"DISABLED")+" / Tab "+tab.tab;inlineEditor.value=String(tab.inlineScript||"");renderLoadedFiles(tab);}
+function renderLoadedFiles(tab){var box=byId("loadedFilesBox");box.innerHTML="";if(!tab.files||!tab.files.length){box.innerHTML='<div class="empty">No JS files loaded.</div>';return;}tab.files.forEach(function(v,idx){var row=document.createElement("div"),btn=document.createElement("button");row.className="loaded-item";row.innerHTML='<div class="file-name">'+esc(v)+'</div>';btn.type="button";btn.className="icon-btn danger";btn.textContent="Remove";btn.onclick=function(){removeFileFromSelectedTab(idx);};row.appendChild(btn);box.appendChild(row);});}
+function onEditorChange(){var tab=getSelectedScriptTab();APP_STATE.script.data.scriptEnabled=!!byId("scriptEnabledCheckbox").checked;if(String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general")==="dcE")return;if(!tab)return;tab.inlineScript=String(byId("inlineEditor").value||"");}
+function setPendingStyle(next,force){
+var cur=String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general");
+var lock=normalizeDochiLock(APP_STATE.script.data.dochiLock);
+if(lock.locked&&next!=="dcE"&&force!==true){
+requestGeneralScriptMode();
+return;
+}
+if(lock.locked&&next!=="dcE"&&force===true){
+APP_STATE.script.generalConvertConfirmed=true;
+}
+if(next===cur&&force!==true){
+updateStyleUi();
+return;
+}
+APP_STATE.script.pendingStyle=next;
+APP_STATE.script.pendingUuid=APP_STATE.selectedUuid;
+APP_STATE.script.data.scriptStyle=next;
+renderScriptTabList();
+renderSelectedScriptTab("");
+updateStyleUi();
+setStatus(tr("npc_editor.script_style_changed","Script style changed to {value}. Press Apply to save.",{value:next}),"status-ok");
+}
+function updateStyleUi(){
+var lock=normalizeDochiLock(APP_STATE.script.data.dochiLock);
+var confirmed=APP_STATE.script.generalConvertConfirmed===true;
+var effectiveLocked=lock.locked&&!confirmed;
+var mode=effectiveLocked?"dcE":String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general");
+var locked=(mode==="dcE");
+var layout=document.querySelector(".script-layout");
+var left=document.querySelector(".script-left");
+var right=document.querySelector(".script-right");
+var generalPanel=document.querySelector(".script-right .editor-panel");
+var dcPanel=byId("dcEditorPanel");
+if(effectiveLocked){
+APP_STATE.script.pendingStyle="dcE";
+APP_STATE.script.pendingUuid=APP_STATE.selectedUuid;
+APP_STATE.script.data.scriptStyle="dcE";
+}
+if(layout){layout.style.display=locked?"block":"flex";layout.style.minHeight=locked?"0":"";}
+if(left){left.style.display=locked?"none":"flex";left.style.width="";left.style.minWidth="";}
+if(right){right.style.display=locked?"block":"flex";right.style.width=locked?"100%":"";right.style.minWidth=locked?"0":"";}
+if(generalPanel){
+generalPanel.style.display=locked?"none":"block";
+generalPanel.style.visibility=locked?"hidden":"visible";
+generalPanel.style.pointerEvents=locked?"none":"auto";
+generalPanel.style.opacity=locked?"0":"1";
+}
+if(dcPanel){dcPanel.classList.toggle("show",locked);dcPanel.style.display=locked?"flex":"none";}
+setDisplay("applyScriptBtn",!locked);
+setDisplay("reloadScriptBtn",!locked);
+setDisplay("addFileBtn",!locked);
+setDisplay("browseFileBtn",!locked);
+setDisplay("loadedFilesBox",!locked);
+setDisplay("inlineEditor",!locked);
+setDisplay("scriptEnabledCheckbox",!locked);
+if(locked)renderDcEditorState();
+updateTopbarModeButtons();
+}
+function updateTopbarModeButtons(){
+var dceBtn=byId("topbarDceBtn");
+var scriptBtn=byId("scriptTabBtn");
+var npc=getSelectedNpc();
+var mode=modeFromNpc(npc);
+if(scriptBtn){
+scriptBtn.classList.toggle("active",mode==="general");
+scriptBtn.disabled=!APP_STATE.admin.canEdit||!npc||mode==="general";
+}
+if(dceBtn){
+dceBtn.classList.toggle("active",mode==="dcE");
+dceBtn.disabled=!APP_STATE.admin.canEdit||!npc||mode==="dcE";
+}
+}
+function addFileToSelectedTab(path){
+var tab=getSelectedScriptTab(),p=String(path||byId("newFileInput").value||"").trim();
+if(!tab||!p)return;
+if(normalizeDochiLock(APP_STATE.script.data.dochiLock).locked&&APP_STATE.script.generalConvertConfirmed!==true){
+setStatus("This NPC is locked to Dochi script mode.","status-warn");
+return;
+}
+if(String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general")==="dcE"&&APP_STATE.picker.mode!=="dcScript"){
+setStatus("dcE mode locks regular file editing.","status-warn");
+return;
+}
+if(!Array.isArray(tab.files))tab.files=[];
+if(tab.files.indexOf(p)>=0){setStatus("File already added.","status-warn");return;}
+tab.files.push(p);
+renderScriptTabList();
+renderSelectedScriptTab("");
+renderDcEditorState();
+}
+function removeFileFromSelectedTab(idx){
+var tab=getSelectedScriptTab();
+if(normalizeDochiLock(APP_STATE.script.data.dochiLock).locked&&APP_STATE.script.generalConvertConfirmed!==true){
+setStatus("This NPC is locked to Dochi script mode.","status-warn");
+return;
+}
+if(!tab||!Array.isArray(tab.files))return;
+tab.files.splice(idx,1);
+renderScriptTabList();
+renderSelectedScriptTab("");
+renderDcEditorState();
+}
+function applyScriptChanges(){
+var npc=getSelectedNpc();
+var style=String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general");
+var confirmGeneral=APP_STATE.script.generalConvertConfirmed===true;
+if(!npc){
+setStatus("No NPC selected.","status-err");
+return;
+}
+if(style==="dcE"){
+saveDcSelection();
+return;
+}
+if(normalizeDochiLock(APP_STATE.script.data.dochiLock).locked&&style!=="dcE"&&!confirmGeneral){
+setStatus("This NPC is locked to Dochi script mode.","status-warn");
+return;
+}
+onEditorChange();
+sendEvt("npc_script_apply",{
+uuid:npc.uuid,
+scriptEnabled:!!APP_STATE.script.data.scriptEnabled,
+scriptStyle:style,
+tabs:APP_STATE.script.data.tabs,
+dcSelection:APP_STATE.script.dcSelection||{},
+confirmGeneralConvert:confirmGeneral
+});
+setStatus("Sent script apply request.","status-warn");
+}
+function openFilePicker(){if(String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general")==="dcE"){openDcScriptPicker();return;}APP_STATE.picker.mode="general";APP_STATE.picker.current="/";APP_STATE.picker.selectedFile="";APP_STATE.picker.rootLabel="ecmascript";byId("pickerSearchInput").value="";byId("filePickerModal").classList.add("show");requestScriptFileList("general");}
+function openDcScriptPicker(){APP_STATE.picker.mode="dcScript";APP_STATE.picker.current="/";APP_STATE.picker.selectedFile="";APP_STATE.picker.rootLabel="dc_lib";byId("pickerSearchInput").value="";byId("filePickerModal").classList.add("show");requestScriptFileList("dcE");}
+function openDcJsonPicker(){var prefix=detectDcPrefixFromSelection();if(!prefix){setStatus("Select a dc script first.","status-warn");return;}APP_STATE.picker.mode="dcJson";APP_STATE.picker.current="/";APP_STATE.picker.selectedFile="";APP_STATE.picker.rootLabel=getDcJsonRootLabel(prefix);byId("pickerSearchInput").value="";byId("filePickerModal").classList.add("show");requestDcJsonFileList(prefix,"");}
+function closeFilePicker(){byId("filePickerModal").classList.remove("show");}
+function requestScriptFileList(mode){sendEvt("npc_script_file_list",{query:"",mode:mode||APP_STATE.picker.mode||"general"});}
+function requestDcJsonFileList(prefix,query){sendEvt("npc_dc_json_file_list",{prefix:String(prefix||""),query:String(query||"")});}
+function addSelectedFileFromInput(closePicker){var p=String(byId("newFileInput").value||APP_STATE.picker.selectedFile||"").trim(),mode=String(APP_STATE.picker.mode||"general");if(!p){setStatus("Select a file first.","status-warn");return;}if(mode==="dcJson"){selectDcJsonPath(p);if(closePicker)closeFilePicker();return;}if(mode==="dcScript"||String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general")==="dcE"){selectDcScriptPath(p);if(closePicker)closeFilePicker();return;}addFileToSelectedTab(p);if(closePicker)closeFilePicker();}
+function setDisplay(id,show){byId(id).style.display=show?"":"none";}
+function normalizeDcSelection(sel){var paths=[],raw;sel=sel||{};raw=Array.isArray(sel.scriptPaths)?sel.scriptPaths:[];raw.forEach(function(v){v=String(v||"");if(v)paths.push(v);});if(!paths.length&&sel.scriptPath)paths.push(String(sel.scriptPath));return {scriptPath:String(sel.scriptPath||""),scriptPaths:paths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")};}
+function normalizeRelUiPath(path){path=String(path||"").replace(/\\/g,"/").replace(/^\s+|\s+$/g,"");while(path.charAt(0)==="/")path=path.substring(1);return path.replace(/\/+/g,"/");}
+function sameRelUiPath(a,b){return normalizeRelUiPath(a).toLowerCase()===normalizeRelUiPath(b).toLowerCase();}
+function clearDcSelectionOnly(){APP_STATE.script.dcSelection={scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};APP_STATE.script.dcBrowser.jsons=[];APP_STATE.script.dcBrowser.jsonLoaded=false;APP_STATE.script.dcBrowser.jsonPrefix="";renderDcInstalledScripts();renderDcMatchedJson();renderDcEditorState();}
+function cancelDcEditor(){
+clearDcSelectionOnly();
+setActiveView("detail");
+}
+function getDcScriptCandidate(path){var p=String(path||""),list=APP_STATE.script.dcBrowser.scripts||[],i,item;for(i=0;i<list.length;i++){item=list[i]||{};if(String(item.path||item||"")===p)return item;}return null;}
+function renderDcEditorState(){var panel=byId("dcEditorPanel"),data=APP_STATE.script.data,sel=normalizeDcSelection(APP_STATE.script.dcSelection),lock=normalizeDochiLock(data.dochiLock),candidate=getDcScriptCandidate(sel.scriptPath),prefix=sel.prefix||detectDcPrefixFromSelection(),summary=[],box,meta,badge,flyout,title,needScripts,needJson,state,canApply,pathsText;if(!panel)return;panel.style.display=String(APP_STATE.script.pendingStyle||data.scriptStyle||"general")==="dcE"?"flex":"none";canApply=!!(candidate&&candidate.available===true&&(!candidate.requiresJson||sel.jsonPath));state=!sel.scriptPath?tr("npc_editor.select_script_first","Select a script first"):(!candidate?tr("npc_editor.reload_installable","Reload installable list"):(candidate.available!==true?tr("npc_editor.missing_requirements","Missing requirements"):(candidate.requiresJson&&!sel.jsonPath?tr("npc_editor.select_json","Select JSON"):tr("npc_editor.ready","Ready"))));flyout=byId("dcDetailFlyout");if(flyout)flyout.classList.toggle("show",!!sel.scriptPath);title=byId("dcFlyoutTitle");if(title)title.textContent=candidate?String(candidate.name||sel.scriptPath):tr("npc_editor.no_selection","No selection");meta=byId("dcMetaLine");if(meta)meta.textContent=sel.scriptPath?(state+" / "+sel.scriptPath):tr("npc_editor.dc_pick_entry","Pick an entry from the list. Details open in a side panel.");if(byId("dcScriptPathInput"))byId("dcScriptPathInput").value=sel.scriptPath||"";if(byId("dcJsonPathInput"))byId("dcJsonPathInput").value=sel.jsonPath||"";badge=byId("dcPrefixBadge");if(badge)badge.textContent=prefix||tr("npc_editor.none_lower","none");if(byId("dcPrefixInfo"))byId("dcPrefixInfo").textContent=prefix||tr("npc_editor.none_lower","none");if(byId("dcStateHint"))byId("dcStateHint").textContent=state;box=byId("dcSelectionBox");if(box){box.innerHTML="";pathsText=sel.scriptPaths&&sel.scriptPaths.length?sel.scriptPaths.join(", "):tr("npc_editor.not_set","not set");summary.push({label:tr("npc_editor.entry","Entry"),value:sel.scriptPath||tr("npc_editor.not_set","not set")});summary.push({label:tr("npc_editor.applied_scriptlist","Applied ScriptList"),value:pathsText});summary.push({label:"JSON",value:sel.jsonPath||tr("npc_editor.not_set","not set")});summary.push({label:tr("npc_editor.lock","Lock"),value:lock.locked?tr("npc_editor.dochi_locked","Dochi locked"):tr("npc_editor.will_lock_apply","will lock on apply")});summary.push({label:tr("npc_editor.state","State"),value:state});if(candidate&&candidate.missing&&candidate.missing.length)summary.push({label:tr("npc_editor.missing","Missing"),value:candidate.missing.join(", ")});summary.forEach(function(row){var item=document.createElement("div"),meta=document.createElement("div");item.className="loaded-item";meta.className="file-name";meta.innerHTML="<div>"+esc(row.label)+"</div><div class='small'>"+esc(row.value)+"</div>";item.appendChild(meta);box.appendChild(item);});}if(byId("dcSaveBtn"))byId("dcSaveBtn").disabled=!APP_STATE.admin.canEdit||!canApply;if(prefix&&candidate&&candidate.requiresJson){if(byId("dcJsonBrowseBtn"))byId("dcJsonBrowseBtn").disabled=!APP_STATE.admin.canEdit;}else{if(byId("dcJsonBrowseBtn"))byId("dcJsonBrowseBtn").disabled=true;}if(String(APP_STATE.script.pendingStyle||data.scriptStyle||"general")==="dcE"){needScripts=APP_STATE.script.dcBrowser.scriptsLoaded!==true;needJson=!!prefix&&candidate&&candidate.requiresJson&&(APP_STATE.script.dcBrowser.jsonLoaded!==true||APP_STATE.script.dcBrowser.jsonPrefix!==prefix);if(needScripts)requestScriptFileList("dcE");if(needJson)requestDcJsonFileList(prefix,"");}}
+function renderDcInstalledScripts(){var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],current=normalizeDcSelection(APP_STATE.script.dcSelection).scriptPath; if(!box)return;box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">No installable dcE scripts found.</div>';return;}list.forEach(function(item){var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div"),prefix=String(item.prefix||inferDcPrefix(p)||""),available=item.available===true,missing=Array.isArray(item.missing)?item.missing:[];row.className="dc-install-row"+(sameRelUiPath(current,p)?" active":"")+(available?"":" disabled");main.className="dc-install-main";main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>'+(missing.length?'<div class="dc-install-missing">'+esc(missing.join(", "))+'</div>':"");badge.className="dc-install-badge";badge.textContent=available?(prefix||"ready"):"missing";row.appendChild(main);row.appendChild(badge);row.onclick=function(){if(!available){setStatus("Cannot apply: "+missing.join(", "),"status-err");return;}selectDcScriptPath(p);};box.appendChild(row);});renderDcEditorState();}
+function renderDcMatchedJson(){var box=byId("dcMatchedJsonBox"),list=APP_STATE.script.dcBrowser.jsons||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),selected=sel.jsonPath,prefix=detectDcPrefixFromSelection(),candidate=getDcScriptCandidate(sel.scriptPath);if(!box)return;box.innerHTML="";if(candidate&&candidate.requiresJson!==true){box.innerHTML='<div class="empty">This entry does not require JSON.</div>';return;}if(!prefix){box.innerHTML='<div class="empty">Select a script first.</div>';return;}if(!list.length){box.innerHTML='<div class="empty">No matching JSON files found.</div>';return;}list.forEach(function(item){var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div");row.className="dc-install-row dc-json-row"+(sameRelUiPath(selected,p)?" active":"");main.className="dc-install-main";main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>';badge.className="dc-install-badge";badge.textContent="JSON";row.appendChild(main);row.appendChild(badge);row.onclick=function(){selectDcJsonPath(p);};box.appendChild(row);});maybeAutoSelectDcJson();}
+function detectDcPrefixFromSelection(){return inferDcPrefix((APP_STATE.script.dcSelection&&APP_STATE.script.dcSelection.scriptPath)||"");}
+function inferDcPrefix(path){var name=lastSeg(path).replace(/\.js$/i,"").toLowerCase();if(!name)return"";if(name==="dc_dialogue_trigger"||name.indexOf("dialogue")>=0)return"dc_dialogue";if(name.indexOf("dc_trainer")==0||name.indexOf("trainer")>=0)return"dc_trainer";if(name.indexOf("dc_soulmob")==0||name.indexOf("soulmob")>=0)return"dc_soulMob";if(name.indexOf("dc_taczmob")==0||name.indexOf("taczmob")>=0)return"dc_taczMob";return"";}
+function getDcJsonRootLabel(prefix){if(prefix==="dc_dialogue")return"dc_data/dc_dialogues";if(prefix==="dc_trainer")return"dc_trainers/spec";if(prefix==="dc_soulMob")return"dc_mob/soulmob";if(prefix==="dc_taczMob")return"dc_mob/taczmob";return String(prefix||"dc_json");}
+function selectDcScriptPath(path){var p=String(path||"").trim(),sel=normalizeDcSelection(APP_STATE.script.dcSelection),candidate=getDcScriptCandidate(p),nextPrefix=candidate?String(candidate.prefix||""):inferDcPrefix(p),paths=candidate&&Array.isArray(candidate.applyScripts)?candidate.applyScripts.slice():[p];if(!p)return;if(candidate&&candidate.available!==true){setStatus("Cannot apply: "+(Array.isArray(candidate.missing)?candidate.missing.join(", "):"requirements missing"),"status-err");return;}if(sel.prefix&&sel.prefix!==nextPrefix)sel.jsonPath="";sel.scriptPath=p;sel.scriptPaths=paths;sel.prefix=nextPrefix;APP_STATE.script.dcSelection=sel;APP_STATE.script.dcBrowser.jsons=[];APP_STATE.script.dcBrowser.jsonLoaded=false;APP_STATE.script.dcBrowser.jsonPrefix="";if(APP_STATE.script.dcSelection.prefix==="")setStatus("Selected script has no dcE prefix.","status-warn");if(nextPrefix&&candidate&&candidate.requiresJson){requestDcJsonFileList(nextPrefix,"");}renderDcInstalledScripts();renderDcMatchedJson();}
+function maybeAutoSelectDcJson(){var sel=normalizeDcSelection(APP_STATE.script.dcSelection),prefix=detectDcPrefixFromSelection(),list=APP_STATE.script.dcBrowser.jsons||[],scriptStem=lastSeg(sel.scriptPath||"").replace(/\.js$/i,"").toLowerCase(),best=null,i,item,stem;if(!prefix||sel.jsonPath||!list.length)return;for(i=0;i<list.length;i++){item=list[i]||{};stem=lastSeg(item.path||item||"").replace(/\.json$/i,"").toLowerCase();if(stem===scriptStem){best=String(item.path||item||"");break;}}if(!best&&list.length===1)best=String(list[0].path||list[0]||"");if(best)selectDcJsonPath(best);}
+function selectDcJsonPath(path){var p=String(path||"").trim();if(!p)return;APP_STATE.script.dcSelection=normalizeDcSelection(APP_STATE.script.dcSelection);APP_STATE.script.dcSelection.jsonPath=p;renderDcMatchedJson();renderDcEditorState();}
+function saveDcSelection(){var npc=getSelectedNpc(),sel,candidate;if(!npc){setStatus("No NPC selected.","status-err");return;}APP_STATE.script.dcSelection=normalizeDcSelection(APP_STATE.script.dcSelection);sel=APP_STATE.script.dcSelection;candidate=getDcScriptCandidate(sel.scriptPath);if(!sel.scriptPath){setStatus("Select an installable dcE script first.","status-warn");return;}if(!candidate){setStatus("Reload the installable script list first.","status-warn");return;}if(candidate.available!==true){setStatus("Cannot apply: "+(Array.isArray(candidate.missing)?candidate.missing.join(", "):"requirements missing"),"status-err");return;}if(candidate.requiresJson&&!sel.jsonPath){setStatus("Select JSON path first.","status-warn");return;}APP_STATE.script.pendingStyle="dcE";APP_STATE.script.pendingUuid=APP_STATE.selectedUuid;APP_STATE.script.data.scriptStyle="dcE";sendEvt("npc_script_apply",{uuid:npc.uuid,scriptEnabled:!!APP_STATE.script.data.scriptEnabled,scriptStyle:"dcE",tabs:APP_STATE.script.data.tabs,dcSelection:APP_STATE.script.dcSelection});setStatus("Sent dcE apply request.","status-warn");}
+function normalizePath(p){p=String(p||"/").replace(/\\/g,"/");if(!p)p="/";if(p.charAt(0)!=="/")p="/"+p;p=p.replace(/\/+/g,"/");if(p.length>1&&p.charAt(p.length-1)==="/")p=p.substring(0,p.length-1);return p||"/";}
+function lastSeg(p){p=String(p||"").replace(/\\/g,"/");var parts=p.split("/");return parts[parts.length-1]||p;}
+function pickerGoUp(){var cur=normalizePath(APP_STATE.picker.current||"/"),idx;if(cur==="/")return;idx=cur.lastIndexOf("/");APP_STATE.picker.current=idx<=0?"/":cur.substring(0,idx);renderPickerState();}
+function buildFileTree(files){var root={name:"/",path:"/",dirs:{},files:[]},i,parts,j,cur,part,pathAcc,fileObj;for(i=0;i<files.length;i++){fileObj=files[i]||{};parts=String(fileObj.path||"").replace(/\\/g,"/").split("/");cur=root;pathAcc="";for(j=0;j<parts.length;j++){part=parts[j];if(!part)continue;if(j===parts.length-1){cur.files.push({name:fileObj.name||part,path:parts.join("/")});}else{pathAcc+="/"+part;if(!cur.dirs[part])cur.dirs[part]={name:part,path:pathAcc,dirs:{},files:[]};cur=cur.dirs[part];}}}sortTree(root);return root;}
+function sortTree(node){var keys=Object.keys(node.dirs).sort();keys.forEach(function(k){sortTree(node.dirs[k]);});node._dirKeys=keys;node.files.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});}
+function getNodeByPath(path){var node=APP_STATE.picker.tree,parts,i,part;if(!node)return null;path=normalizePath(path);if(path==="/")return node;parts=path.split("/");for(i=1;i<parts.length;i++){part=parts[i];if(!part)continue;if(!node.dirs[part])return null;node=node.dirs[part];}return node;}
+function toggleTreeDir(path){path=normalizePath(path);APP_STATE.picker.expanded[path]=!APP_STATE.picker.expanded[path];renderPickerState();}
+function renderPickerState(){var tree=APP_STATE.picker.tree||{dirs:{},files:[]};var search=String(byId("pickerSearchInput").value||"").toLowerCase();var node=getNodeByPath(APP_STATE.picker.current)||tree;byId("pickerRootLine").textContent=APP_STATE.picker.rootLabel||(APP_STATE.picker.root||"customnpcs/scripts/ecmascript");byId("pickerPathLine").textContent=APP_STATE.picker.current||"/";if(byId("pickerAddBtn"))byId("pickerAddBtn").textContent=String(APP_STATE.picker.mode||"general")==="dcJson"?"Select":"Add";if(byId("pickerUpBtn"))byId("pickerUpBtn").disabled=normalizePath(APP_STATE.picker.current||"/")==="/";renderPickerTree(tree,search);renderPickerFiles(node,search);}
+function renderPickerTree(root,search){var box=byId("pickerTree");box.innerHTML="";if(!APP_STATE.picker.tree){box.innerHTML='<div class="empty">No folders found.</div>';return;}appendTreeNode(box,root,0,search,true);}
+function appendTreeNode(container,node,depth,search,isRoot){var frag=document.createDocumentFragment();var showNode=isRoot||!search||node.path==="/"||String(node.name).toLowerCase().indexOf(search)>=0||subtreeMatches(node,search);var dirKeys=node._dirKeys||[];var expanded=APP_STATE.picker.expanded[node.path]!==false;var row,childWrap,caret,label;if(!showNode)return;label=isRoot?(APP_STATE.picker.rootLabel||"ecmascript"):node.name;row=document.createElement("div");row.className="tree-node"+(normalizePath(APP_STATE.picker.current)===normalizePath(node.path)?" active":"");row.style.paddingLeft=(10+depth*16)+"px";row.innerHTML='<div class="tree-label"><div class="tree-caret">'+(dirKeys.length?(expanded?"v":">"):"")+'</div><div class="picker-icon">[D]</div><div class="picker-name">'+esc(label)+'</div></div>';row.onclick=function(){APP_STATE.picker.current=node.path;renderPickerState();};row.ondblclick=function(e){e.stopPropagation();APP_STATE.picker.current=node.path;if(dirKeys.length)toggleTreeDir(node.path);};caret=row.querySelector(".tree-caret");if(caret&&dirKeys.length){caret.onclick=function(e){e.stopPropagation();toggleTreeDir(node.path);};}frag.appendChild(row);if(expanded){childWrap=document.createElement("div");childWrap.className="tree-children";dirKeys.forEach(function(k){appendTreeNode(childWrap,node.dirs[k],depth+1,search,false);});frag.appendChild(childWrap);}container.appendChild(frag);}
+function subtreeMatches(node,search){var i,keys=node._dirKeys||[];if(!search)return true;for(i=0;i<keys.length;i++)if(String(keys[i]).toLowerCase().indexOf(search)>=0||subtreeMatches(node.dirs[keys[i]],search))return true;for(i=0;i<node.files.length;i++)if(String(node.files[i].name).toLowerCase().indexOf(search)>=0)return true;return false;}
+function renderPickerFiles(node,search){var box=byId("pickerList"),dirs=node?(node._dirKeys||[]).map(function(k){return node.dirs[k];}):[],files=node?node.files.slice():[],mode=String(APP_STATE.picker.mode||"general");box.innerHTML="";if(search){dirs=dirs.filter(function(v){return subtreeMatches(v,search)||String(v.name).toLowerCase().indexOf(search)>=0;});files=files.filter(function(v){return String(v.name).toLowerCase().indexOf(search)>=0;});}dirs.forEach(function(v){var row=document.createElement("div");row.className="picker-item dir";row.innerHTML='<div class="picker-icon">[D]</div><div class="picker-name">'+esc(v.name)+'</div><div class="picker-meta">folder</div>';row.onclick=function(){APP_STATE.picker.current=v.path;renderPickerState();};box.appendChild(row);});files.forEach(function(v){var row=document.createElement("div");row.className="picker-item file"+(APP_STATE.picker.selectedFile===v.path?" active":"");row.innerHTML='<div class="picker-icon">[F]</div><div class="picker-name">'+esc(v.name)+'</div><div class="picker-meta">'+(mode==="dcJson"?"double click to select":"double click to add")+'</div>';row.onclick=function(){APP_STATE.picker.selectedFile=v.path;byId("newFileInput").value=v.path;renderPickerState();};row.ondblclick=function(){APP_STATE.picker.selectedFile=v.path;byId("newFileInput").value=v.path;addSelectedFileFromInput(true);};box.appendChild(row);});if(!dirs.length&&!files.length)box.innerHTML='<div class="empty">Nothing to display.</div>';}
+debugStep("init","before");
+try{
+init();
+debugStep("init","after");
+}catch(initErr){
+debugStep("init_error",String(initErr&&initErr.stack||initErr&&initErr.message||initErr));
+throw initErr;
+}
+debugStep("i18n","before async load");
+loadI18n(function(){
+debugStep("i18n","callback error="+I18N_LOAD_ERROR);
+renderAdminState();
+rebuildFactionSelect();
+applyFilter();
+renderScriptState("");
+renderKeyboardPicker();
+applyI18n(document.body);
+if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");
+});
+function appendOption(select, value, label){
+    var opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    select.appendChild(opt);
+}
+
+</script>
+</body>
+</html>
