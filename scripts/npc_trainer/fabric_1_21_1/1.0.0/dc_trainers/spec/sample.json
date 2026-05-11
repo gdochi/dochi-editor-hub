@@ -1,0 +1,30 @@
+{
+  "basic": {
+    "returnHome": true,
+    "detectType": 0,
+    "battleExclamation": {
+      "enable": false
+    }
+  },
+  "battleSettings": {
+    "rematchEnable": false,
+    "rematchMax": 0,
+    "rematchRoundMode": "fixed",
+    "rematchStartRound": 0,
+    "maxBattleRounds": 1
+  },
+  "battle": [
+    {
+      "specPath": "sample.json",
+      "battleFormat": "GEN_9_SINGLES",
+      "itemLimit": 1,
+      "startDelay": 0,
+      "denyCooldown": 0
+    }
+  ],
+  "condition": [],
+  "after": {
+    "rounds": []
+  },
+  "globalCompatibility": {}
+}

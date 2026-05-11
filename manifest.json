@@ -5,14 +5,14 @@
   "description": "Versioned script package library for Dochi editors",
   "base_path": "minecraft/customnpcs/scripts/ecmascript/dc_lib",
   "package_index": {
-    "trainer:fabric_1_21_1": {
-      "package": "trainer",
-      "editor": "trainer",
+    "npc_trainer:fabric_1_21_1": {
+      "package": "npc_trainer",
+      "editor": "npc_trainer",
       "mc_version": "fabric_1_21_1",
       "sub_path": "",
       "latest": "1.0.0",
       "versions": [
-        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
+        "scripts/npc_trainer/fabric_1_21_1/1.0.0/manifest.json"
       ]
     },
     "soullikemob:forge_1_20_1": {
@@ -70,13 +70,13 @@
   },
   "packages": [
     {
-      "package": "trainer",
-      "editor": "trainer",
+      "package": "npc_trainer",
+      "editor": "npc_trainer",
       "mc_version": "fabric_1_21_1",
       "sub_path": "",
       "latest": "1.0.0",
       "versions": [
-        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
+        "scripts/npc_trainer/fabric_1_21_1/1.0.0/manifest.json"
       ]
     },
     {

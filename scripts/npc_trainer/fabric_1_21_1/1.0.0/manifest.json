@@ -1,8 +1,8 @@
 {
-  "id": "trainer/fabric_1_21_1/1.0.0",
-  "package": "trainer",
+  "id": "npc_trainer/fabric_1_21_1/1.0.0",
+  "package": "npc_trainer",
   "version": "1.0.0",
-  "editor": "trainer",
+  "editor": "npc_trainer",
   "mc_version": "fabric_1_21_1",
   "description": "NPC trainer battle package for Fabric 1.21.1",
   "entry": "dc_npc_trainer.js",
@@ -96,10 +96,22 @@
           "note": "Trainer config JSON root."
         },
         {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_trainers/spec/sample.json",
+          "required": false,
+          "note": "Default sample trainer config used when no NPC spec path is set."
+        },
+        {
           "type": "json_dir",
           "path": "customnpcs/dc_data/dc_trainers/pokemonparty/",
           "required": true,
           "note": "Trainer party spec root."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_trainers/pokemonparty/sample.json",
+          "required": false,
+          "note": "Sample Cobblemon party referenced by the sample trainer config."
         },
         {
           "type": "json_dir",
@@ -125,6 +137,18 @@
       "source": "dc_npc_editor.html",
       "install_as": "dc_npc_editor.html",
       "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "dc_trainers/spec/sample.json",
+      "install_as": "dc_data/dc_trainers/spec/sample.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_trainers/pokemonparty/sample.json",
+      "install_as": "dc_data/dc_trainers/pokemonparty/sample.json",
+      "type": "json",
       "dependencies": []
     }
   ]

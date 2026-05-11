@@ -1,0 +1,48 @@
+{
+  "name": "sample_trainer_party",
+  "ai": {
+    "type": "rct",
+    "data": {
+      "maxSelectMargin": 0.45
+    }
+  },
+  "team": [
+    {
+      "species": "rattata",
+      "level": 5,
+      "nature": "hardy",
+      "ability": "runaway",
+      "types": [
+        "normal"
+      ],
+      "stats": {
+        "hp": 19,
+        "atk": 12,
+        "def": 9,
+        "spatk": 8,
+        "spdef": 9,
+        "speed": 14
+      },
+      "ivs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spatk": 0,
+        "spdef": 0,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spatk": 0,
+        "spdef": 0,
+        "speed": 0
+      },
+      "moveset": [
+        "tackle",
+        "tailwhip"
+      ]
+    }
+  ]
+}

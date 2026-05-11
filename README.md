@@ -13,6 +13,6 @@ Local package library for Dochi script distribution.
 
 ## Example
 
-- `scripts/trainer/fabric_1_21_1/1.0.0/manifest.json`
-- `scripts/trainer/fabric_1_21_1/1.0.0/trainer_1.0.0.js`
-- `scripts/trainer/fabric_1_21_1/1.0.0/trainer_1.0.0.html`
+- `scripts/npc_trainer/fabric_1_21_1/1.0.0/manifest.json`
+- `scripts/npc_trainer/fabric_1_21_1/1.0.0/dc_npc_trainer.js`
+- `scripts/npc_trainer/fabric_1_21_1/1.0.0/dc_battle_exclamation.html`

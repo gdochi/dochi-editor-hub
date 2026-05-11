@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-11T00:33:25.023Z",
+  "generated_at": "2026-05-11T00:51:12.074Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -97,62 +97,15 @@
       ]
     },
     {
-      "id": "scroll_dialogue",
-      "package": "scroll_dialogue",
-      "script": "dc_story_scroll.js",
-      "versions": [
-        {
-          "mc_version": "common",
-          "version": "1.0.0",
-          "manifest": "scroll_dialogue/common/1.0.0/manifest.json",
-          "source_path": "scroll_dialogue/common/1.0.0/dc_story_scroll.js"
-        }
-      ],
-      "script_dependencies": [],
-      "html_dependencies": []
-    },
-    {
-      "id": "soullikemob",
-      "package": "soullikemob",
-      "script": "dc_soullikemob.js",
-      "versions": [
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.0",
-          "manifest": "soullikemob/forge_1_20_1/1.0.0/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.0/dc_soullikemob.js"
-        },
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.1",
-          "manifest": "soullikemob/forge_1_20_1/1.0.1/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.1/dc_soullikemob.js"
-        },
-        {
-          "mc_version": "forge_1_20_1",
-          "version": "1.0.2",
-          "manifest": "soullikemob/forge_1_20_1/1.0.2/manifest.json",
-          "source_path": "soullikemob/forge_1_20_1/1.0.2/dc_soullikemob.js"
-        }
-      ],
-      "script_dependencies": [],
-      "html_dependencies": [
-        {
-          "path": "html/dc_soullikemob.html",
-          "required": true
-        }
-      ]
-    },
-    {
-      "id": "trainer",
-      "package": "trainer",
+      "id": "npc_trainer",
+      "package": "npc_trainer",
       "script": "dc_npc_trainer.js",
       "versions": [
         {
           "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
-          "manifest": "trainer/fabric_1_21_1/1.0.0/manifest.json",
-          "source_path": "trainer/fabric_1_21_1/1.0.0/dc_npc_trainer.js"
+          "manifest": "npc_trainer/fabric_1_21_1/1.0.0/manifest.json",
+          "source_path": "npc_trainer/fabric_1_21_1/1.0.0/dc_npc_trainer.js"
         }
       ],
       "script_dependencies": [
@@ -212,6 +165,53 @@
         },
         {
           "path": "html/ds_battle_exclamation.html",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "scroll_dialogue",
+      "package": "scroll_dialogue",
+      "script": "dc_story_scroll.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "scroll_dialogue/common/1.0.0/manifest.json",
+          "source_path": "scroll_dialogue/common/1.0.0/dc_story_scroll.js"
+        }
+      ],
+      "script_dependencies": [],
+      "html_dependencies": []
+    },
+    {
+      "id": "soullikemob",
+      "package": "soullikemob",
+      "script": "dc_soullikemob.js",
+      "versions": [
+        {
+          "mc_version": "forge_1_20_1",
+          "version": "1.0.0",
+          "manifest": "soullikemob/forge_1_20_1/1.0.0/manifest.json",
+          "source_path": "soullikemob/forge_1_20_1/1.0.0/dc_soullikemob.js"
+        },
+        {
+          "mc_version": "forge_1_20_1",
+          "version": "1.0.1",
+          "manifest": "soullikemob/forge_1_20_1/1.0.1/manifest.json",
+          "source_path": "soullikemob/forge_1_20_1/1.0.1/dc_soullikemob.js"
+        },
+        {
+          "mc_version": "forge_1_20_1",
+          "version": "1.0.2",
+          "manifest": "soullikemob/forge_1_20_1/1.0.2/manifest.json",
+          "source_path": "soullikemob/forge_1_20_1/1.0.2/dc_soullikemob.js"
+        }
+      ],
+      "script_dependencies": [],
+      "html_dependencies": [
+        {
+          "path": "html/dc_soullikemob.html",
           "required": true
         }
       ]
