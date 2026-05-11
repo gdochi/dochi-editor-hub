@@ -355,7 +355,6 @@ function normalizeEntityTargetType(value) {
 
     var speakerName = "";
     try{ speakerName = String(ctx && ctx.npc && ctx.npc.display && typeof ctx.npc.display.getName === "function" ? ctx.npc.display.getName() : ""); }catch(errS0){ speakerName = ""; }
-    if(!speakerName){ try{ speakerName = String(ctx && ctx.npc && typeof ctx.npc.getName === "function" ? ctx.npc.getName() : ""); }catch(errS1){ speakerName = ""; } }
     speakerName = String(speakerName || "").trim();
     if(speakerName){
       try{

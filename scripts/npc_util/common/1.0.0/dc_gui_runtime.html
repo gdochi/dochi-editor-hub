@@ -296,6 +296,62 @@
       return ia - ib;
     }
 
+    function esc(s){
+      return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;" }[c]));
+    }
+
+    function mcText(s){
+      const raw = String(s == null ? "" : s);
+      const colors = {0:"#000000",1:"#0000AA",2:"#00AA00",3:"#00AAAA",4:"#AA0000",5:"#AA00AA",6:"#FFAA00",7:"#AAAAAA",8:"#555555",9:"#5555FF",a:"#55FF55",b:"#55FFFF",c:"#FF5555",d:"#FF55FF",e:"#FFFF55",f:"#FFFFFF"};
+      let out = "", buf = "";
+      let state = {color:"",bold:false,italic:false,underline:false,strike:false};
+      function style(){
+        const st = [];
+        if(state.color) st.push("color:"+state.color);
+        if(state.bold) st.push("font-weight:700");
+        if(state.italic) st.push("font-style:italic");
+        if(state.underline && state.strike) st.push("text-decoration:underline line-through");
+        else if(state.underline) st.push("text-decoration:underline");
+        else if(state.strike) st.push("text-decoration:line-through");
+        return st.join(";");
+      }
+      function flush(){
+        if(!buf) return;
+        const st = style();
+        const txt = esc(buf);
+        out += st ? '<span style="'+st+'">'+txt+'</span>' : txt;
+        buf = "";
+      }
+      function reset(){
+        state = {color:"",bold:false,italic:false,underline:false,strike:false};
+      }
+      for(let i=0;i<raw.length;i++){
+        const ch = raw.charAt(i);
+        if(ch === "§" && i + 1 < raw.length){
+          const code = raw.charAt(++i).toLowerCase();
+          flush();
+          if(code === "x" && i + 12 < raw.length){
+            let hex = "", ok = true;
+            for(let h=0;h<6;h++){
+              if(raw.charAt(i+1+h*2) !== "§" || !/^[0-9a-f]$/i.test(raw.charAt(i+2+h*2))){ ok = false; break; }
+              hex += raw.charAt(i+2+h*2);
+            }
+            if(ok){ reset(); state.color = "#"+hex; i += 12; continue; }
+          }
+          if(colors[code]){ reset(); state.color = colors[code]; }
+          else if(code === "l") state.bold = true;
+          else if(code === "o") state.italic = true;
+          else if(code === "n") state.underline = true;
+          else if(code === "m") state.strike = true;
+          else if(code === "r") reset();
+          continue;
+        }
+        buf += ch;
+      }
+      flush();
+      return out;
+    }
+
     function getChoices(){
       const direct = BIND.choice || INIT.choice;
       const list = Array.isArray(direct) ? direct : [];
@@ -635,7 +691,7 @@ prev.addEventListener('click', function(ev){
       if(speakerText){
         speakerNode = document.createElement("div");
         speakerNode.className = "speaker";
-        speakerNode.textContent = speakerText;
+        speakerNode.innerHTML = mcText(speakerText);
       }
 
       const lines = document.createElement("div");
@@ -1137,8 +1193,6 @@ var stopPagerEv = function(ev){
   </script>
 </body>
 </html>
-
-
 
 
 
