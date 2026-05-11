@@ -1147,20 +1147,11 @@ function bd_buildBindings(raw){
         normActions.push({ store:a.store });
         continue;
       }
-      if(a.storeData && typeof a.storeData === "object"){
-        normActions.push({ store:a.storeData });
-        continue;
-      }
-      if(a.storedData && typeof a.storedData === "object"){
-        normActions.push({ store:a.storedData });
-        continue;
-      }
-      if(rawType === "store" || rawType === "stored" || rawType === "storeddata" || rawType === "store_data" || rawType === "stored_data"){
+      if(rawType === "store"){
         normActions.push({ store:{
-          key:String(a.key || a.id || a.name || ""),
-          op:String(a.storeOp || a.op || a.operator || "set"),
-          value:a.value,
-          scope:String(a.scope || a.storeScope || a.storeTarget || a.targetScope || a.target || a.targetType || "player")
+          key:String(a.key || ""),
+          op:String(a.storeOp || a.op || "set"),
+          value:a.value
         } });
         continue;
       }

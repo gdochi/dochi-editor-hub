@@ -221,14 +221,11 @@ var DcDialogueUtilModule = (function(){
         continue;
       }
       if(a.store && typeof a.store === "object"){ out.push({ store: a.store }); continue; }
-      if(a.storeData && typeof a.storeData === "object"){ out.push({ store: a.storeData }); continue; }
-      if(a.storedData && typeof a.storedData === "object"){ out.push({ store: a.storedData }); continue; }
-      if(type === "store" || type === "stored" || type === "storeddata" || type === "store_data" || type === "stored_data"){
+      if(type === "store"){
         out.push({ store: {
-          key: String(a.key || a.id || a.name || ""),
-          op: String(a.storeOp || a.op || a.operator || "set"),
-          value: a.value,
-          scope: String(a.scope || a.storeScope || a.storeTarget || a.targetScope || a.target || a.targetType || "player")
+          key: String(a.key || ""),
+          op: String(a.storeOp || a.op || "set"),
+          value: a.value
         }});
         continue;
       }
@@ -283,6 +280,49 @@ var DcDialogueUtilModule = (function(){
     }
     for(var j=0;j<list.length;j++){ if(!evalOneCondition(player, npc, list[j])) return false; }
     return true;
+  }
+
+  function normalizeRouteAction(route){
+    var r = route && typeof route === "object" ? route : {};
+    var linkMode = String(r.linkMode || r.link || "internal").toLowerCase();
+    var target = r.goto != null ? r.goto : (r.target != null ? r.target : r.value);
+    var filePath = String(r.filePath || r.path || "");
+    if(linkMode === "external_json") linkMode = "external";
+    if(linkMode === "internal_node") linkMode = "internal";
+    if(linkMode === "external") target = filePath || target;
+    return { goto: String(target || ""), linkMode: linkMode, filePath: filePath };
+  }
+
+  function resolveNodeRoutes(player, npc, raw, rel, debug){
+    var currentRaw = raw;
+    var currentRel = String(rel || "");
+    var seen = {};
+    for(var guard=0; guard<16; guard++){
+      var node = unwrapNode(currentRaw);
+      var routes = node && Array.isArray(node.routes) ? node.routes : (node && Array.isArray(node.route) ? node.route : []);
+      var matched = null;
+      for(var i=0;i<routes.length;i++){
+        var route = routes[i] || {};
+        if(evalConditions(player, npc, route)){
+          matched = normalizeRouteAction(route);
+          break;
+        }
+      }
+      if(!matched || !matched.goto) return { raw: currentRaw, rel: currentRel };
+      if(String(matched.linkMode || "").toLowerCase() === "battle") return { raw: currentRaw, rel: currentRel };
+      var activeLike = { baseSubPath: baseSubPath(currentRel) };
+      var nextRel = resolveNextDialogueRel(activeLike, matched, matched.goto);
+      if(!nextRel) return { raw: currentRaw, rel: currentRel };
+      var key = String(nextRel || "").toLowerCase();
+      if(seen[key]) return { raw: currentRaw, rel: currentRel };
+      seen[key] = true;
+      var nextRaw = readJson(normalizeDialoguePath(nextRel));
+      if(!nextRaw) return { raw: currentRaw, rel: currentRel };
+      debugLog(npc, debug, "route " + currentRel + " -> " + nextRel);
+      currentRel = nextRel;
+      currentRaw = nextRaw;
+    }
+    return { raw: currentRaw, rel: currentRel };
   }
 
   function componentString(comp){
@@ -425,6 +465,9 @@ var DcDialogueUtilModule = (function(){
       debugLog(npc, debug, "start/open conditions failed.");
       return null;
     }
+    var routed = resolveNodeRoutes(player, npc, raw, dialogueRel, debug);
+    raw = routed.raw;
+    dialogueRel = routed.rel;
 
     var guiJsonPath = getPayloadGuiPath(raw, opts.guiJsonPath);
     debugLog(npc, debug, "resolved guiJsonPath=" + guiJsonPath);
@@ -460,6 +503,9 @@ var DcDialogueUtilModule = (function(){
 
   function updateOpenDialogue(player, npc, active, raw, nextRel, pendingFx){
     if(!player || !active || !raw) return false;
+    var routed = resolveNodeRoutes(player, npc, raw, nextRel, false);
+    raw = routed.raw;
+    nextRel = routed.rel;
     var sessionId = String(active.sessionId || "");
     var mergedBindings = mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), pendingFx);
     var payload = {
@@ -507,12 +553,6 @@ var DcDialogueUtilModule = (function(){
     var ctx = { player: player, npc: npc, event: eventObj };
     if(typeof rew_chk_applyAction === "function"){
       return rew_chk_applyAction(ctx, action);
-    }
-    if(typeof dc_reward_applyAction === "function"){
-      return dc_reward_applyAction(ctx, action);
-    }
-    if(typeof DcRewardCheckerModule !== "undefined" && DcRewardCheckerModule && typeof DcRewardCheckerModule.applyAction === "function"){
-      return DcRewardCheckerModule.applyAction(ctx, action);
     }
     {
       throw new Error("dc_reward_checker.js must be loaded before dc_dialogue_util.js");
