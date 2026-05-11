@@ -46,6 +46,7 @@ var data={};
  if(e.eventName==="npc_delete"){if(requireCanEdit(e,"npcActionResult","delete"))onNpcDelete(e,data);return;}
  if(e.eventName==="npc_script_info"){if(requireCanBrowse(e,"npcScriptData","script_info"))onNpcScriptInfo(e,data);return;}
  if(e.eventName==="npc_script_apply"){if(requireCanEdit(e,"npcScriptApplyResult","script_apply"))onNpcScriptApply(e,data);return;}
+ if(e.eventName==="npc_script_enabled_toggle"){if(requireCanEdit(e,"npcScriptToggleResult","script_toggle"))onNpcScriptEnabledToggle(e,data);return;}
  if(e.eventName==="npc_script_file_list"){if(requireCanEdit(e,"npcScriptFileList","script_file_list"))onNpcScriptFileList(e,data);return;}
  if(e.eventName==="npc_dc_json_file_list"){if(requireCanEdit(e,"npcDcJsonFileList","dc_json_file_list"))onNpcDcJsonFileList(e,data);return;}
 }
@@ -533,7 +534,7 @@ var list=toJsArray(getCachedNpcList(player));
 return buildNpcBrowserInitFromList(player,list,range);
 }
 function buildNpcBrowserInitFromList(player,list,range){
-var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,previewSlot,previewNbt,dochiLock,overlayEntities=[];
+var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,scriptEnabled,previewSlot,previewNbt,dochiLock,overlayEntities=[];
 for(i=0;i<list.length;i++){
 n=list[i];
 try{n=getNpcByUuid(player,String(n.getUUID()))||n;}catch(resolveErr){}
@@ -548,6 +549,7 @@ dist=distanceToPlayer(player,n);
 style=getNpcScriptStyle(n);
 dochiLock=getNpcDochiLock(n);
 if(dochiLock.locked)style="dcE";
+scriptEnabled=getNpcScriptEnabled(n);
 previewSlot=-1;
 previewNbt="";
 if(CFG.PREVIEW_ENTITY_RENDER){
@@ -572,6 +574,7 @@ x:x,y:y,z:z,
 distance:dist,
 distanceText:formatDistance(dist),
 scriptStyle:style,
+scriptEnabled:scriptEnabled,
 dochiLocked:dochiLock.locked,
 dochiLock:dochiLock,
 previewSlot:previewSlot,
@@ -682,6 +685,23 @@ setNpcDochiLock(npc,{locked:false});
 pushBrowser(e.player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:style,dcSelection:getNpcDcSelection(npc),dochiLock:defaultDochiLock()});
 pushNpcList(e.player,getStoredScanRange(e.player));
 }
+function onNpcScriptEnabledToggle(e,data){
+var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),raw,existing,next,expectedState,res,payload;
+if(!npc){pushBrowser(e.player,"npcScriptToggleResult",{ok:false,error:"NPC is outside the current scan range. Refresh or move closer."});return;}
+raw=getEntityNbtSafe(npc);
+existing=extractScriptTabsFromRaw(raw);
+next=(data.scriptEnabled===true||data.scriptEnabled===false)?data.scriptEnabled:!existing.scriptEnabled;
+expectedState=buildScriptStateFromTabs(existing.tabs,next);
+res=setNpcScriptEnabledDirect(npc,next,expectedState);
+if(!res.ok){pushBrowser(e.player,"npcScriptToggleResult",{ok:false,uuid:String(npc.getUUID()),error:res.error||"Script toggle failed"});return;}
+payload=buildNpcScriptDataPayload(npc);
+payload.ok=true;
+payload.action="script_toggle";
+payload.scriptEnabled=next;
+pushBrowser(e.player,"npcScriptToggleResult",payload);
+pushBrowser(e.player,"npcScriptData",payload);
+pushNpcList(e.player,getStoredScanRange(e.player));
+}
 function buildNpcScriptDataPayload(npc){
 var raw=getEntityNbtSafe(npc),result=extractScriptTabsFromRaw(raw),lock=getNpcDochiLock(npc);
 result.scriptStyle=getNpcScriptStyle(npc);
@@ -690,6 +710,16 @@ result.dcSelection=getNpcDcSelection(npc);
 result.dochiLock=lock;
 result.uuid=String(npc.getUUID());
 return result;
+}
+function getNpcScriptEnabled(npc){
+var raw,result;
+try{
+raw=getEntityNbtSafe(npc);
+result=extractScriptTabsFromRaw(raw);
+return result.scriptEnabled===true;
+}catch(err){
+return true;
+}
 }
 function applyNpcModeOnly(player,npc,style){
 var uuid=String(npc.getUUID()),res,payload;
@@ -748,6 +778,20 @@ return {ok:false,error:"direct script write failed: "+String(err)};
 }
 refreshNpcClient(npc);
 verify=verifyEntityScriptWrite(npc,expectedState||buildScriptStateFromTabs(tabs,scriptEnabled===true));
+if(!verify.ok)return verify;
+return {ok:true};
+}
+function setNpcScriptEnabledDirect(npc,scriptEnabled,expectedState){
+var nbt,verify;
+try{
+nbt=npc.getEntityNbt();
+setNbtScriptEnabled(nbt,scriptEnabled===true);
+npc.setEntityNbt(nbt);
+}catch(err){
+return {ok:false,error:"script enabled write failed: "+String(err)};
+}
+refreshNpcClient(npc);
+verify=verifyEntityScriptWrite(npc,expectedState);
 if(!verify.ok)return verify;
 return {ok:true};
 }
