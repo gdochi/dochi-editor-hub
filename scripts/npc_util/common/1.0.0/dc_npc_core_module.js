@@ -1,3 +1,4 @@
+var __DcNpcEventPendingModules = (typeof __DcNpcEventPendingModules !== "undefined" && __DcNpcEventPendingModules) ? __DcNpcEventPendingModules : [];
 var NpcEventModule = NpcEventModule || {};
 (function (ns) {
   if (!ns || typeof ns !== "object") ns = {};

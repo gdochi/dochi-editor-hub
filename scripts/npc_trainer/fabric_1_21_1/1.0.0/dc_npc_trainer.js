@@ -3,6 +3,7 @@ var TrainerModel = Java.type("com.gitlab.srcmc.rctapi.api.models.TrainerModel");
 var BR = Java.type("com.cobblemon.mod.common.battles.BattleRegistry");
 var TBA = Java.type("com.cobblemon.mod.common.battles.actor.TrainerBattleActor");
 var PBA = Java.type("com.cobblemon.mod.common.battles.actor.PokemonBattleActor");
+var __DcNpcEventPendingModules = (typeof __DcNpcEventPendingModules !== "undefined" && __DcNpcEventPendingModules) ? __DcNpcEventPendingModules : [];
 var KEY = {
   SPEC_PATH: "dc_trainer_spec_path",
   CFG: "dc_trainer_cfg",
@@ -1832,7 +1833,7 @@ function dc_trainer_overlay_module(){
   };
 }
 function dc_trainer_pendingModules() {
-  if (typeof __DcNpcEventPendingModules === "undefined" || !__DcNpcEventPendingModules) __DcNpcEventPendingModules = [];
+  if (!__DcNpcEventPendingModules) __DcNpcEventPendingModules = [];
   return __DcNpcEventPendingModules;
 }
 function dc_trainer_registerOrQueue(name, module) {

@@ -7,9 +7,9 @@ var ArrayList = Java.type("java.util.ArrayList");
 
 var GUI_ID = 9473;
 
-var DEFAULT_ROOT_DIR = "customnpcs/JSON/item/";
-var DEFAULT_PREFIX_DIR = "customnpcs/JSON/item/prefix/";
-var DEFAULT_CATEGORY_FILE = "customnpcs/JSON/item/category_config.json";
+var DEFAULT_ROOT_DIR = "customnpcs/dc_data/dc_item/";
+var DEFAULT_PREFIX_DIR = "customnpcs/dc_data/dc_item/prefix/";
+var DEFAULT_CATEGORY_FILE = "customnpcs/dc_data/dc_item/category_config.json";
 
 var MODE_HOME="home",MODE_LORE="lore",MODE_STATS="stats",MODE_REGISTER="register",MODE_CATEGORY="category",MODE_SETTINGS="settings";
 
