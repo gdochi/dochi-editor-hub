@@ -10,11 +10,9 @@
       "editor": "trainer",
       "mc_version": "fabric_1_21_1",
       "sub_path": "",
-      "latest": "1.0.2",
+      "latest": "1.0.0",
       "versions": [
-        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
-        "scripts/trainer/fabric_1_21_1/1.0.1/manifest.json",
-        "scripts/trainer/fabric_1_21_1/1.0.2/manifest.json"
+        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
       ]
     },
     "soullikemob:forge_1_20_1": {
@@ -44,11 +42,9 @@
       "editor": "dialogue",
       "mc_version": "common",
       "sub_path": "",
-      "latest": "1.0.2",
+      "latest": "1.0.0",
       "versions": [
-        "scripts/dialogue/common/1.0.0/manifest.json",
-        "scripts/dialogue/common/1.0.1/manifest.json",
-        "scripts/dialogue/common/1.0.2/manifest.json"
+        "scripts/dialogue/common/1.0.0/manifest.json"
       ]
     },
     "npc_editor:common": {
@@ -78,11 +74,9 @@
       "editor": "trainer",
       "mc_version": "fabric_1_21_1",
       "sub_path": "",
-      "latest": "1.0.2",
+      "latest": "1.0.0",
       "versions": [
-        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json",
-        "scripts/trainer/fabric_1_21_1/1.0.1/manifest.json",
-        "scripts/trainer/fabric_1_21_1/1.0.2/manifest.json"
+        "scripts/trainer/fabric_1_21_1/1.0.0/manifest.json"
       ]
     },
     {
@@ -112,11 +106,9 @@
       "editor": "dialogue",
       "mc_version": "common",
       "sub_path": "",
-      "latest": "1.0.2",
+      "latest": "1.0.0",
       "versions": [
-        "scripts/dialogue/common/1.0.0/manifest.json",
-        "scripts/dialogue/common/1.0.1/manifest.json",
-        "scripts/dialogue/common/1.0.2/manifest.json"
+        "scripts/dialogue/common/1.0.0/manifest.json"
       ]
     },
     {

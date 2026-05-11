@@ -4,24 +4,126 @@
   "version": "1.0.0",
   "editor": "trainer",
   "mc_version": "fabric_1_21_1",
-  "description": "Trainer package sample for Fabric 1.21.1",
-  "entry": "dc_trainer.js",
+  "description": "NPC trainer battle package for Fabric 1.21.1",
+  "entry": "dc_npc_trainer.js",
   "files": [
     {
-      "source": "dc_trainer.js",
-      "install_as": "dc_trainer.js",
+      "source": "dc_npc_trainer.js",
+      "install_as": "dc_npc_trainer.js",
       "dependencies": [
         {
-          "type": "html",
-          "path": "html/dc_trainer.html",
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_npc_core_module.js",
           "required": true,
-          "note": "DOM mount target is supplied by dc_trainer.html."
+          "load_order": 1
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_cond_checker.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_reward_checker.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_sequence_core.js",
+          "required": true,
+          "load_order": 6
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 8
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/ds_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 9
+        },
+        {
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for battle exclamation overlay, browser bridge, and dialogue HTML runtime."
+        },
+        {
+          "type": "mod",
+          "id": "Cobblemon",
+          "required": true,
+          "note": "Uses Cobblemon battle registry and battle actors."
+        },
+        {
+          "type": "mod",
+          "id": "RCTApi/TBCS",
+          "required": true,
+          "note": "Uses RCTApi TrainerModel registration and /tbcs battle integration."
+        },
+        {
+          "type": "html",
+          "path": "html/ds_battle_exclamation.html",
+          "required": true,
+          "note": "Opened by the dc_battle_exclamation overlay."
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true,
+          "note": "Used by battle dialogue through dc_dialogue_util."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_trainers/spec/",
+          "required": true,
+          "note": "Trainer config JSON root."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_trainers/pokemonparty/",
+          "required": true,
+          "note": "Trainer party spec root."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_dialogues/",
+          "required": false,
+          "note": "Required only when battle dialogue is enabled."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_gui/dialogue_gui.json",
+          "required": false,
+          "note": "Default GUI template used by battle dialogue."
         }
       ]
     },
     {
-      "source": "dc_trainer.html",
-      "install_as": "dc_trainer.html",
+      "source": "dc_battle_exclamation.html",
+      "install_as": "ds_battle_exclamation.html",
+      "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "dc_npc_editor.html",
+      "install_as": "dc_npc_editor.html",
       "type": "html",
       "dependencies": []
     }

@@ -43,18 +43,6 @@ var JS_MODULE_CACHE = {};
 var DC_LAST_INTERACT_EVENT = {};
 var DC_BD_LINK = {};
 var DC_BD_LAST_CHOICE = {};
-var DEBUG_JS_STEP = false;
-var DEBUG_TIMER_AI_ROT = false;
-var DEBUG_SEQ_STEP_SAY = false;
-var DEBUG_TIMER_SEQ = false;
-var DEBUG_SEQ_PRINT = false;
-var DEBUG_DENY_PRINT = false;
-var DEBUG_BD_EVT = false;
-function dc_noop(){}
-var DC_DBG = { on:false };
-var dc_dbg = dc_noop;
-var seq_print = dc_noop;
-var js_step_debug = dc_noop;
 function dc_evt_key(p){try{ return p.getUUID(); }catch(e){ return ""; }}
 function dc_evt_store(p, e){try{ var k = dc_evt_key(p); if(k) DC_LAST_INTERACT_EVENT[k] = e; }catch(err){}}
 function dc_evt_get(p){try{ var k = dc_evt_key(p); return k ? DC_LAST_INTERACT_EVENT[k] : null; }catch(err){ return null; }}
@@ -97,10 +85,6 @@ function bd_choiceIsRecent(p, sessionId, withinMs){
     return (Date.now() - (v.at || 0)) <= Math.max(0, util_toInt(withinMs, 0));
   }catch(e){ return false; }
 }
-var trainer_log = dc_noop;
-var trainer_timeTag = dc_noop;
-var deny_print = dc_noop;
-var trainer_say = dc_noop;
 var DEFAULT_CFG = {
   basic: {
     displayArea: "",
@@ -157,23 +141,17 @@ var DEFAULT_CFG = {
   after: { rounds: [] },
   globalCompatibility: {}
 };
-// cfg_
-var cfg_say = dc_noop;
 function cfg_loadRaw(n) {
   var sd = n.getStoreddata();
   var rawPath = sd.get(KEY.SPEC_PATH);
   var fallback = "customnpcs/dc_data/dc_trainers/spec/sample.json";
-  cfg_say(n, "[cfg] loadRaw rawPath=" + String(rawPath || "") + " fallback=" + fallback);
   var f = cfg_chk_resolveFile(rawPath, null);
   if (!f || !f.exists()) {
-    cfg_say(n, "[cfg] primary missing, try fallback");
     f = cfg_chk_resolveFile(fallback, null);
   }
   if (!f || !f.exists()) {
-    cfg_say(n, "[cfg] loadRaw failed: no file");
     return null;
   }
-  cfg_say(n, "[cfg] loadRaw file=" + String(f.getPath ? f.getPath() : f));
   return { path: String(rawPath || fallback), file: f, raw: cfg_chk_readTextFile(f) };
 }
 function cfg_normalize(raw) {
@@ -202,11 +180,9 @@ function cfg_normalize(raw) {
   return out;
 }
 function cfg_refresh(n) {
-  cfg_say(n, "[cfg] refresh begin");
   var rawInfo = cfg_loadRaw(n);
   var td = n.getTempdata();
   if (!rawInfo) {
-    cfg_say(n, "[cfg] refresh fallback default config");
     td.put(KEY.CFG, JSON.stringify(cfg_chk_defaultConfig(DEFAULT_CFG)));
     td.put(KEY.CFG_RAW, "");
     return cfg_chk_defaultConfig(DEFAULT_CFG);
@@ -215,15 +191,12 @@ function cfg_refresh(n) {
   var rawText = String(rawInfo.raw || "").replace(/^\uFEFF/, "");
   try {
     parsed = JSON.parse(rawText);
-    cfg_say(n, "[cfg] json parse ok");
   } catch (e) {
-    cfg_say(n, "[cfg] json parse failed: " + String(e));
     parsed = null;
   }
   var cfg = cfg_normalize(parsed);
   td.put(KEY.CFG_RAW, rawText);
   td.put(KEY.CFG, JSON.stringify(cfg));
-  cfg_say(n, "[cfg] refresh ok battle=" + String((cfg.battle || []).length) + " after=" + String((cfg.after && cfg.after.rounds || []).length) + " condition=" + String((cfg.condition || []).length));
   return cfg;
 }
 function cfg_get(n) {
@@ -233,7 +206,6 @@ function cfg_get(n) {
     try {
       return cfg_normalize(JSON.parse(String(cached)));
     } catch (e) {
-      cfg_say(n, "[cfg] cache parse failed -> refresh");
       return cfg_refresh(n);
     }
   }
@@ -275,7 +247,6 @@ function cfg_roundPack(n, p) {
     afterSteps: afterRound.afterSequenceEnabled === true ? ((afterRound.afterSequence) || []) : []
   };
 }
-// ai_
 function ai_detect(n) {
   var cfg = cfg_get(n);
   var basic = cfg.basic || {};
@@ -418,9 +389,7 @@ function ai_dash(n, p, pos) {
 }
 function ai_isDenied(n) {
   var ticks = n.getStoreddata().get("deny_tick");
-  var denied = util_toInt(ticks, 0) > 0;
-  deny_print("ai_isDenied", { denyTick: util_toInt(ticks, 0), denied: denied });
-  return denied;
+  return util_toInt(ticks, 0) > 0;
 }
 function ai_stepDeny(n, stepTicks) {
   var sd = n.getStoreddata();
@@ -429,7 +398,6 @@ function ai_stepDeny(n, stepTicks) {
   left -= Math.max(1, util_toInt(stepTicks, 1));
   if (left < 0) left = 0;
   sd.put("deny_tick", String(left));
-  deny_print("ai_stepDeny", { stepTicks: util_toInt(stepTicks, 1), left: left });
   return left;
 }
 function ai_isBattle(p) {
@@ -472,26 +440,18 @@ function cond_canChallenge(n, p, cfg) {
   var settings = (cfg && cfg.battleSettings) || {};
   return settings.rematchEnable === true;
 }
-function cond_check(n, p) {return cond_sat(n, p, false).ok;}
-function cond_sat(n, p, debug) {
+function cond_check(n, p) {return cond_sat(n, p).ok;}
+function cond_sat(n, p) {
   var cfg = cfg_get(n);
-  var log = [];
   if (cond_canChallenge(n, p, cfg) === false) {
-    if (debug) log.push("rematch disabled");
-    return debug ? { ok: false, round: 0, mode: "and", log: log } : { ok: false, round: 0, mode: "and" };
+    return { ok: false, round: 0, mode: "and" };
   }
   var idx = cond_round(n, p, cfg);
   var pack = cfg.condition[idx] || {};
   var mode = (pack && pack.mode != null) ? String(pack.mode) : "and";
   var rules = Array.isArray(pack.list) ? pack.list : (Array.isArray(pack.rules) ? pack.rules : []);
-  if (debug) {
-    log.push("round=" + idx);
-    log.push("mode=" + mode);
-    log.push("rules=" + rules.length);
-  }
-  if (!rules.length) return debug ? { ok: true, round: idx, mode: mode, log: log } : { ok: true, round: idx, mode: mode };
+  if (!rules.length) return { ok: true, round: idx, mode: mode };
 
-  var passCount = 0;
   for (var i = 0; i < rules.length; i++) {
     var c = rules[i] || {};
     var type = String(c.type || "");
@@ -499,16 +459,14 @@ function cond_sat(n, p, debug) {
     var key = c.key != null ? String(c.key) : "";
     var val = c.value != null ? c.value : null;
     var res = cond_one(n, p, type, op, key, val, c);
-    if (debug && res.msg) log.push(res.msg);
     if (mode === "or") {
-      if (res.pass) return debug ? { ok: true, round: idx, mode: mode, log: log } : { ok: true, round: idx, mode: mode };
+      if (res.pass) return { ok: true, round: idx, mode: mode };
     } else {
-      if (!res.pass) return debug ? { ok: false, round: idx, mode: mode, log: log } : { ok: false, round: idx, mode: mode };
+      if (!res.pass) return { ok: false, round: idx, mode: mode };
     }
-    if (res.pass) passCount++;
   }
-  if (mode === "or") return debug ? { ok: false, round: idx, mode: mode, log: log } : { ok: false, round: idx, mode: mode };
-  return debug ? { ok: true, round: idx, mode: mode, log: log } : { ok: true, round: idx, mode: mode };
+  if (mode === "or") return { ok: false, round: idx, mode: mode };
+  return { ok: true, round: idx, mode: mode };
 }
 function cond_one(n, p, type, op, key, val, entry) {
   var t = String(type || "").toLowerCase();
@@ -544,13 +502,9 @@ function cond_round(n, p, cfg) {
   return start;
 }
 function flow_begin(n, p) {
-  dc_dbg(p, "flow_begin enter");
-  seq_say(n, "[flow] begin");
   var td = n.getTempdata();
   var state = String(td.get(KEY.STATE) || "idle");
-  seq_print("flow_begin", { player: p ? p.getName() : "", state: state, busy: String(td.get(KEY.BUSY) || "") });
   if (td.get(KEY.BUSY) || state !== "idle") {
-    seq_say(n, "[flow] begin skip state=" + state);
     return false;
   }
   if (flow_lock(n, p) === false) { return false; }
@@ -562,15 +516,10 @@ function flow_begin(n, p) {
   var denyCooldown = Math.max(0, util_toInt((pack.battle || {}).denyCooldown, util_toInt((pack.battleSettings || {}).denyCooldown, 0)));
   td.put(KEY.DENY_COOLDOWN, String(denyCooldown));
   ai_dash(n, p, basic.npcDash || {});
-  excl_broadcast(n, p, "flow_begin", { round: pack.round, enable: !!(basic.battleExclamation && basic.battleExclamation.enable), preSteps: (pack.preSteps || []).length });
   if (excl_shouldPlay(pack)) {
     excl_start(n, p, pack);
     return true;
   }
-  excl_broadcast(n, p, "battleExclamation_disabled", {
-    round: pack.round,
-    reason: "basic.battleExclamation.enable is false"
-  });
   flow_continueAfterExcl(n, pack);
   return true;
 }
@@ -721,18 +670,7 @@ function excl_play(n, p, cfg) {
   if (!p || !cfg) return;
   bat_facePair(n, p);
   excl_playSound(n, p, cfg);
-  excl_broadcast(n, p, "excl_play", {
-    enable: !!cfg.enable,
-    concept: String(cfg.concept || "modern"),
-    text: String(cfg.text || "!"),
-    durationTicks: excl_durationTicks(cfg)
-  });
-  var opened = excl_openOverlay(p, cfg);
-  excl_broadcast(n, p, opened ? "excl_overlay_opened" : "excl_overlay_failed", {
-    ok: opened,
-    path: "html/ds_battle_exclamation.html",
-    name: "dc_battle_exclamation"
-  });
+  excl_openOverlay(p, cfg);
   excl_sendBrowser(p, "message", cfg);
   excl_sendBrowser(p, "battleExclamationConfig", cfg);
   excl_sendBrowser(p, "battle_exclamation_init", cfg);
@@ -740,7 +678,6 @@ function excl_play(n, p, cfg) {
 function excl_send_tick(n) {
   var p = bat_getTarget(n);
   if (!p || !bat_isLocked(n)) {
-    excl_debug(n, "excl_send_tick_cancel", { hasPlayer: !!p, locked: bat_isLocked(n) });
     n.timers.stop(TID.EXCL_SEND);
     return;
   }
@@ -754,7 +691,6 @@ function excl_send_tick(n) {
   }
   tries += 1;
   td.put(KEY.EXCL_SEND_TRY, String(tries));
-  excl_debug(n, "excl_send_tick", { try: tries, player: p.getName() });
   excl_sendBrowser(p, "message", cfg);
   excl_sendBrowser(p, "battleExclamationConfig", cfg);
   excl_sendBrowser(p, "battle_exclamation_init", cfg);
@@ -765,7 +701,6 @@ function excl_send_tick(n) {
   }
 }
 function excl_start(n, p, pack) {
-  dc_dbg(p, "excl_start");
   var cfg = excl_getConfig(pack);
   if (!cfg || cfg.enable !== true) {
     flow_continueAfterExcl(n, pack);
@@ -774,8 +709,6 @@ function excl_start(n, p, pack) {
   n.getTempdata().put(KEY.STATE, "exclamation");
   n.getTempdata().put(KEY.EXCL_OVERLAY, "dc_battle_exclamation");
   n.getTempdata().put(KEY.EXCL_SEND_TRY, "0");
-  excl_debug(n, "excl_start", { player: p.getName(), round: pack.round, durationTicks: excl_durationTicks(cfg) });
-  excl_broadcast(n, p, "excl_start", { player: p.getName(), round: pack.round, durationTicks: excl_durationTicks(cfg) });
   excl_play(n, p, cfg);
   n.timers.forceStart(TID.EXCL_SEND, 1, false);
   n.timers.forceStart(TID.EXCL, excl_durationTicks(cfg), false);
@@ -783,29 +716,16 @@ function excl_start(n, p, pack) {
 function excl_tick(n) {
   var p = bat_getTarget(n);
   if (!p || !bat_isLocked(n)) {
-    excl_debug(n, "excl_tick_cancel", { hasPlayer: !!p, locked: bat_isLocked(n) });
-    excl_broadcast(n, p, "excl_tick_cancel", { hasPlayer: !!p, locked: bat_isLocked(n) });
     n.timers.stop(TID.EXCL);
     ret_cancel(n);
     return;
   }
-  excl_debug(n, "excl_tick_continue", { player: p.getName() });
-  excl_broadcast(n, p, "excl_tick_continue", { player: p.getName() });
   excl_closeOverlay(n, p);
   var pack = cfg_roundPack(n, p);
   flow_continueAfterExcl(n, pack);
 }
 function flow_continueAfterExcl(n, pack) {
   var p = bat_getTarget(n);
-  dc_dbg(p, "flow_continueAfterExcl");
-  seq_say(n, "[flow] continueAfterExcl");
-  seq_print("flow_continueAfterExcl", {
-    round: pack.round,
-    preSteps: (pack.preSteps || []).length,
-    preTimeline: seq_totalTicks(pack.preSteps, pack.battle.preSequenceTimelineTicks)
-  });
-  excl_debug(n, "flow_continueAfterExcl", { round: pack.round, preSteps: (pack.preSteps || []).length, nextDelay: (pack.battle && pack.battle.startDelay) || 0 });
-  excl_broadcast(n, p, "flow_continueAfterExcl", { round: pack.round, preSteps: (pack.preSteps || []).length, nextDelay: (pack.battle && pack.battle.startDelay) || 0 });
   // Battle dialogue should play after exclamation and before any pre-sequence steps.
   if (p && bd_maybeStart(n, p, pack)) return;
   if (seq_hasSteps(pack.preSteps)) {
@@ -825,8 +745,6 @@ function flow_continueAfterBattleDialogue(n, p) {
   }
   bat_begin(n);
 }
-var excl_debug = dc_noop;
-var excl_broadcast = dc_noop;
 function seq_hasSteps(steps) {return typeof seq_core_hasSteps === "function" ? seq_core_hasSteps(steps) : (Array.isArray(steps) && steps.length > 0);}
 function seq_totalTicks(steps, fallback) {return typeof seq_core_calcTotal === "function" ? seq_core_calcTotal(steps, fallback) : Math.max(1, util_toInt(fallback, 20));}
 function seq_token() {
@@ -930,15 +848,6 @@ function seq_start(n, kind, roundIdx, steps, totalTicks, nextMode) {
   state.started = {};
   state.done = {};
   state.started = state.started || {};
-  seq_print("seq_start", {
-    kind: String(state.kind || kind || "pre"),
-    round: util_toInt(state.round, 0),
-    tick: util_toInt(state.tick, 0),
-    total: util_toInt(state.total, 1),
-    next: String(state.next || ""),
-    stepCount: Array.isArray(state.steps) ? state.steps.length : 0,
-    token: String(state.token || "")
-  });
   seq_schedule(n, state);
 }
 function seq_handleTimer(n, e) {
@@ -967,7 +876,6 @@ function seq_handleTimer(n, e) {
   if (String(meta.role || "") === "finish") {
     delete map[String(e.id)];
     seq_timerMapSave(td, map);
-    seq_print("seq_finish_ready", { total: util_toInt(state.total, 1), next: String(state.next || ""), token: String(state.token || "") });
     seq_finish(n);
     return true;
   }
@@ -993,11 +901,6 @@ function seq_ctx(n, state) {
     kind: String(state && state.kind != null ? state.kind : td.get(KEY.SEQ_KIND))
   };
 }
-var seq_say = dc_noop;
-function seq_stepTag(step) {
-  if (!step) return "step";
-  return String(step.stepName || step.type || "step");
-}
 function js_stepRelativePath(step) {
   if (!step) return "";
   var sub = String(step.jsSubPath || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
@@ -1019,16 +922,7 @@ function js_stepLoadPath(step) {
 function js_hasCallableEntry(text) {return /\bfunction\s+jsCall\s*\(/.test(String(text || ""));}
 function js_loadStepModule(n, ctx, step) {
   var loadPath = js_stepLoadPath(step);
-  excl_debug(n, "js_step_begin", {
-    stepName: String(step && step.stepName || ""),
-    type: String(step && step.type || ""),
-    loadPath: loadPath,
-    jsSubPath: String(step && step.jsSubPath || ""),
-    jsFileName: String(step && step.jsFileName || ""),
-    scriptCall: String(step && step.scriptCall || "")
-  });
   if (!loadPath) {
-    excl_broadcast(n, ctx && ctx.player, "js_step_missing_path", { stepName: String(step && step.stepName || "") });
     return false;
   }
   if (JS_MODULE_CACHE[loadPath] === true) {
@@ -1036,31 +930,21 @@ function js_loadStepModule(n, ctx, step) {
   }
   var file = cfg_chk_resolveFile(loadPath, null);
   if (!file || !file.exists()) {
-    excl_broadcast(n, ctx && ctx.player, "js_step_missing_file", { path: loadPath });
     return false;
   }
   try {
     var raw = cfg_chk_readTextFile(file);
-    excl_debug(n, "js_step_scan", {
-      path: loadPath,
-      hasJsCall: js_hasCallableEntry(raw),
-      length: raw ? String(raw).length : 0
-    });
     if (!js_hasCallableEntry(raw)) {
-      excl_broadcast(n, ctx && ctx.player, "js_step_missing_jsCall", { path: loadPath });
       return false;
     }
     if (typeof load === "function") {
       load(String(file.getAbsolutePath()));
-      excl_debug(n, "js_step_loaded", { path: loadPath });
     } else {
-      excl_broadcast(n, ctx && ctx.player, "js_step_loader_unavailable", { path: loadPath });
       return false;
     }
     JS_MODULE_CACHE[loadPath] = true;
     return true;
   } catch (err) {
-    excl_broadcast(n, ctx && ctx.player, "js_step_load_failed", { path: loadPath, error: String(err) });
     return false;
   }
 }
@@ -1076,82 +960,41 @@ function js_runStep(n, ctx, step) {
     if (!callOpts.handItem && ctx && ctx.cfg && ctx.cfg.basic && ctx.cfg.basic.handItem) {
       callOpts.handItem = String(ctx.cfg.basic.handItem || "");
     }
-    js_step_debug(n, "before_jsCall", {
-      path: js_stepLoadPath(step),
-      stepName: String(step && step.stepName || ""),
-      type: String(step && step.type || "")
-    });
-    excl_debug(n, "js_step_call", {
-      path: js_stepLoadPath(step),
-      call: "jsCall"
-    });
-    js_step_debug(n, "call_jsCall_ctx", {
-      hasPlayer: !!(ctx && ctx.player),
-      hasNpc: !!(ctx && ctx.npc),
-      round: ctx && ctx.round != null ? ctx.round : null,
-      kind: ctx && ctx.kind != null ? ctx.kind : null
-    });
     jsCall(ctx, callOpts);
-    js_step_debug(n, "after_jsCall", {
-      path: js_stepLoadPath(step),
-      stepName: String(step && step.stepName || "")
-    });
-    excl_debug(n, "js_step_call_ok", { path: js_stepLoadPath(step) });
   } catch (err) {
-    js_step_debug(n, "jsCall_failed", {
-      path: js_stepLoadPath(step),
-      error: String(err)
-    });
-    excl_broadcast(n, ctx && ctx.player, "js_step_call_failed", { path: js_stepLoadPath(step), error: String(err) });
   }
 }
 function seq_runStep(n, ctx, step) {
   if (!step) return;
   var type = String(step.type || "");
-  seq_say(n, "[seq] start " + type + " " + seq_stepTag(step) + " @" + String(step.startTick || 0) + " +" + String(step.duration || 0));
   if (type === "message") {
-    seq_say(n, "[seq] message -> util_msgPrint");
     util_msgPrint(ctx.player, step);
-    seq_say(n, "[seq] done message " + seq_stepTag(step));
     return;
   }
   if (type === "sound") {
-    seq_say(n, "[seq] sound -> util_sound");
     if (typeof util_sound === "function") util_sound(ctx.player, step);
-    seq_say(n, "[seq] done sound " + seq_stepTag(step));
     return;
   }
   if (type === "html") {
-    seq_say(n, "[seq] html -> ds_ani_html");
     if (typeof ds_ani_html === "function") ds_ani_html(ctx, step);
-    seq_say(n, "[seq] done html " + seq_stepTag(step));
     return;
   }
   if (type === "js") {
-    seq_say(n, "[seq] js -> load + jsCall");
     js_runStep(n, ctx, step);
-    seq_say(n, "[seq] done js " + seq_stepTag(step));
     return;
   }
   if (type === "dialogue") {
-    seq_say(n, "[seq] dialogue -> ds_dialogue");
     if (typeof ds_dialogue === "function") ds_dialogue(ctx, step);
-    seq_say(n, "[seq] done dialogue " + seq_stepTag(step));
     return;
   }
   if (type === "gecko") {
-    seq_say(n, "[seq] gecko -> ds_ani_gecko");
     if (typeof ds_ani_gecko === "function") ds_ani_gecko(ctx, step);
-    seq_say(n, "[seq] done gecko " + seq_stepTag(step));
     return;
   }
   if (type === "cutscene") {
-    seq_say(n, "[seq] cutscene -> executeCommand");
     if (step.command) n.executeCommand(String(step.command));
-    seq_say(n, "[seq] done cutscene " + seq_stepTag(step));
     return;
   }
-  seq_say(n, "[seq] skip unknown " + type + " " + seq_stepTag(step));
 }
 function seq_finish(n) {
   var td = n.getTempdata();
@@ -1247,7 +1090,6 @@ function bd_resolveGuiPath(pack, cfg){
     if(enabled && go) return bd_guiFullPath(go);
     return bd_guiFullPath("dialogue_gui.json");
   }
-  // default
   return bd_guiFullPath(offset || "dialogue_gui.json");
 }
 function bd_readJson(path){
@@ -1334,7 +1176,6 @@ function bd_buildBindings(raw){
   return out;
 }
 function bd_open(n, p, pack, cfgObj){
-  dc_dbg(p, "bd_open");
   if(typeof dc_dialogue_open !== "function") return false;
   var round = util_toInt(pack && pack.round, 0);
   var cfg = cfgObj && cfgObj.cfg ? cfgObj.cfg : {};
@@ -1354,8 +1195,7 @@ function bd_open(n, p, pack, cfgObj){
       htmlPath: "html/dc_util/dc_gui_runtime.html",
       sessionId: sessionId,
       mode: "trainer_battle",
-      returnGoto: wantedGoto,
-      debug: DEBUG_BD_EVT === true
+      returnGoto: wantedGoto
     });
   }catch(e0){
     handle = null;
@@ -1367,7 +1207,6 @@ function bd_open(n, p, pack, cfgObj){
   return true;
 }
 function bd_maybeStart(n, p, pack){
-  dc_dbg(p, "bd_maybeStart");
   var battle = (pack && pack.battle) ? pack.battle : {};
   var cfg = battle && battle.battleDialogue && typeof battle.battleDialogue === "object" ? battle.battleDialogue : null;
   if(!cfg || cfg.enabled !== true) return false;
@@ -1451,12 +1290,8 @@ function bd_handleClosed(n, p){
   return true;
 }
 function bat_begin(n) {
-  seq_say(n, "[bat] begin");
-  seq_print("bat_begin", { state: n.getTempdata().get(KEY.STATE), target: bat_getTarget(n) ? bat_getTarget(n).getName() : "" });
-  trainer_timeTag("bat_begin_enter", { state: n.getTempdata().get(KEY.STATE), target: bat_getTarget(n) ? bat_getTarget(n).getName() : "" });
   var p = bat_getTarget(n);
   if (!p) {
-    excl_broadcast(n, p, "bat_begin_no_target", { state: n.getTempdata().get(KEY.STATE) });
     ret_cancel(n);
     return;
   }
@@ -1473,37 +1308,24 @@ function bat_begin(n) {
   var graceMs = (delay > 0 ? (delay * 50) : 0) + 1500;
   td0.put(KEY.BAT_GRACE_UNTIL, String(Date.now() + graceMs));
   ret_battlePose(n);
-  excl_broadcast(n, p, "bat_begin", {
-    round: pack.round,
-    delay: delay,
-    specPath: String(battle.specPath || battle.trainerSpec || ""),
-    normalizedSpecPath: spc_normalizePathText(String(battle.specPath || battle.trainerSpec || ""))
-  });
   if (delay > 0) {n.timers.forceStart(TID.BAT, delay, false);return;}
   bat_launch(n);
 }
 function bat_launch(n) {
-  seq_say(n, "[bat] launch");
-  seq_print("bat_launch", { state: n.getTempdata().get(KEY.STATE), target: bat_getTarget(n) ? bat_getTarget(n).getName() : "" });
-  trainer_timeTag("bat_launch_enter", { state: n.getTempdata().get(KEY.STATE), target: bat_getTarget(n) ? bat_getTarget(n).getName() : "" });
   var p = bat_getTarget(n);
   n.getTempdata().remove(KEY.BAT_GRACE_UNTIL);
   if (!p) {
-    excl_broadcast(n, p, "bat_launch_no_target", { state: n.getTempdata().get(KEY.STATE) });
     ret_cancel(n);
     return;
   }
   var pack = cfg_roundPack(n, p);
   var battle = pack.battle || {};
   var specPath = String(battle.specPath || battle.trainerSpec || "").trim();
-  excl_broadcast(n, p, "bat_launch", { round: pack.round, specPath: specPath, normalizedSpecPath: spc_normalizePathText(specPath), hasPack: !!pack, hasBattle: !!battle });
   if (!specPath) {
-    excl_broadcast(n, p, "bat_launch_missing_spec", { round: pack.round });
     ret_cancel(n);
     return;
   }
   if (spc_apply(n, specPath) === false) {
-    excl_broadcast(n, p, "bat_launch_apply_failed", { specPath: specPath });
     ret_cancel(n);
     return;
   }
@@ -1535,18 +1357,15 @@ function bat_startBattle(n, p, pack) {
   ret_setBattleHandItem(n);
   try { n.setPosition(n.getHomeX() + 0.5, n.getHomeY() + 1, n.getHomeZ() + 0.5); } catch (e0) {}
   bat_facePair(n, p);
-  trainer_timeTag("bat_startBattle_before_command", { battleFormat: battleFormat, itemLimit: itemLimit, target: p.getName() });
   var startSound = (((pack.cfg || {}).sound || {}).start) || null;
   if (startSound && (startSound.id || startSound.soundId) && typeof util_sound === "function") {
     util_sound(p, { mode: startSound.mode || startSound.soundMode || "playsound", id: startSound.id || startSound.soundId, volume: startSound.vol, pitch: startSound.pitch, asset: startSound.asset });
   }
   var cmdLine = "/tbcs battle " + battleFormat + " " + p.getName() + " vs " + n.getUUID() + " " + hook + " rules " + rules;
   n.executeCommand(cmdLine);
-  trainer_timeTag("bat_startBattle_after_command", { battleFormat: battleFormat, target: p.getName() });
   rot_start(n);
   n.getTempdata().put(KEY.STATE, "battle");
 }
-// reward / ret / spc
 function rew_clear(p, n) {
   var sd = p.getStoreddata();
   var raw = sd.get("trainerData");
@@ -1690,7 +1509,6 @@ function ret_reset(n, mode) {
   n.timers.stop(TID.ROT);
   n.timers.stop(TID.BAT);
   n.timers.stop(TID.EXCL);
-  excl_debug(n, "ret_reset", { mode: mode });
   try{ td.remove(KEY.BAT_GRACE_UNTIL); }catch(eG3){}
   try{ td.remove(KEY.BAT_SKIP_DELAY); }catch(eG4){}
   try {
@@ -1729,10 +1547,8 @@ function ret_reset(n, mode) {
     td.remove(KEY.TARGET_NAME);
     td.remove(KEY.TARGET_UUID);
     n.getStoreddata().put("deny_tick", String(denyCooldown));
-    deny_print("ret_reset_set_deny", { mode: mode, denyCooldown: denyCooldown });
   } else if (mode === "init") {
     n.getStoreddata().put("deny_tick", "0");
-    deny_print("ret_reset_clear_deny", { mode: mode });
   }
 
   if (mode === "init" || util_toInt(basic.detectType, 0) !== 0) {
@@ -1829,44 +1645,46 @@ function spc_apply(n, specPath) {
   var normalized = spc_normalizePathText(specPath);
   var temp = spc_temp(n, normalized, id, n.getDisplay().getName());
   if (!temp) {
-    excl_debug(n, "spc_apply_temp_failed", { specPath: specPath, normalized: normalized });
     return false;
   }
   var trainerObj = spc_register(n, id, temp.raw);
   if (!trainerObj) {
-    excl_debug(n, "spc_apply_register_failed", { specPath: specPath, normalized: normalized, id: id });
     return false;
   }
   n.getStoreddata().put("trainer_attached_id", id);
-  excl_broadcast(n, bat_getTarget(n), "spc_apply_ok", { specPath: specPath, normalized: normalized, id: id });
   return true;
 }
 
-if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventModule.registerModule === "function") {
-  NpcEventModule.registerModule("dc_trainer_core", {
+function dc_trainer_syncAiTimer(n) {
+  if (!n) return;
+  var basic = cfg_basic(n);
+  var detectType = util_toInt(basic.detectType, 0);
+  if (detectType !== 0) {
+    n.timers.forceStart(TID.AI, util_toInt(basic.detectTick, 20), true);
+  } else {
+    n.timers.stop(TID.AI);
+  }
+}
+function dc_trainer_core_module(){
+  return {
     events: {
       init: function (e) {
         var n = e.npc;
         // Reload config on init so spec edits apply without requiring a full restart.
         try { cfg_refresh(n); } catch (eCfg0) {}
         var td = n ? n.getTempdata() : null;
-        if (td && td.get(KEY.INIT_DONE) === "1") {return;}
-        if (td) td.put(KEY.INIT_DONE, "1");
-        n.timers.clear();
-        ret_init(n);
-        ret_clearHandItem(n);
-        var basic = cfg_basic(n);
-        var detectType = util_toInt(basic.detectType, 0);
-        if (detectType !== 0) {
-          n.timers.forceStart(TID.AI, util_toInt(basic.detectTick, 20), true);
-        } else {
-          n.timers.stop(TID.AI);
+        var already = td && td.get(KEY.INIT_DONE) === "1";
+        if (!already) {
+          if (td) td.put(KEY.INIT_DONE, "1");
+          n.timers.clear();
+          ret_init(n);
+          ret_clearHandItem(n);
         }
+        dc_trainer_syncAiTimer(n);
       },
       interact: function (e) {
         var n = e.npc;
         var p = e.player;
-        dc_dbg(p, "interact start");
         var basic = cfg_basic(n);
         if (util_toInt(basic.detectType, 0) !== 0) return;
         if (ai_check(n, p) === false) return;
@@ -1874,8 +1692,10 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
         flow_begin(n, p);
       }
     }
-  });
-  NpcEventModule.registerModule("dc_trainer_timer", {
+  };
+}
+function dc_trainer_timer_module(){
+  return {
     events: {
       timer: function (e) {
         var n = e.npc;
@@ -1893,8 +1713,10 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
         }
       }
     }
-  });
-  NpcEventModule.registerModule("dc_trainer_reward", {
+  };
+}
+function dc_trainer_reward_module(){
+  return {
     events: {
       trigger: function (e) {
         var n = e.entity;
@@ -1918,9 +1740,11 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
         ret_cancel(n);
       }
     }
-  });
+  };
+}
 
-  NpcEventModule.registerModule("dc_trainer_overlay", {
+function dc_trainer_overlay_module(){
+  return {
     events: {
       htmlGuiEvent: function (e) {
   
@@ -1928,7 +1752,6 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
 
         var n = e.npc;
         var p = e.player;
-        dc_dbg(p, "htmlGuiEvent enter " + String(e.eventName||""));
         var evName = String(e.eventName || "");
 
         var payload = e.data;
@@ -1943,7 +1766,6 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
           } else if (evName === "__guiClosed" || evName === "done") {
             // closing immediately after a choice is expected (choice handler closes gui). Don't cancel flow for that.
             if (bd_choiceIsRecent(p, sidForChoice, 1200) || bd_choiceIsRecent(p, "", 1200)) {
-              dc_dbg(p, "ignore " + evName + " after recent choice sid=" + sidForChoice);
               return;
             }
           }
@@ -2007,10 +1829,27 @@ if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMo
         } catch (err) {}
       }
     }
+  };
+}
+function dc_trainer_pendingModules() {
+  if (typeof __DcNpcEventPendingModules === "undefined" || !__DcNpcEventPendingModules) __DcNpcEventPendingModules = [];
+  return __DcNpcEventPendingModules;
+}
+function dc_trainer_registerOrQueue(name, module) {
+  if (typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventModule.registerModule === "function") {
+    NpcEventModule.registerModule(name, module);
+    return;
+  }
+  dc_trainer_pendingModules().push({
+    name: name,
+    module: module
   });
 }
+dc_trainer_registerOrQueue("dc_trainer_core", dc_trainer_core_module());
+dc_trainer_registerOrQueue("dc_trainer_timer", dc_trainer_timer_module());
+dc_trainer_registerOrQueue("dc_trainer_reward", dc_trainer_reward_module());
+dc_trainer_registerOrQueue("dc_trainer_overlay", dc_trainer_overlay_module());
 
-// --- htmlGuiEvent direct hook (ensures routing) ---
 function htmlGuiEvent(e){
   try{ if(typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventModule.emit === "function"){ NpcEventModule.emit("htmlGuiEvent", e); } }catch(err1){}
 }

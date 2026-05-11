@@ -840,7 +840,8 @@ return parts[parts.length-1]||p;
 }
 function getDcEntrySpecs(){
 return [
-{id:"dc_dialogue_trigger",name:"Dialogue Trigger",path:"ds_npc_util/dc_dialogue_trigger.js",prefix:"dc_dialogue",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_reward_checker.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["dc_util/dc_gui_runtime.html"]}
+{id:"dc_dialogue_trigger",name:"Dialogue Trigger",path:"ds_npc_util/dc_dialogue_trigger.js",prefix:"dc_dialogue",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_reward_checker.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["dc_util/dc_gui_runtime.html"]},
+{id:"dc_npc_trainer",name:"NPC Trainer",path:"dc_npc_trainer.js",prefix:"dc_trainer",requiresJson:true,scriptDeps:["ds_npc_util/dc_npc_core_module.js","ds_npc_util/dc_cfg_checker.js","ds_npc_util/dc_util_common.js","ds_npc_util/dc_cond_checker.js","ds_npc_util/dc_reward_checker.js","ds_npc_util/dc_sequence_core.js","ds_npc_util/dc_gui_runtime.js","ds_npc_util/dc_dialogue_util.js"],htmlDeps:["ds_battle_exclamation.html","dc_util/dc_gui_runtime.html"]}
 ];
 }
 function listDcInstallableScripts(){

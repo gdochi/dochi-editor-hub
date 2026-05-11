@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-10T14:38:36.765Z",
+  "generated_at": "2026-05-11T00:33:25.023Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -146,25 +146,13 @@
     {
       "id": "trainer",
       "package": "trainer",
-      "script": "dc_trainer.js",
+      "script": "dc_npc_trainer.js",
       "versions": [
         {
           "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
           "manifest": "trainer/fabric_1_21_1/1.0.0/manifest.json",
-          "source_path": "trainer/fabric_1_21_1/1.0.0/dc_trainer.js"
-        },
-        {
-          "mc_version": "fabric_1_21_1",
-          "version": "1.0.1",
-          "manifest": "trainer/fabric_1_21_1/1.0.1/manifest.json",
-          "source_path": "trainer/fabric_1_21_1/1.0.1/dc_trainer.js"
-        },
-        {
-          "mc_version": "fabric_1_21_1",
-          "version": "1.0.2",
-          "manifest": "trainer/fabric_1_21_1/1.0.2/manifest.json",
-          "source_path": "trainer/fabric_1_21_1/1.0.2/dc_trainer.js"
+          "source_path": "trainer/fabric_1_21_1/1.0.0/dc_npc_trainer.js"
         }
       ],
       "script_dependencies": [
@@ -205,6 +193,12 @@
           "load_order": 6
         },
         {
+          "script": "dc_gui_runtime.js",
+          "path": "npc_util/common/1.0.0/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 8
+        },
+        {
           "script": "dc_dialogue_util.js",
           "path": "npc_util/common/1.0.0/dc_dialogue_util.js",
           "required": true,
@@ -213,7 +207,11 @@
       ],
       "html_dependencies": [
         {
-          "path": "html/dc_trainer.html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "path": "html/ds_battle_exclamation.html",
           "required": true
         }
       ]

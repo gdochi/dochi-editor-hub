@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle Exclamation</title>
+<!-- @package battle_exclamation -->
+<!-- @version 1.0.0 -->
+<!-- @file ds_battle_exclamation.html -->
+<style>
+  :root{
+    --text:#ffffff;
+    --glow:#ffd84d;
+    --accent:#4f8cff;
+    --accent-2:#8db4ff;
+    --scene-top:transparent;
+    --scene-bottom:transparent;
+    --scene-bg-opacity:0;
+    --classic-box-bg:#ffffff;
+    --classic-box-border:#000000;
+    --text-scale:1;
+    --card-scale:1;
+    --pulse-speed:900ms;
+    --shake-speed:550ms;
+    --ring-opacity:.28;
+    --scene-opacity:1;
+    --burst-white:rgba(255,255,255,.96);
+    --burst-core:rgba(255,216,77,.95);
+    --burst-inner:rgba(255,159,26,.88);
+    --burst-outer:rgba(255,159,26,0);
+    --pixel-outline:#3b2a08;
+    --mark-size:clamp(120px,22vw,280px);
+    --classic-bang-size:clamp(88px,14.5vw,160px);
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent !important;font-family:Arial,Helvetica,sans-serif;color:#fff}
+  body{position:relative}
+  .app{position:absolute;inset:0;background:transparent !important}
+  .app::before{content:none !important}
+  .scene{position:absolute;inset:0;z-index:1;display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity 180ms ease,transform 180ms ease;transform:scale(.985);background:transparent !important}
+  .scene.active{opacity:var(--scene-opacity);pointer-events:auto;transform:scale(1)}
+  .scene::before{content:none !important}
+  .burst{position:absolute;aspect-ratio:1;border-radius:50%}
+  .scene.modern .burst,
+  .scene.custom .burst{width:min(72vw,560px);background:radial-gradient(circle, var(--burst-white) 0 10%, var(--burst-core) 11% 20%, var(--burst-inner) 21% 31%, transparent 32%);filter:drop-shadow(0 0 28px color-mix(in srgb, var(--burst-core) 66%, transparent));opacity:.95;transform:scale(.95);animation:pulse var(--pulse-speed) ease-in-out infinite}
+  .scene.modern .burst::before,
+  .scene.modern .burst::after,
+  .scene.custom .burst::before,
+  .scene.custom .burst::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid color-mix(in srgb,var(--burst-core) 35%, transparent);animation:ring 1.2s ease-out infinite}
+  .scene.modern .burst::after,
+  .scene.custom .burst::after{width:145%;height:145%;border-color:color-mix(in srgb,var(--burst-white) 18%, transparent);animation-delay:.22s}
+  .mark{position:relative;z-index:2;line-height:1;font-weight:900;user-select:none;transform-origin:center 70%;font-size:calc(var(--mark-size) * var(--text-scale));color:var(--text);text-shadow:0 0 8px rgba(255,255,255,.9),0 0 22px var(--glow),0 0 54px color-mix(in srgb,var(--glow) 72%, transparent)}
+  .scene.modern .mark,
+  .scene.custom .mark{animation:shake var(--shake-speed) steps(2,end) infinite,glow .9s ease-in-out infinite}
+  .scene.pixel .mark{font-family:"Courier New",monospace;text-shadow:0 0 0 #000,4px 0 0 var(--pixel-outline),-4px 0 0 var(--pixel-outline),0 4px 0 var(--pixel-outline),0 -4px 0 var(--pixel-outline),6px 6px 0 rgba(0,0,0,.55),0 0 16px var(--glow);animation:pixel-flicker .65s steps(2,end) infinite}
+  .scene.classic .icon{width:calc(min(28vw,240px) * var(--card-scale));aspect-ratio:.7/1;border:clamp(5px,.8vw,9px) solid var(--classic-box-border);border-radius:28px 28px 42px 42px;background:var(--classic-box-bg);display:grid;place-items:center;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+  .scene.classic .bang{line-height:1;font-size:calc(var(--classic-bang-size) * var(--text-scale));font-weight:900;color:#000;user-select:none;transform:translateY(-1%)}
+  .hidden{display:none !important}
+  @keyframes pulse{0%,100%{transform:scale(.92);opacity:.72}50%{transform:scale(1.04);opacity:1}}
+  @keyframes ring{0%{width:30%;height:30%;opacity:.9}100%{width:190%;height:190%;opacity:0}}
+  @keyframes shake{0%{transform:translate(0,0) rotate(-2deg)}25%{transform:translate(2px,-1px) rotate(2deg)}50%{transform:translate(-2px,1px) rotate(-1deg)}75%{transform:translate(1px,2px) rotate(1deg)}100%{transform:translate(0,0) rotate(-2deg)}}
+  @keyframes glow{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.18) saturate(1.25)}}
+  @keyframes pixel-flicker{0%,100%{transform:scale(1.05) translateY(0)}50%{transform:scale(1.05) translateY(-2px)}}
+  @media (max-width:960px){:root{--mark-size:clamp(96px,30vw,220px)}}
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <section class="scene modern" data-scene="modern" aria-hidden="true">
+      <div class="burst" aria-hidden="true"></div>
+      <div class="mark" aria-hidden="true">!</div>
+    </section>
+    <section class="scene classic" data-scene="classic" aria-hidden="true">
+      <div class="icon" aria-hidden="true"><div class="bang">!</div></div>
+    </section>
+    <section class="scene pixel" data-scene="pixel" aria-hidden="true">
+      <div class="mark" aria-hidden="true">!</div>
+    </section>
+    <section class="scene custom" data-scene="custom" aria-hidden="true">
+      <div class="burst" aria-hidden="true"></div>
+      <div class="mark" aria-hidden="true">!</div>
+    </section>
+  </div>
+
+  <script>
+    const DEFAULT_CONFIG = {
+      enable: true,
+      concept: "modern",
+      text: "!",
+      style: {
+        textColor: "#ffffff",
+        glowColor: "#ffd84d",
+        sceneTop: "#121a2a",
+        sceneBottom: "#05070d",
+        backgroundOpacity: 1,
+        classicBoxColor: "#ffffff",
+        classicBoxOpacity: 1,
+        textScale: 1,
+        cardScale: 1,
+        markScale: 1,
+        pulseSpeed: 900,
+        shakeSpeed: 550
+      },
+      animation: {
+        durationMs: 1200
+      },
+      sound: {
+        mode: "playsound",
+        id: "minecraft:entity.player.levelup",
+        volume: 1,
+        pitch: 1,
+        asset: {
+          subPath: "",
+          fileName: "stinger.ogg"
+        }
+      }
+    };
+
+    const scenes = Array.from(document.querySelectorAll(".scene"));
+    let currentConfig = deepClone(DEFAULT_CONFIG);
+
+    function deepClone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function parseBool(value) {
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value !== 0;
+      const text = String(value == null ? "" : value).trim().toLowerCase();
+      return text === "true" || text === "1" || text === "yes" || text === "on";
+    }
+
+    function clampNumber(value, min, max, fallback) {
+      const n = Number(value);
+      if (Number.isNaN(n)) return fallback;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function normalizeConfig(source) {
+      const input = source && typeof source === "object" ? source : {};
+      const style = input.style && typeof input.style === "object" ? input.style : {};
+      const sound = input.sound && typeof input.sound === "object" ? input.sound : {};
+      const animation = input.animation && typeof input.animation === "object" ? input.animation : {};
+      return {
+        enable: parseBool(input.enable),
+        concept: String(input.concept || "modern"),
+        text: String(input.text || "!").slice(0, 8),
+        style: {
+          textColor: String(style.textColor || "#ffffff"),
+          glowColor: String(style.glowColor || "#ffd84d"),
+          sceneTop: String(style.sceneTop || "#121a2a"),
+          sceneBottom: String(style.sceneBottom || "#05070d"),
+          backgroundOpacity: clampNumber(style.backgroundOpacity, 0, 1, 1),
+          classicBoxColor: String(style.classicBoxColor || "#ffffff"),
+          classicBoxOpacity: clampNumber(style.classicBoxOpacity, 0, 1, 1),
+          textScale: clampNumber(style.textScale ?? style.markScale, 0.6, 1.8, 1),
+          cardScale: clampNumber(style.cardScale ?? style.markScale, 0.6, 2, 1),
+          markScale: clampNumber(style.markScale ?? style.textScale, 0.6, 2, 1),
+          pulseSpeed: clampNumber(style.pulseSpeed, 200, 2000, 900),
+          shakeSpeed: clampNumber(style.shakeSpeed, 100, 1500, 550)
+        },
+                animation: {
+          durationTicks: clampNumber(animation.durationTicks ?? Math.round((animation.durationMs ?? 1200) / 50), 0, 1200, 24),
+          durationMs: clampNumber((animation.durationTicks ?? Math.round((animation.durationMs ?? 1200) / 50)) * 50, 0, 60000, 1200)
+        },
+        sound: {
+          mode: String(sound.mode || "playsound"),
+          id: String(sound.id || "minecraft:entity.player.levelup"),
+          volume: clampNumber(sound.volume, 0, 10, 1),
+          pitch: clampNumber(sound.pitch, 0, 10, 1),
+          asset: {
+            subPath: String(sound.asset && sound.asset.subPath || ""),
+            fileName: String(sound.asset && sound.asset.fileName || "stinger.ogg")
+          }
+        }
+      };
+    }
+
+    function hexToRgba(hex, alpha) {
+      const raw = String(hex || "").trim().replace(/^#/, "");
+      const normalized = raw.length === 3 ? raw.split("").map((part) => part + part).join("") : raw.padEnd(6, "0").slice(0, 6);
+      const value = parseInt(normalized, 16);
+      if (Number.isNaN(value)) return `rgba(255,255,255,${clampNumber(alpha, 0, 1, 1)})`;
+      const r = (value >> 16) & 255;
+      const g = (value >> 8) & 255;
+      const b = value & 255;
+      return `rgba(${r},${g},${b},${clampNumber(alpha, 0, 1, 1)})`;
+    }
+
+    function applyScene(name) {
+      scenes.forEach((scene) => {
+        const active = scene.dataset.scene === name;
+        scene.classList.toggle("active", active);
+        scene.setAttribute("aria-hidden", active ? "false" : "true");
+      });
+    }
+
+    function restartScene() {
+      const active = document.querySelector(".scene.active");
+      if (!active) return;
+      active.style.animation = "none";
+      active.offsetHeight;
+      active.style.animation = "";
+      active.classList.remove("active");
+      requestAnimationFrame(() => {
+        active.classList.add("active");
+      });
+    }
+
+    function renderConfig(config, options = {}) {
+      currentConfig = normalizeConfig(config);
+      const style = currentConfig.style;
+      document.documentElement.style.setProperty("--text", style.textColor);
+      document.documentElement.style.setProperty("--glow", style.glowColor);
+      document.documentElement.style.setProperty("--accent", style.glowColor);
+      document.documentElement.style.setProperty("--accent-2", style.glowColor);
+      document.documentElement.style.setProperty("--scene-top", style.backgroundOpacity <= 0 ? "transparent" : style.sceneTop);
+      document.documentElement.style.setProperty("--scene-bottom", style.backgroundOpacity <= 0 ? "transparent" : style.sceneBottom);
+      document.documentElement.style.setProperty("--scene-bg-opacity", String(style.backgroundOpacity));
+      document.documentElement.style.setProperty("--classic-box-bg", hexToRgba(style.classicBoxColor, style.classicBoxOpacity));
+      document.documentElement.style.setProperty("--classic-box-border", style.classicBoxColor);
+      document.documentElement.style.setProperty("--text-scale", String(style.textScale ?? 1));
+      document.documentElement.style.setProperty("--card-scale", String(style.cardScale ?? 1));
+      document.documentElement.style.setProperty("--pulse-speed", `${style.pulseSpeed}ms`);
+      document.documentElement.style.setProperty("--shake-speed", `${style.shakeSpeed}ms`);
+      document.documentElement.style.setProperty("--burst-white", hexToRgba(style.textColor, 0.96));
+      document.documentElement.style.setProperty("--burst-core", hexToRgba(style.glowColor, 0.96));
+      document.documentElement.style.setProperty("--burst-inner", hexToRgba(style.glowColor, 0.84));
+      document.documentElement.style.setProperty("--burst-outer", hexToRgba(style.glowColor, 0.16));
+      document.documentElement.style.setProperty("--pixel-outline", hexToRgba(style.glowColor, 1));
+
+      document.querySelectorAll(".mark, .bang").forEach((node) => {
+        node.textContent = currentConfig.text || "!";
+      });
+
+      applyScene(currentConfig.concept);
+      document.body.style.background = "transparent";
+      document.querySelector(".app").style.background = "transparent";
+      if (options.play !== false) {
+        restartScene();
+      }
+    }
+
+    function extractPayload(raw) {
+      if (raw == null) return null;
+      if (typeof raw === "string") {
+        const text = raw.trim();
+        if (!text) return null;
+        try {
+          return JSON.parse(text);
+        } catch (err) {
+          return { message: text };
+        }
+      }
+      if (typeof raw === "object") {
+        if (raw.payload && typeof raw.payload === "object") return raw.payload;
+        if (raw.data && typeof raw.data === "object") return raw.data;
+        if (raw.json && typeof raw.json === "object") return raw.json;
+        if (raw.config && typeof raw.config === "object") return raw.config;
+        if (raw.enable != null || raw.concept != null || raw.text != null || raw.style != null) return raw;
+        return raw;
+      }
+      return null;
+    }
+
+    function handleIncoming(raw) {
+      const payload = extractPayload(raw);
+      if (!payload) return;
+      if (payload.type === "battleExclamationConfig" && payload.payload) {
+        renderConfig(payload.payload);
+        return;
+      }
+      if (payload.eventName === "battleExclamationConfig" && payload.data) {
+        renderConfig(extractPayload(payload.data) || payload.data);
+        return;
+      }
+      if (payload.eventName === "battle_exclamation_init" && payload.data) {
+        renderConfig(extractPayload(payload.data) || payload.data);
+        return;
+      }
+      if (payload.enable != null || payload.concept != null || payload.text != null || payload.style != null) {
+        renderConfig(payload);
+      }
+    }
+
+    function hookWindowCnpc() {
+      if (!window.cnpc) return false;
+      try {
+        if (window.cnpc.initData != null) {
+          handleIncoming(window.cnpc.initData);
+        }
+      } catch (err) {}
+      try {
+        if (typeof window.cnpc.onEvent === "function") {
+          window.cnpc.onEvent("battleExclamationConfig", function(data) {
+            handleIncoming(data);
+          });
+          window.cnpc.onEvent("battle_exclamation_init", function(data) {
+            handleIncoming(data);
+          });
+          window.cnpc.onEvent("message", function(data) {
+            handleIncoming(data);
+          });
+          return true;
+        }
+      } catch (err2) {}
+      return false;
+    }
+
+    window.addEventListener("message", (event) => {
+      handleIncoming(event.data);
+    });
+    document.addEventListener("message", (event) => {
+      handleIncoming(event.data || event.detail || event);
+    });
+
+    window.addEventListener("battleExclamationConfig", (event) => {
+      handleIncoming(event.detail || event.data || event);
+    });
+    document.addEventListener("battleExclamationConfig", (event) => {
+      handleIncoming(event.detail || event.data || event);
+    });
+    window.addEventListener("battle_exclamation_init", (event) => {
+      handleIncoming(event.detail || event.data || event);
+    });
+    document.addEventListener("battle_exclamation_init", (event) => {
+      handleIncoming(event.detail || event.data || event);
+    });
+
+    function bootstrapFromInitialSources() {
+      if (hookWindowCnpc()) return true;
+      return false;
+    }
+
+    bootstrapFromInitialSources();
+  </script>
+</body>
+</html>
