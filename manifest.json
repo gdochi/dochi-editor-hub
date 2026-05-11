@@ -37,6 +37,26 @@
         "scripts/item_editor/forge_1_20_1/1.0.0/manifest.json"
       ]
     },
+    "item_editor:fabric_1_21_1": {
+      "package": "item_editor",
+      "editor": "item_editor",
+      "mc_version": "fabric_1_21_1",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/item_editor/fabric_1_21_1/1.0.0/manifest.json"
+      ]
+    },
+    "scroll_dialogue:common": {
+      "package": "scroll_dialogue",
+      "editor": "scroll_dialogue",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/scroll_dialogue/common/1.0.0/manifest.json"
+      ]
+    },
     "npc_dialogue:common": {
       "package": "npc_dialogue",
       "editor": "dialogue",
@@ -99,6 +119,26 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/item_editor/forge_1_20_1/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "item_editor",
+      "editor": "item_editor",
+      "mc_version": "fabric_1_21_1",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/item_editor/fabric_1_21_1/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "scroll_dialogue",
+      "editor": "scroll_dialogue",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/scroll_dialogue/common/1.0.0/manifest.json"
       ]
     },
     {

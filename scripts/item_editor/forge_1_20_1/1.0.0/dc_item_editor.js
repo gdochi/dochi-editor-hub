@@ -1787,10 +1787,10 @@ function getCategoryPresetDir(p){
  try{
   var cf = new File(getCategoryFile(p));
   var parent = cf.getParent();
-  if(parent == null || String(parent) == "") return "customnpcs/JSON/item/category_presets/";
+  if(parent == null || String(parent) == "") return "customnpcs/dc_data/dc_item/category_presets/";
   return String(parent) + File.separator + "category_presets" + File.separator;
  }catch(err){
-  return "customnpcs/JSON/item/category_presets/";
+  return "customnpcs/dc_data/dc_item/category_presets/";
  }
 }
 
