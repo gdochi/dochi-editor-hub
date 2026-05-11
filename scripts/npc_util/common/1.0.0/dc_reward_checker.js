@@ -161,6 +161,33 @@ function rew_chk_applyCobbleDollar(npc, player, op, amount) {
   return rew_chk_applyCommand(npc, player, "cobbledollars " + cmdOp + " {player} " + n);
 }
 
+function rew_chk_applyCobblemonGive(npc, player, pokemon, level, options) {
+  var data, spec, playerName, levelValue, attrs, commandName, cmd;
+  data = options && typeof options === "object" ? options : {};
+  if (pokemon && typeof pokemon === "object") {
+    data = pokemon;
+    pokemon = data.species || data.pokemon || data.key || "";
+  }
+  spec = rew_chk_replaceVars(pokemon, npc, player).trim();
+  if (!spec && data.pokemonData && typeof data.pokemonData === "object") {
+    spec = String(data.pokemonData.species || data.pokemonData.pokemon || "").trim();
+  }
+  if (!spec) return rew_chk_result(false, "COBBLEMON pokemon missing");
+  playerName = rew_chk_playerName(player);
+  if (!playerName) return rew_chk_result(false, "COBBLEMON player missing");
+  levelValue = rew_chk_toInt(data.level != null ? data.level : (data.amount != null ? data.amount : level), 0);
+  attrs = [];
+  if (levelValue > 0 && spec.toLowerCase().indexOf("level=") < 0) attrs.push("level=" + levelValue);
+  if ((data.shiny === true || data.shiny === "true") && spec.toLowerCase().indexOf("shiny") < 0) attrs.push("shiny");
+  if (data.ability) attrs.push("ability=" + String(data.ability));
+  if (data.nature) attrs.push("nature=" + String(data.nature));
+  if (data.gender) attrs.push("gender=" + String(data.gender));
+  if (data.form) attrs.push("form=" + String(data.form));
+  commandName = String(data.commandName || data.command || "givepokemonother").replace(/^\/+/, "");
+  cmd = commandName + " " + playerName + " " + spec + (attrs.length ? (" " + attrs.join(" ")) : "");
+  return rew_chk_applyCommand(npc, player, cmd);
+}
+
 function rew_chk_normalizeAction(action) {
   var a = action && typeof action === "object" ? action : {};
   var type = String(a.type || a.action || "").toLowerCase();
@@ -183,6 +210,15 @@ function rew_chk_normalizeAction(action) {
       amount: Number(a.amount || a.value || 0)
     };
   }
+  if (a.cobblemon_give && typeof a.cobblemon_give === "object") out.cobblemon_give = a.cobblemon_give;
+  else if (type === "cobblemon_give") {
+    out.cobblemon_give = {
+      pokemon: String(a.pokemon || a.key || ""),
+      level: Number(a.level || a.amount || a.value || 0),
+      amount: Number(a.level || a.amount || a.value || 0),
+      pokemonData: a.pokemonData
+    };
+  }
   return out;
 }
 
@@ -197,6 +233,7 @@ function rew_chk_applyAction(ctx, action) {
   if (a.ftb_task) results.push(rew_chk_applyFtbTask(npc, player, a.ftb_task));
   if (a.ftb_complete) results.push(rew_chk_applyFtbComplete(npc, player, a.ftb_complete));
   if (a.cobbledollar) results.push(rew_chk_applyCobbleDollar(npc, player, a.cobbledollar.op || a.cobbledollar.moneyOp || "add", a.cobbledollar.amount));
+  if (a.cobblemon_give) results.push(rew_chk_applyCobblemonGive(npc, player, a.cobblemon_give.pokemonData || a.cobblemon_give.pokemon || a.cobblemon_give.key, a.cobblemon_give.level || a.cobblemon_give.amount || a.cobblemon_give.value, a.cobblemon_give));
   if (a.command) results.push(rew_chk_applyCommand(npc, player, a.command));
   return { pass: true, msg: "ACTION applied", results: results };
 }
@@ -217,5 +254,6 @@ var DcRewardCheckerModule = {
   applyAdvancement: rew_chk_applyAdvancementAction,
   applyFtbTask: rew_chk_applyFtbTask,
   applyFtbComplete: rew_chk_applyFtbComplete,
-  applyCobbleDollar: rew_chk_applyCobbleDollar
+  applyCobbleDollar: rew_chk_applyCobbleDollar,
+  applyCobblemonGive: rew_chk_applyCobblemonGive
 };

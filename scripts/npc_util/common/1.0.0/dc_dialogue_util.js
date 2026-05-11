@@ -238,6 +238,15 @@ var DcDialogueUtilModule = (function(){
       }
       if(type === "ftb_task"){ out.push({ ftb_task: { quest:String(a.quest || ""), task:Number(a.task || 0) } }); continue; }
       if(type === "ftb_complete"){ out.push({ ftb_complete: { quest:String(a.quest || "") } }); continue; }
+      if(type === "cobblemon_give"){
+        out.push({ cobblemon_give: {
+          pokemon: String(a.pokemon || a.key || ""),
+          level: Number(a.level || a.amount || a.value || 0),
+          amount: Number(a.level || a.amount || a.value || 0),
+          pokemonData: a.pokemonData
+        }});
+        continue;
+      }
       if(type === "cobbledollar" || type === "cobbledollar_add" || type === "cobbledollar_take"){
         out.push({ cobbledollar: {
           op: type === "cobbledollar_take" ? "take" : String(a.moneyOp || a.op || "add"),

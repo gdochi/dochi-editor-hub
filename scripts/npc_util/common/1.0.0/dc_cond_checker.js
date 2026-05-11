@@ -8,14 +8,16 @@ function cond_chk_normalizeOp(type, op) {
   var t = cond_chk_toText(type).toLowerCase();
   var o = cond_chk_toText(op).toLowerCase();
   if (t === 'item') {
-    if (o !== 'has' && o !== 'not' && o !== '>=' ) return 'has';
+    if (o === "hasnt" || o === "hasn't" || o === "notdone") o = 'not';
+    if (o !== 'has' && o !== 'not' && o !== '>' && o !== '>=' && o !== '<' && o !== '<=' && o !== '==' && o !== '!=' ) return 'has';
     return o;
   }
   if (t === 'stored' || t === 'faction') {
-    if (o !== '==' && o !== '>=' && o !== '<=') return '==';
+    if (o !== '==' && o !== '!=' && o !== '>' && o !== '>=' && o !== '<' && o !== '<=') return '==';
     return o;
   }
   if (t === 'tag') {
+    if (o === "hasnt" || o === "hasn't") o = 'not';
     if (o !== 'has' && o !== 'not') return 'has';
     return o;
   }
@@ -30,6 +32,7 @@ function cond_chk_compareText(cur, tgt, op) {
   var b = cond_chk_toText(tgt);
   var o = cond_chk_normalizeOp('stored', op);
   if (o === '==') return cond_chk_result(a === b, 'TEXT ' + a + ' ' + o + ' ' + b);
+  if (o === '!=') return cond_chk_result(a !== b, 'TEXT ' + a + ' != ' + b);
   return cond_chk_result(false, 'TEXT unsupported op ' + o);
 }
 function cond_chk_compareNumber(cur, tgt, op) {
@@ -38,7 +41,10 @@ function cond_chk_compareNumber(cur, tgt, op) {
   var o = cond_chk_normalizeOp('stored', op);
   if (isNaN(a) || isNaN(b)) return cond_chk_result(false, 'NUM invalid');
   if (o === '==') return cond_chk_result(a === b, 'NUM ' + a + ' == ' + b);
+  if (o === '!=') return cond_chk_result(a !== b, 'NUM ' + a + ' != ' + b);
+  if (o === '>') return cond_chk_result(a > b, 'NUM ' + a + ' > ' + b);
   if (o === '>=') return cond_chk_result(a >= b, 'NUM ' + a + ' >= ' + b);
+  if (o === '<') return cond_chk_result(a < b, 'NUM ' + a + ' < ' + b);
   if (o === '<=') return cond_chk_result(a <= b, 'NUM ' + a + ' <= ' + b);
   return cond_chk_result(false, 'NUM unsupported op ' + o);
 }
@@ -55,7 +61,12 @@ function cond_chk_compareCount(count, need, op, label) {
   if (isNaN(a) || isNaN(b)) return cond_chk_result(false, label + ' invalid count');
   if (o === 'has') return cond_chk_result(a > 0, label + ' has ' + a);
   if (o === 'not') return cond_chk_result(a === 0, label + ' not ' + a);
+  if (o === '>') return cond_chk_result(a > b, label + ' ' + a + ' > ' + b);
   if (o === '>=') return cond_chk_result(a >= b, label + ' ' + a + ' >= ' + b);
+  if (o === '<') return cond_chk_result(a < b, label + ' ' + a + ' < ' + b);
+  if (o === '<=') return cond_chk_result(a <= b, label + ' ' + a + ' <= ' + b);
+  if (o === '==') return cond_chk_result(a === b, label + ' ' + a + ' == ' + b);
+  if (o === '!=') return cond_chk_result(a !== b, label + ' ' + a + ' != ' + b);
   return cond_chk_result(false, label + ' unsupported op ' + o);
 }
 
@@ -65,10 +76,10 @@ function cond_item(n, p, op, key, val) {
   var has = 0;
   has = p.getInventory().count(p.getWorld().createItem(key, 1), true, true);
   var normalized = cond_chk_normalizeOp('item', op);
-  if (normalized === '>=') {
+  if (normalized === '>' || normalized === '>=' || normalized === '<' || normalized === '<=' || normalized === '==' || normalized === '!=') {
     var need = parseInt(String(val != null ? val : '0'), 10);
-    if (isNaN(need) || need < 1) return cond_chk_result(false, 'ITEM >= invalid');
-    return cond_chk_compareCount(has, need, '>=', 'ITEM ' + key);
+    if (isNaN(need)) return cond_chk_result(false, 'ITEM count invalid');
+    return cond_chk_compareCount(has, need, normalized, 'ITEM ' + key);
   }
   return cond_chk_comparePresence(has > 0, normalized, 'ITEM ' + key);
 }
@@ -78,7 +89,12 @@ function cond_stored(n, p, op, key, val) {
   var cur = p.getStoreddata().get(key);
   var tgt = val != null ? String(val) : '';
   var normalized = cond_chk_normalizeOp('stored', op);
-  if (normalized === '==') return cond_chk_compareText(cur, tgt, '==');
+  if (normalized === '==' || normalized === '!=') {
+    var curNum = parseFloat(String(cur));
+    var tgtNum = parseFloat(String(tgt));
+    if (!isNaN(curNum) && !isNaN(tgtNum)) return cond_chk_compareNumber(cur, tgt, normalized);
+    return cond_chk_compareText(cur, tgt, normalized);
+  }
   return cond_chk_compareNumber(cur, tgt, normalized);
 }
 
