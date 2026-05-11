@@ -187,11 +187,17 @@ var DcDialogueUtilModule = (function(){
 
   function getPayloadGuiPath(raw, requested){
     var req = String(requested || "").trim();
-    if(req) return normalizeGuiPath(req);
+    if(req){
+      var requestedPath = normalizeGuiPath(req);
+      return fileExists(requestedPath) ? requestedPath : DEFAULT_GUI_JSON;
+    }
     var gui = raw && raw.gui && typeof raw.gui === "object" ? raw.gui : {};
     var source = String((raw && raw.guiSource) || gui.guiSource || "default").toLowerCase();
     var offset = String((raw && raw.guiOffset) || gui.guiOffset || "").trim();
-    if(source === "custom" && offset) return normalizeGuiPath(offset);
+    if(source === "custom" && offset){
+      var customPath = normalizeGuiPath(offset);
+      return fileExists(customPath) ? customPath : DEFAULT_GUI_JSON;
+    }
     return DEFAULT_GUI_JSON;
   }
 
