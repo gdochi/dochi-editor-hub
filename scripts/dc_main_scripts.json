@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-11T02:31:59.503Z",
+  "generated_at": "2026-05-11T03:53:40.361Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -57,16 +57,22 @@
           "load_order": 4
         },
         {
+          "script": "dc_cond_checker.js",
+          "path": "npc_util/common/1.0.0/dc_cond_checker.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
           "script": "dc_reward_checker.js",
           "path": "npc_util/common/1.0.0/dc_reward_checker.js",
           "required": true,
-          "load_order": 5
+          "load_order": 6
         },
         {
           "script": "dc_dialogue_util.js",
           "path": "npc_util/common/1.0.0/dc_dialogue_util.js",
           "required": true,
-          "load_order": 6
+          "load_order": 7
         }
       ],
       "html_dependencies": [

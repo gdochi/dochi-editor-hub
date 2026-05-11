@@ -282,49 +282,6 @@ var DcDialogueUtilModule = (function(){
     return true;
   }
 
-  function normalizeRouteAction(route){
-    var r = route && typeof route === "object" ? route : {};
-    var linkMode = String(r.linkMode || r.link || "internal").toLowerCase();
-    var target = r.goto != null ? r.goto : (r.target != null ? r.target : r.value);
-    var filePath = String(r.filePath || r.path || "");
-    if(linkMode === "external_json") linkMode = "external";
-    if(linkMode === "internal_node") linkMode = "internal";
-    if(linkMode === "external") target = filePath || target;
-    return { goto: String(target || ""), linkMode: linkMode, filePath: filePath };
-  }
-
-  function resolveNodeRoutes(player, npc, raw, rel, debug){
-    var currentRaw = raw;
-    var currentRel = String(rel || "");
-    var seen = {};
-    for(var guard=0; guard<16; guard++){
-      var node = unwrapNode(currentRaw);
-      var routes = node && Array.isArray(node.routes) ? node.routes : (node && Array.isArray(node.route) ? node.route : []);
-      var matched = null;
-      for(var i=0;i<routes.length;i++){
-        var route = routes[i] || {};
-        if(evalConditions(player, npc, route)){
-          matched = normalizeRouteAction(route);
-          break;
-        }
-      }
-      if(!matched || !matched.goto) return { raw: currentRaw, rel: currentRel };
-      if(String(matched.linkMode || "").toLowerCase() === "battle") return { raw: currentRaw, rel: currentRel };
-      var activeLike = { baseSubPath: baseSubPath(currentRel) };
-      var nextRel = resolveNextDialogueRel(activeLike, matched, matched.goto);
-      if(!nextRel) return { raw: currentRaw, rel: currentRel };
-      var key = String(nextRel || "").toLowerCase();
-      if(seen[key]) return { raw: currentRaw, rel: currentRel };
-      seen[key] = true;
-      var nextRaw = readJson(normalizeDialoguePath(nextRel));
-      if(!nextRaw) return { raw: currentRaw, rel: currentRel };
-      debugLog(npc, debug, "route " + currentRel + " -> " + nextRel);
-      currentRel = nextRel;
-      currentRaw = nextRaw;
-    }
-    return { raw: currentRaw, rel: currentRel };
-  }
-
   function componentString(comp){
     if(comp == null) return "";
     try{ if(typeof comp.getString === "function") return String(comp.getString()); }catch(e0){}
@@ -465,10 +422,6 @@ var DcDialogueUtilModule = (function(){
       debugLog(npc, debug, "start/open conditions failed.");
       return null;
     }
-    var routed = resolveNodeRoutes(player, npc, raw, dialogueRel, debug);
-    raw = routed.raw;
-    dialogueRel = routed.rel;
-
     var guiJsonPath = getPayloadGuiPath(raw, opts.guiJsonPath);
     debugLog(npc, debug, "resolved guiJsonPath=" + guiJsonPath);
     var sessionId = String(opts.sessionId || (Date.now() + "_" + Math.floor(Math.random()*900000+100000)));
@@ -503,9 +456,6 @@ var DcDialogueUtilModule = (function(){
 
   function updateOpenDialogue(player, npc, active, raw, nextRel, pendingFx){
     if(!player || !active || !raw) return false;
-    var routed = resolveNodeRoutes(player, npc, raw, nextRel, false);
-    raw = routed.raw;
-    nextRel = routed.rel;
     var sessionId = String(active.sessionId || "");
     var mergedBindings = mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), pendingFx);
     var payload = {
