@@ -7,6 +7,7 @@ var DcGuiRuntimeModule = (function () {
   var OVERLAY_NAME = "dc_gui_runtime";
   var DEFAULT_HTML = "html/dc_util/dc_gui_runtime.html";
   var DEFAULT_ENTITY_SLOT_BASE = 0;
+  var LANG_CACHE = {};
 
   function getContext(target, maybeNpc, maybeOpts) {
     if (target && target.player && target.npc) {
@@ -20,7 +21,94 @@ var DcGuiRuntimeModule = (function () {
     }
     return null;
   }
-function normalizeEntityTargetType(value) {
+
+  function normalizeLocale(v){v=String(v||"").toLowerCase().replace("-","_");return /^[a-z]{2,3}_[a-z0-9_]+$/.test(v)?v:"";}
+  function isTranslationKeyText(v){v=String(v||"");return v.indexOf(".")>0&&/^[a-z0-9_.-]+$/.test(v);}
+  function readStoredLocale(player){try{return normalizeLocale(player.getStoreddata().get("npc_browser_locale_pref")||"");}catch(err){return "";}}
+  function callString(obj,names){
+    var i,v;
+    if(!obj)return "";
+    for(i=0;i<names.length;i++){try{if(typeof obj[names[i]]==="function"){v=obj[names[i]]();if(v!=null)return String(v);}}catch(err0){}}
+    return "";
+  }
+  function getPlayerLocale(player){
+    var locale=readStoredLocale(player),mc=null,opts=null;
+    if(locale)return locale;
+    locale=normalizeLocale(callString(player,["getLanguage"]));
+    if(locale)return locale;
+    try{if(player&&typeof player.getMCEntity==="function")mc=player.getMCEntity();}catch(err0){}
+    locale=normalizeLocale(callString(mc,["getLanguage"]));
+    if(locale)return locale;
+    try{opts=mc&&mc.method_53823?mc.method_53823():(mc&&mc.clientInformation?mc.clientInformation():null);}catch(err1){opts=null;}
+    locale=normalizeLocale(callString(opts,["comp_1951","language","getLanguage","getLocale","locale"]));
+    return locale||"en_us";
+  }
+  function stripBom(s){s=String(s||"");return s&&s.charCodeAt(0)===0xFEFF?s.substring(1):s;}
+  function mergeLangJson(out,raw){
+    var text=stripBom(raw).trim(),obj,keys,i,k;
+    if(!text)return;
+    if(text.charAt(0)!=="{")text="{"+text+"}";
+    try{obj=JSON.parse(text);}catch(err){return;}
+    keys=Object.keys(obj);
+    for(i=0;i<keys.length;i++){k=keys[i];if(obj[k]!=null)out[k]=String(obj[k]);}
+  }
+  function readFileText(file){
+    try{if(typeof cfg_chk_readTextFile==="function")return cfg_chk_readTextFile(file);}catch(err0){}
+    try{
+      var Files=Java.type("java.nio.file.Files"),StandardCharsets=Java.type("java.nio.charset.StandardCharsets");
+      return new java.lang.String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8);
+    }catch(err1){return "";}
+  }
+  function langRelMatch(path,locale){
+    path=String(path||"").toLowerCase().replace(/\\/g,"/");
+    return path.indexOf("assets/")===0&&path.indexOf("/lang/")>0&&path.slice(-("/lang/"+locale+".json").length)==="/lang/"+locale+".json";
+  }
+  function readStreamText(input){
+    var Reader=Java.type("java.io.InputStreamReader"),BufferedReader=Java.type("java.io.BufferedReader"),br=null,line,out=[];
+    try{br=new BufferedReader(new Reader(input,"UTF-8"));while((line=br.readLine())!==null)out.push(String(line));return out.join("\n");}
+    finally{if(br)br.close();}
+  }
+  function scanLangDir(out,root,dir,locale){
+    var files=dir.listFiles(),i,f,rel;
+    if(!files)return;
+    for(i=0;i<files.length;i++){
+      f=files[i];
+      if(f.isDirectory()){scanLangDir(out,root,f,locale);continue;}
+      rel=String(root.toURI().relativize(f.toURI()).getPath()||"");
+      if(langRelMatch(rel,locale))mergeLangJson(out,readFileText(f));
+    }
+  }
+  function scanLangZip(out,file,locale){
+    var ZipFile=Java.type("java.util.zip.ZipFile"),zip=null,entries,e;
+    try{zip=new ZipFile(file);entries=zip.entries();while(entries.hasMoreElements()){e=entries.nextElement();if(!e.isDirectory()&&langRelMatch(e.getName(),locale))mergeLangJson(out,readStreamText(zip.getInputStream(e)));}}
+    finally{if(zip)zip.close();}
+  }
+  function langMap(locale){
+    var File=Java.type("java.io.File"),dirs=["mods","./mods","minecraft/mods","./minecraft/mods","resourcepacks","./resourcepacks","minecraft/resourcepacks","./minecraft/resourcepacks"],map={},seen={},i,dir,list,j,f,p,name;
+    locale=normalizeLocale(locale)||"en_us";
+    if(LANG_CACHE[locale])return LANG_CACHE[locale];
+    for(i=0;i<dirs.length;i++){
+      dir=new File(dirs[i]);if(!dir.exists()||!dir.isDirectory())continue;
+      list=dir.listFiles();if(!list)continue;
+      for(j=0;j<list.length;j++){
+        f=list[j];name=String(f.getName()).toLowerCase();p=String(f.getAbsolutePath()).replace(/\\/g,"/");
+        if(seen[p]||(!f.isDirectory()&&name.slice(-4)!==".jar"&&name.slice(-4)!==".zip"))continue;
+        seen[p]=true;try{if(f.isDirectory())scanLangDir(map,f,f,locale);else scanLangZip(map,f,locale);}catch(err){}
+      }
+    }
+    LANG_CACHE[locale]=map;
+    return map;
+  }
+  function translateNpcNameForPlayer(player,name){
+    var key=String(name||""),locale,map,fallback;
+    if(!isTranslationKeyText(key))return key;
+    locale=getPlayerLocale(player);map=langMap(locale);
+    if(map[key]!=null)return String(map[key]);
+    if(locale!=="en_us"){fallback=langMap("en_us");if(fallback[key]!=null)return String(fallback[key]);}
+    return key;
+  }
+
+  function normalizeEntityTargetType(value) {
     var key = String(value || "npc").trim().toLowerCase();
     if (key === "player" || key === "id") return key;
     return "npc";
@@ -354,7 +442,7 @@ function normalizeEntityTargetType(value) {
 
 
     var speakerName = "";
-    try{ speakerName = String(ctx && ctx.npc && ctx.npc.display && typeof ctx.npc.display.getName === "function" ? ctx.npc.display.getName() : ""); }catch(errS0){ speakerName = ""; }
+    try{ speakerName = translateNpcNameForPlayer(ctx.player, String(ctx && ctx.npc && ctx.npc.display && typeof ctx.npc.display.getName === "function" ? ctx.npc.display.getName() : "")); }catch(errS0){ speakerName = ""; }
     speakerName = String(speakerName || "").trim();
     if(speakerName){
       try{
