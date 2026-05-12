@@ -106,6 +106,12 @@
         },
         {
           "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_cond_checker.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
           "path": "dc_lib/dc_npc_util/dc_gui_runtime.js",
           "required": true,
           "load_order": 4

@@ -118,3 +118,74 @@ function cond_adv(n, p, op, key) {
   var normalized = op === 'not' ? 'not' : 'done';
   return cond_chk_comparePresence(has, normalized, 'ADV ' + key);
 }
+
+function cond_chk_boolTarget(v, fallback) {
+  if (v === true || v === false) return v;
+  if (v == null || v === '') return fallback !== false;
+  var s = String(v).toLowerCase();
+  if (s === 'true' || s === '1' || s === 'yes' || s === 'y' || s === 'on') return true;
+  if (s === 'false' || s === '0' || s === 'no' || s === 'n' || s === 'off') return false;
+  return fallback !== false;
+}
+
+function cond_chk_mcPlayer(p) {
+  try {
+    if (p && typeof p.getMCEntity === 'function') return p.getMCEntity();
+  } catch (e0) {}
+  return p;
+}
+
+function cond_ftb(n, p, op, key, val, taskIndex) {
+  if (!key) return cond_chk_result(false, 'FTB quest key missing');
+  var ServerQuestFile, QuestObjectBase, file, questLong, quest, data, target, targetName;
+  try {
+    ServerQuestFile = Java.type('dev.ftb.mods.ftbquests.quest.ServerQuestFile');
+    QuestObjectBase = Java.type('dev.ftb.mods.ftbquests.quest.QuestObjectBase');
+  } catch (e0) {
+    return cond_chk_result(false, 'FTB classes missing');
+  }
+  file = ServerQuestFile.INSTANCE;
+  if (!file) return cond_chk_result(false, 'FTB quest file missing');
+  try {
+    questLong = QuestObjectBase.parseCodeString(String(key));
+    quest = file.getQuest(questLong);
+  } catch (e1) {
+    return cond_chk_result(false, 'FTB quest id invalid ' + key);
+  }
+  if (!quest) return cond_chk_result(false, 'FTB quest not found ' + key);
+  try {
+    data = file.getOrCreateTeamData(cond_chk_mcPlayer(p));
+  } catch (e2) {
+    return cond_chk_result(false, 'FTB team data missing');
+  }
+  target = quest;
+  targetName = 'quest ' + key;
+  if (taskIndex != null && String(taskIndex) !== '') {
+    var tasks = quest.getTasksAsList();
+    var idx = parseInt(String(taskIndex), 10);
+    if (isNaN(idx) || idx < 0 || idx >= tasks.size()) return cond_chk_result(false, 'FTB task out of range ' + key + '#' + taskIndex);
+    target = tasks.get(idx);
+    targetName = 'task ' + key + '#' + idx;
+  }
+
+  var normalized = String(op || 'completed').toLowerCase();
+  var want = cond_chk_boolTarget(val, true);
+  var completed = false;
+  var started = false;
+  try { completed = !!data.isCompleted(target); } catch (e3) { completed = false; }
+  try { started = !!data.isStarted(target); } catch (e4) { started = false; }
+
+  if (normalized === 'not_completed' || normalized === 'incomplete' || normalized === 'notdone') {
+    return cond_chk_result(completed === false, 'FTB ' + targetName + ' completed false');
+  }
+  if (normalized === 'not_started') {
+    return cond_chk_result(started === false, 'FTB ' + targetName + ' started false');
+  }
+  if (normalized === 'started' || normalized === 'start') {
+    return cond_chk_result(started === want, 'FTB ' + targetName + ' started ' + started + ' want ' + want);
+  }
+  if (normalized === 'completed' || normalized === 'complete' || normalized === 'done') {
+    return cond_chk_result(completed === want, 'FTB ' + targetName + ' completed ' + completed + ' want ' + want);
+  }
+  return cond_chk_result(false, 'FTB unsupported op ' + op);
+}
