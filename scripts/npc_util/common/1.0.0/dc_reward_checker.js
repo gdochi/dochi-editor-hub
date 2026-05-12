@@ -85,6 +85,47 @@ function rew_chk_applyAdvancement(npc, player, key) {
   return rew_chk_result(true, "ADV " + key);
 }
 
+function rew_chk_mcPlayer(player) {
+  try {
+    if (player && typeof player.getMCEntity === "function") return player.getMCEntity();
+  } catch (e0) {}
+  return player;
+}
+
+function rew_chk_getFtbQuestContext(player, questId) {
+  var ServerQuestFile, QuestObjectBase, file, questLong, quest, data;
+  try {
+    ServerQuestFile = Java.type("dev.ftb.mods.ftbquests.quest.ServerQuestFile");
+    QuestObjectBase = Java.type("dev.ftb.mods.ftbquests.quest.QuestObjectBase");
+  } catch (e0) {
+    return null;
+  }
+  file = ServerQuestFile.INSTANCE;
+  if (!file) return null;
+  try {
+    questLong = QuestObjectBase.parseCodeString(String(questId));
+    quest = file.getQuest(questLong);
+  } catch (e1) {
+    return null;
+  }
+  if (!quest) return null;
+  try {
+    data = file.getOrCreateTeamData(rew_chk_mcPlayer(player));
+  } catch (e2) {
+    return null;
+  }
+  return { file: file, quest: quest, data: data };
+}
+
+function rew_chk_refreshFtbQuest(data, quest) {
+  try {
+    if (data && quest && typeof data.checkAutoCompletion === "function") data.checkAutoCompletion(quest);
+  } catch (e0) {}
+  try {
+    if (data && typeof data.markDirty === "function") data.markDirty();
+  } catch (e1) {}
+}
+
 function rew_chk_applyStore(player, store) {
   var key, data, op, cur, delta;
   if (!player || !store) return rew_chk_result(false, "STORE missing");
@@ -135,19 +176,34 @@ function rew_chk_applyAdvancementAction(npc, player, adv) {
 }
 
 function rew_chk_applyFtbTask(npc, player, task) {
-  var quest, taskIndex, suffix;
+  var quest, taskIndex, ctx, tasks, target;
   if (!task) return rew_chk_result(false, "FTB task missing");
   quest = typeof task === "object" ? String(task.quest || "") : String(task || "");
   if (!quest) return rew_chk_result(false, "FTB quest missing");
   taskIndex = typeof task === "object" ? Number(task.task || 0) : 0;
-  suffix = taskIndex > 0 ? (" " + taskIndex) : "";
-  return rew_chk_applyCommand(npc, player, "ftbquests change_progress {player} complete " + quest + suffix);
+  ctx = rew_chk_getFtbQuestContext(player, quest);
+  if (!ctx) return rew_chk_result(false, "FTB quest not found " + quest);
+  tasks = ctx.quest.getTasksAsList();
+  if (taskIndex < 0 || taskIndex >= tasks.size()) return rew_chk_result(false, "FTB task out of range " + quest + "#" + taskIndex);
+  target = tasks.get(taskIndex);
+  ctx.data.setProgress(target, target.getMaxProgress());
+  rew_chk_refreshFtbQuest(ctx.data, ctx.quest);
+  return rew_chk_result(true, "FTB task complete " + quest + "#" + taskIndex);
 }
 
 function rew_chk_applyFtbComplete(npc, player, complete) {
   var quest = typeof complete === "object" ? String(complete.quest || "") : String(complete || "");
+  var ctx, tasks, i, target;
   if (!quest) return rew_chk_result(false, "FTB complete quest missing");
-  return rew_chk_applyCommand(npc, player, "ftbquests change_progress {player} complete " + quest);
+  ctx = rew_chk_getFtbQuestContext(player, quest);
+  if (!ctx) return rew_chk_result(false, "FTB quest not found " + quest);
+  tasks = ctx.quest.getTasksAsList();
+  for (i = 0; i < tasks.size(); i++) {
+    target = tasks.get(i);
+    ctx.data.setProgress(target, target.getMaxProgress());
+  }
+  rew_chk_refreshFtbQuest(ctx.data, ctx.quest);
+  return rew_chk_result(true, "FTB quest complete " + quest);
 }
 
 function rew_chk_applyCobbleDollar(npc, player, op, amount) {
