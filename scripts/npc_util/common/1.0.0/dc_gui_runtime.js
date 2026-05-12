@@ -7,7 +7,8 @@ var DcGuiRuntimeModule = (function () {
   var OVERLAY_NAME = "dc_gui_runtime";
   var DEFAULT_HTML = "html/dc_util/dc_gui_runtime.html";
   var DEFAULT_ENTITY_SLOT_BASE = 0;
-  var LANG_CACHE = {};
+  var LOCALE_PREF_KEY = "npc_browser_locale_pref";
+  var LANG_RESOURCE_CACHE = {};
 
   function getContext(target, maybeNpc, maybeOpts) {
     if (target && target.player && target.npc) {
@@ -22,91 +23,218 @@ var DcGuiRuntimeModule = (function () {
     return null;
   }
 
-  function normalizeLocale(v){v=String(v||"").toLowerCase().replace("-","_");return /^[a-z]{2,3}_[a-z0-9_]+$/.test(v)?v:"";}
-  function isTranslationKeyText(v){v=String(v||"");return v.indexOf(".")>0&&/^[a-z0-9_.-]+$/.test(v);}
-  function readStoredLocale(player){try{return normalizeLocale(player.getStoreddata().get("npc_browser_locale_pref")||"");}catch(err){return "";}}
-  function callString(obj,names){
-    var i,v;
-    if(!obj)return "";
-    for(i=0;i<names.length;i++){try{if(typeof obj[names[i]]==="function"){v=obj[names[i]]();if(v!=null)return String(v);}}catch(err0){}}
-    return "";
-  }
   function getPlayerLocale(player){
-    var locale=readStoredLocale(player),mc=null,opts=null;
-    if(locale)return locale;
-    locale=normalizeLocale(callString(player,["getLanguage"]));
-    if(locale)return locale;
-    try{if(player&&typeof player.getMCEntity==="function")mc=player.getMCEntity();}catch(err0){}
-    locale=normalizeLocale(callString(mc,["getLanguage"]));
-    if(locale)return locale;
-    try{opts=mc&&mc.method_53823?mc.method_53823():(mc&&mc.clientInformation?mc.clientInformation():null);}catch(err1){opts=null;}
-    locale=normalizeLocale(callString(opts,["comp_1951","language","getLanguage","getLocale","locale"]));
-    return locale||"en_us";
-  }
-  function stripBom(s){s=String(s||"");return s&&s.charCodeAt(0)===0xFEFF?s.substring(1):s;}
-  function mergeLangJson(out,raw){
-    var text=stripBom(raw).trim(),obj,keys,i,k;
-    if(!text)return;
-    if(text.charAt(0)!=="{")text="{"+text+"}";
-    try{obj=JSON.parse(text);}catch(err){return;}
-    keys=Object.keys(obj);
-    for(i=0;i<keys.length;i++){k=keys[i];if(obj[k]!=null)out[k]=String(obj[k]);}
-  }
-  function readFileText(file){
-    try{if(typeof cfg_chk_readTextFile==="function")return cfg_chk_readTextFile(file);}catch(err0){}
-    try{
-      var Files=Java.type("java.nio.file.Files"),StandardCharsets=Java.type("java.nio.charset.StandardCharsets");
-      return new java.lang.String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8);
-    }catch(err1){return "";}
-  }
-  function langRelMatch(path,locale){
-    path=String(path||"").toLowerCase().replace(/\\/g,"/");
-    return path.indexOf("assets/")===0&&path.indexOf("/lang/")>0&&path.slice(-("/lang/"+locale+".json").length)==="/lang/"+locale+".json";
-  }
-  function readStreamText(input){
-    var Reader=Java.type("java.io.InputStreamReader"),BufferedReader=Java.type("java.io.BufferedReader"),br=null,line,out=[];
-    try{br=new BufferedReader(new Reader(input,"UTF-8"));while((line=br.readLine())!==null)out.push(String(line));return out.join("\n");}
-    finally{if(br)br.close();}
-  }
-  function scanLangDir(out,root,dir,locale){
-    var files=dir.listFiles(),i,f,rel;
-    if(!files)return;
-    for(i=0;i<files.length;i++){
-      f=files[i];
-      if(f.isDirectory()){scanLangDir(out,root,f,locale);continue;}
-      rel=String(root.toURI().relativize(f.toURI()).getPath()||"");
-      if(langRelMatch(rel,locale))mergeLangJson(out,readFileText(f));
-    }
-  }
-  function scanLangZip(out,file,locale){
-    var ZipFile=Java.type("java.util.zip.ZipFile"),zip=null,entries,e;
-    try{zip=new ZipFile(file);entries=zip.entries();while(entries.hasMoreElements()){e=entries.nextElement();if(!e.isDirectory()&&langRelMatch(e.getName(),locale))mergeLangJson(out,readStreamText(zip.getInputStream(e)));}}
-    finally{if(zip)zip.close();}
-  }
-  function langMap(locale){
-    var File=Java.type("java.io.File"),dirs=["mods","./mods","minecraft/mods","./minecraft/mods","resourcepacks","./resourcepacks","minecraft/resourcepacks","./minecraft/resourcepacks"],map={},seen={},i,dir,list,j,f,p,name;
-    locale=normalizeLocale(locale)||"en_us";
-    if(LANG_CACHE[locale])return LANG_CACHE[locale];
-    for(i=0;i<dirs.length;i++){
-      dir=new File(dirs[i]);if(!dir.exists()||!dir.isDirectory())continue;
-      list=dir.listFiles();if(!list)continue;
-      for(j=0;j<list.length;j++){
-        f=list[j];name=String(f.getName()).toLowerCase();p=String(f.getAbsolutePath()).replace(/\\/g,"/");
-        if(seen[p]||(!f.isDirectory()&&name.slice(-4)!==".jar"&&name.slice(-4)!==".zip"))continue;
-        seen[p]=true;try{if(f.isDirectory())scanLangDir(map,f,f,locale);else scanLangZip(map,f,locale);}catch(err){}
-      }
-    }
-    LANG_CACHE[locale]=map;
-    return map;
-  }
-  function translateNpcNameForPlayer(player,name){
-    var key=String(name||""),locale,map,fallback;
-    if(!isTranslationKeyText(key))return key;
-    locale=getPlayerLocale(player);map=langMap(locale);
-    if(map[key]!=null)return String(map[key]);
-    if(locale!=="en_us"){fallback=langMap("en_us");if(fallback[key]!=null)return String(fallback[key]);}
-    return key;
-  }
+var pref=getStoredLocalePreference(player),candidates=[],mc=null,opts=null;
+if(pref)return pref;
+addLocaleCandidate(candidates,readJavaNoArgString(player,["getLanguage"]));
+try{if(player&&typeof player.getMCEntity==="function")mc=player.getMCEntity();}catch(err1){}
+addLocaleCandidate(candidates,readJavaNoArgString(mc,["getLanguage"]));
+addLocaleCandidate(candidates,readJavaFieldString(mc,["field_46156","language","locale","clientLanguage","selectedLanguage"]));
+opts=readJavaNoArgValue(mc,["method_53823","clientInformation","getClientInformation","getClientOptions"]);
+if(opts)addLocaleCandidate(candidates,readJavaNoArgString(opts,["comp_1951","language","getLanguage","getLocale","locale"]));
+if(opts)addLocaleCandidate(candidates,readJavaFieldString(opts,["comp_1951","language","locale"]));
+return pickBestLocaleCandidate(candidates)||"en_us";
+}
+function getStoredLocalePreference(player){
+try{return normalizeLocaleCandidate(player.getStoreddata().get(LOCALE_PREF_KEY)||"");}catch(err){}
+return "";
+}
+function addLocaleCandidate(list,value){
+var locale=normalizeLocaleCandidate(value);
+if(locale)list.push(locale);
+}
+function normalizeLocaleCandidate(value){
+var locale=String(value||"").toLowerCase().replace("-","_");
+if(!/^[a-z]{2,3}_[a-z0-9_]+$/.test(locale))return "";
+return locale;
+}
+function pickBestLocaleCandidate(list){
+var i,first="";
+for(i=0;i<list.length;i++){
+if(!first)first=list[i];
+if(list[i]&&list[i]!=="en_us")return list[i];
+}
+return first||"";
+}
+function readJavaNoArgString(obj,names){
+var value=readJavaNoArgValue(obj,names);
+if(value==null)return "";
+return String(value||"");
+}
+function readJavaNoArgValue(obj,names){
+var i,value,methods,empty,j,m;
+if(!obj)return null;
+for(i=0;i<names.length;i++){
+try{if(typeof obj[names[i]]==="function"){value=obj[names[i]]();if(value!=null)return value;}}catch(err0){}
+}
+try{
+methods=obj.getClass().getMethods();
+empty=Java.to([],"java.lang.Object[]");
+for(i=0;i<names.length;i++){
+for(j=0;j<methods.length;j++){
+m=methods[j];
+try{
+if(String(m.getName())===names[i]&&m.getParameterCount()===0){
+try{m.setAccessible(true);}catch(err1){}
+value=m.invoke(obj,empty);
+if(value!=null)return value;
+}
+}catch(err2){}
+}
+}
+}catch(err3){}
+return null;
+}
+function readJavaFieldString(obj,names){
+var cls=null,i,field,value;
+if(!obj)return "";
+try{cls=obj.getClass();}catch(err0){return "";}
+while(cls){
+for(i=0;i<names.length;i++){
+try{
+field=cls.getDeclaredField(names[i]);
+field.setAccessible(true);
+value=field.get(obj);
+if(value!=null&&String(value)!=="")return String(value);
+}catch(err1){}
+}
+try{cls=cls.getSuperclass();}catch(err2){cls=null;}
+}
+return "";
+}
+function normalizeLocale(locale){
+locale=String(locale||"en_us").toLowerCase().replace("-","_");
+return locale||"en_us";
+}
+function translateNpcNameForPlayer(player,name){
+name=String(name||"");
+if(!isTranslationKeyText(name))return name;
+return getLangResourceValue(getPlayerLocale(player),name)||name;
+}
+function isTranslationKeyText(text){
+text=String(text||"");
+return text.indexOf(".")>0&&/^[a-z0-9_.-]+$/.test(text);
+}
+function getLangResourceValue(locale,key){
+var map=loadLangResourceMap(locale),fallback;
+if(map[key]!=null)return String(map[key]);
+if(normalizeLocale(locale)!=="en_us"){
+fallback=loadLangResourceMap("en_us");
+if(fallback[key]!=null)return String(fallback[key]);
+}
+return "";
+}
+function loadLangResourceMap(locale){
+locale=normalizeLocale(locale);
+if(LANG_RESOURCE_CACHE[locale])return LANG_RESOURCE_CACHE[locale];
+LANG_RESOURCE_CACHE[locale]={};
+loadLangResourcesInto(LANG_RESOURCE_CACHE[locale],locale);
+return LANG_RESOURCE_CACHE[locale];
+}
+function loadLangResourcesInto(out,locale){
+var containers=findLangResourceContainers(),i,file;
+for(i=0;i<containers.length;i++){
+file=containers[i];
+if(file.isFile())readZipLangResources(out,file,locale);
+else if(file.isDirectory())readDirLangResources(out,file,locale);
+}
+}
+function findLangResourceContainers(){
+var File=Java.type("java.io.File"),out=[],seen={},dirs=[new File("mods"),new File("./mods"),new File("minecraft/mods"),new File("./minecraft/mods"),new File("resourcepacks"),new File("./resourcepacks"),new File("minecraft/resourcepacks"),new File("./minecraft/resourcepacks")],i;
+for(i=0;i<dirs.length;i++)pushResourceContainersFromDir(out,seen,dirs[i]);
+return out;
+}
+function pushResourceContainersFromDir(out,seen,dir){
+var list,i,file,name,path;
+if(!dir||!dir.exists()||!dir.isDirectory())return;
+list=dir.listFiles();
+if(!list)return;
+for(i=0;i<list.length;i++){
+file=list[i];
+if(!file)continue;
+name=String(file.getName()).toLowerCase();
+if(file.isDirectory()||name.slice(-4)===".jar"||name.slice(-4)===".zip"){
+path=String(file.getAbsolutePath()).replace(/\\/g,"/");
+if(!seen[path]){seen[path]=true;out.push(file);}
+}
+}
+}
+function readZipLangResources(out,file,locale){
+var ZipFile=Java.type("java.util.zip.ZipFile"),zip=null,entries,entry,path,raw;
+try{
+zip=new ZipFile(file);
+entries=zip.entries();
+while(entries.hasMoreElements()){
+entry=entries.nextElement();
+if(entry.isDirectory())continue;
+path=String(entry.getName()).toLowerCase();
+if(!isLangResourcePath(path,locale))continue;
+raw=readInputStreamText(zip.getInputStream(entry));
+mergeLangJson(out,raw);
+}
+}finally{
+if(zip)zip.close();
+}
+}
+function readDirLangResources(out,dir,locale){
+walkDirLangResources(out,dir,dir,locale);
+}
+function walkDirLangResources(out,root,dir,locale){
+var list=dir.listFiles(),i,file,rel;
+if(!list)return;
+for(i=0;i<list.length;i++){
+file=list[i];
+if(file.isDirectory()){walkDirLangResources(out,root,file,locale);continue;}
+rel=String(root.toURI().relativize(file.toURI()).getPath()||"").toLowerCase();
+if(isLangResourcePath(rel,locale))mergeLangJson(out,readTextFile(file));
+}
+}
+function isLangResourcePath(path,locale){
+var suffix="/lang/"+normalizeLocale(locale)+".json";
+path=String(path||"").toLowerCase().replace(/\\/g,"/");
+return path.indexOf("assets/")===0&&path.indexOf("/lang/")>0&&path.slice(-suffix.length)===suffix;
+}
+function mergeLangJson(out,raw){
+var text=stripBom(String(raw||"{}")).trim(),obj,keys,i,key,value;
+if(!text)return;
+if(text.charAt(0)!=="{")text="{"+text+"}";
+try{
+obj=JSON.parse(text);
+}catch(err){
+return;
+}
+keys=Object.keys(obj);
+for(i=0;i<keys.length;i++){
+key=keys[i];
+value=obj[key];
+if(value!=null)out[key]=String(value);
+}
+}
+function readInputStreamText(input){
+var InputStreamReader=Java.type("java.io.InputStreamReader"),BufferedReader=Java.type("java.io.BufferedReader"),br=null,line,parts=[];
+try{
+br=new BufferedReader(new InputStreamReader(input,"UTF-8"));
+while((line=br.readLine())!==null)parts.push(String(line));
+return stripBom(parts.join("\n"));
+}finally{
+if(br)br.close();
+}
+}
+function readTextFile(file){
+var FileInputStream=Java.type("java.io.FileInputStream"),InputStreamReader=Java.type("java.io.InputStreamReader"),BufferedReader=Java.type("java.io.BufferedReader"),br=null,line,parts=[];
+try{
+br=new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF-8"));
+while((line=br.readLine())!==null)parts.push(String(line));
+return stripBom(parts.join("\n"));
+}finally{
+if(br)br.close();
+}
+}
+function stripBom(text){
+text=String(text||"");
+if(text.length&&text.charCodeAt(0)===65279)return text.substring(1);
+return text;
+}
 
   function normalizeEntityTargetType(value) {
     var key = String(value || "npc").trim().toLowerCase();
