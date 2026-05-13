@@ -380,6 +380,41 @@
       return out;
     }
 
+    function getShopBind(){
+      const direct = BIND.shop || INIT.shop;
+      return direct && typeof direct === "object" ? direct : null;
+    }
+
+    function getShopChoices(role){
+      const shop = getShopBind();
+      if(!shop) return null;
+      const key = String(role || "");
+      const group = shop.choices && typeof shop.choices === "object" ? shop.choices : {};
+      const list = Array.isArray(group[key]) ? group[key] : [];
+      const out = [];
+      for(let i=0;i<list.length;i++){
+        const item = list[i];
+        if(item && typeof item === "object"){
+          out.push({
+            label: String(item.label || ""),
+            index: item.index != null ? Number(item.index) : i,
+            role: String(item.role || key),
+            data: item.data != null ? item.data : null
+          });
+        }
+      }
+      return out;
+    }
+
+    function getShopText(role){
+      const shop = getShopBind();
+      if(!shop || !shop.text || typeof shop.text !== "object") return null;
+      const value = shop.text[String(role || "")];
+      if(Array.isArray(value)) return value.map(v => String(v ?? "")).join("\n");
+      if(value != null) return String(value);
+      return null;
+    }
+
     function getDialogLines(){
       const direct = BIND.text || INIT.text;
       if(Array.isArray(direct)) return direct.map(v => String(v ?? ""));
@@ -697,7 +732,9 @@ prev.addEventListener('click', function(ev){
       overlay.style.justifyContent = verticalMap[String(item.dialogTextVAlign || "top")] || "flex-start";
       overlay.style.gap = String(Math.max(4, Math.round(10 * uiScale))) + 'px';
 
-      const speakerText = getSpeaker() || String(item.speaker || "").trim();
+      const shopRole = String(item.shopRole || "");
+      const shopText = shopRole ? getShopText(shopRole) : null;
+      const speakerText = shopRole ? String(item.speaker || "").trim() : (getSpeaker() || String(item.speaker || "").trim());
       let speakerNode = null;
       if(speakerText){
         speakerNode = document.createElement("div");
@@ -709,7 +746,7 @@ prev.addEventListener('click', function(ev){
       lines.className = "lines";
 
       const list = getDialogLines();
-      const fullText = list.length ? list.join("\n") : String(item.text || "");
+      const fullText = shopText != null ? shopText : (list.length ? list.join("\n") : String(item.text || ""));
 
       const anim = String(item.dialogTextAnim || "none");
       const cps = Number(item.dialogTypingSpeed || 24);
@@ -1157,6 +1194,12 @@ var stopPagerEv = function(ev){
           continue;
         }
         if(type === "choice"){
+          const role = String(item.shopRole || "");
+          const shopChoices = role ? getShopChoices(role) : null;
+          if(shopChoices){
+            renderChoiceBox(stage, item, shopChoices, 0);
+            continue;
+          }
           const cap = Math.max(1, Number(item.choiceCount || 1));
           const slice = allChoices.slice(cursor, cursor + cap);
           cursor = renderChoiceBox(stage, item, slice, cursor);

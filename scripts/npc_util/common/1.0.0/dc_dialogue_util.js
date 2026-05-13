@@ -207,6 +207,15 @@ var DcDialogueUtilModule = (function(){
         out.push({ goto: String(target || ""), linkMode: linkMode, filePath: filePath });
         continue;
       }
+      if(type === "go_shop"){
+        out.push({
+          type: "go_shop",
+          shopJsonPath: String(a.shopJsonPath || a.filePath || a.path || ""),
+          shopId: String(a.shopId || ""),
+          shopAccessPolicy: String(a.shopAccessPolicy || "dialogue_only")
+        });
+        continue;
+      }
       if(type === "store"){
         out.push({ store: {
           key: String(a.key || ""),
@@ -551,6 +560,24 @@ var DcDialogueUtilModule = (function(){
 
     for(var i=0;i<actions.length;i++){
       var a = actions[i] || {};
+      if(String(a.type || "").toLowerCase() === "go_shop"){
+        closeHtmlGui(player);
+        clearActive(player);
+        if(typeof dc_shop_open !== "function"){
+          var resShopMissing = { done:false, reason:"shop_runtime_missing" };
+          setLastResult(player, resShopMissing);
+          return resShopMissing;
+        }
+        var shopRes = dc_shop_open({ player: player, npc: npc, event: eventObj }, {
+          shopJsonPath: String(a.shopJsonPath || ""),
+          shopId: String(a.shopId || ""),
+          accessPolicy: String(a.shopAccessPolicy || "dialogue_only"),
+          source: "dialogue"
+        });
+        var resShop = { done:true, reason:"go_shop", shopId:String(a.shopId || ""), opened: shopRes != null };
+        setLastResult(player, resShop);
+        return resShop;
+      }
       runRewardAction(player, npc, eventObj, a);
 
       if(a.close === true){

@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "shopId": "main_shop",
+  "name": "Gradion's Shop",
+  "gui": {
+    "source": "default",
+    "guiJsonPath": "",
+    "guiOffset": "shop_gui_default"
+  },
+  "access": {
+    "conditionMode": "and",
+    "failMessage": "You cannot use this shop yet.",
+    "conditions": []
+  },
+  "currency": {
+    "type": "item",
+    "id": "minecraft:emerald"
+  },
+  "restock": {
+    "enabled": true,
+    "ticks": 12000
+  },
+  "categories": [
+    {
+      "id": "heal",
+      "name": "Healing"
+    },
+    {
+      "id": "combat",
+      "name": "Combat"
+    }
+  ],
+  "products": [
+    {
+      "id": "potion",
+      "name": "Healing Potion",
+      "item": {
+        "type": "id",
+        "id": "minecraft:potion"
+      },
+      "price": 15,
+      "baseStock": -1,
+      "categoryId": "heal",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Healing Potion.",
+        "Restores health."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "golden_apple",
+      "name": "Golden Apple",
+      "item": {
+        "type": "id",
+        "id": "minecraft:golden_apple"
+      },
+      "price": 30,
+      "baseStock": 30,
+      "categoryId": "heal",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Golden Apple.",
+        "Grants regeneration."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "diamond_sword",
+      "name": "Diamond Sword",
+      "item": {
+        "type": "id",
+        "id": "minecraft:diamond_sword"
+      },
+      "price": 80,
+      "baseStock": 25,
+      "categoryId": "combat",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Diamond Sword.",
+        "Sharp and reliable."
+      ],
+      "enabled": true
+    }
+  ]
+}

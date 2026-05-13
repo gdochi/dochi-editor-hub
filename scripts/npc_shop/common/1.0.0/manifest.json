@@ -1,15 +1,15 @@
 {
-  "id": "npc_dialogue/common/1.0.0",
-  "package": "npc_dialogue",
+  "id": "npc_shop/common/1.0.0",
+  "package": "npc_shop",
   "version": "1.0.0",
-  "editor": "dialogue",
+  "editor": "shopkeeper",
   "mc_version": "common",
-  "description": "Dialogue trigger package shared for Forge and Fabric",
-  "entry": "dc_dialogue_trigger.js",
+  "description": "Shop trigger package shared for Forge and Fabric",
+  "entry": "dc_shop_trigger.js",
   "files": [
     {
-      "source": "dc_dialogue_trigger.js",
-      "install_as": "dc_dialogue_trigger.js",
+      "source": "dc_shop_trigger.js",
+      "install_as": "dc_shop_trigger.js",
       "type": "script",
       "dependencies": [
         {
@@ -55,14 +55,19 @@
           "load_order": 7
         },
         {
-          "type": "script",
-          "path": "dc_lib/dc_npc_util/dc_dialogue_util.js",
-          "required": true,
-          "load_order": 8
-        },
-        {
           "type": "html",
           "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_shops/",
+          "required": true,
+          "note": "shopJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_gui/shop_gui_default.json",
           "required": true
         },
         {
@@ -70,41 +75,24 @@
           "path": "customnpcs/dc_data/dc_installable_scripts/",
           "required": true,
           "note": "NPC Editor reads installable dcE entries from here."
-        },
-        {
-          "type": "json_dir",
-          "path": "customnpcs/dc_data/dc_dialogues/",
-          "required": true,
-          "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
-        },
-        {
-          "type": "json_dir",
-          "path": "customnpcs/dc_data/dc_shops/",
-          "required": true,
-          "note": "go_shop shopJsonPath resolves here unless a customnpcs/dc_data path is supplied."
-        },
-        {
-          "type": "json",
-          "path": "customnpcs/dc_data/dc_gui/shop_gui_default.json",
-          "required": true
         }
       ]
     },
     {
-      "source": "dc_installable_scripts/dc_dialogue_trigger.json",
-      "install_as": "dc_data/dc_installable_scripts/dc_dialogue_trigger.json",
+      "source": "dc_installable_scripts/dc_shop_trigger.json",
+      "install_as": "dc_data/dc_installable_scripts/dc_shop_trigger.json",
       "type": "json",
       "dependencies": []
     },
     {
-      "source": "../../../npc_editor/common/1.0.0/dc_gui/sample_gui.json",
-      "install_as": "dc_data/dc_gui/sample_gui.json",
-      "type": "json",
-      "dependencies": []
-    },
-    {
-      "source": "../../../npc_shop/common/1.0.0/dc_gui/shop_gui_default.json",
+      "source": "dc_gui/shop_gui_default.json",
       "install_as": "dc_data/dc_gui/shop_gui_default.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_shops/main_shop.json",
+      "install_as": "dc_data/dc_shops/main_shop.json",
       "type": "json",
       "dependencies": []
     }

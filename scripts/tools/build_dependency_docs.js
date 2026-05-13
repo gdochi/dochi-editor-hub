@@ -9,7 +9,7 @@ const mdPath = path.join(rootDir, "DEPENDENCIES.md")
 const htmlPath = path.join(rootDir, "docs", "dependencies.html")
 const htmlIndexPath = path.join(rootDir, "docs", "index.html")
 
-const utilityNamePattern = /^(cfg_chk_|cond_|cond_chk_|rew_chk_|seq_core_|util_|dc_gecko_|dc_dialogue_|dc_dialogue_trigger_|openDcGuiRuntime$|NpcEventModule$|DcGuiRuntimeModule$)/
+const utilityNamePattern = /^(cfg_chk_|cond_|cond_chk_|rew_chk_|seq_core_|util_|dc_gecko_|dc_dialogue_|dc_dialogue_trigger_|dc_shop_|openDcGuiRuntime$|NpcEventModule$|DcGuiRuntimeModule$)/
 const ignoredMainPackages = { npc_util: true }
 
 function readText(filePath) {

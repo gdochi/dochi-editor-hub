@@ -1,10 +1,10 @@
 {
-  "id": "dc_dialogue_trigger",
-  "name": "Dialogue Trigger",
-  "path": "dc_npc_util/dc_dialogue_trigger.js",
-  "prefix": "dc_dialogue",
+  "id": "dc_shop_trigger",
+  "name": "Shop Trigger",
+  "path": "dc_shop/dc_shop_trigger.js",
+  "prefix": "dc_shop",
   "requires_json": true,
-  "json_root": "dc_data/dc_dialogues",
+  "json_root": "dc_data/dc_shops",
   "script_deps": [
     "dc_npc_util/dc_npc_core_module.js",
     "dc_npc_util/dc_cfg_checker.js",
@@ -12,8 +12,7 @@
     "dc_npc_util/dc_gui_runtime.js",
     "dc_npc_util/dc_cond_checker.js",
     "dc_npc_util/dc_reward_checker.js",
-    "dc_npc_util/dc_shop_runtime.js",
-    "dc_npc_util/dc_dialogue_util.js"
+    "dc_npc_util/dc_shop_runtime.js"
   ],
   "html_deps": [
     "dc_util/dc_gui_runtime.html"

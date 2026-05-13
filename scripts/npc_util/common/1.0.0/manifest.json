@@ -124,6 +124,12 @@
         },
         {
           "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_shop_runtime.js",
+          "required": false,
+          "note": "Required when dialogue choices use go_shop actions."
+        },
+        {
+          "type": "script",
           "path": "dc_lib/dc_npc_util/dc_gecko_util.js",
           "required": false,
           "note": "Only needed when NPC FX uses Gecko skin/model/animation calls."
@@ -139,6 +145,59 @@
           "path": "customnpcs/dc_data/dc_dialogues/",
           "required": true,
           "note": "dialogueJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+        }
+      ]
+    },
+    {
+      "source": "dc_shop_runtime.js",
+      "install_as": "dc_shop_runtime.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_gui_runtime.js",
+          "required": true,
+          "load_order": 4
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_cond_checker.js",
+          "required": true,
+          "load_order": 5
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_reward_checker.js",
+          "required": true,
+          "load_order": 6
+        },
+        {
+          "type": "html",
+          "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        },
+        {
+          "type": "json",
+          "path": "customnpcs/dc_data/dc_gui/shop_gui_default.json",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_shops/",
+          "required": true,
+          "note": "shopJsonPath resolves here unless a customnpcs/dc_data path is supplied."
         }
       ]
     },
@@ -185,9 +244,15 @@
         },
         {
           "type": "script",
-          "path": "dc_lib/dc_npc_util/dc_dialogue_util.js",
+          "path": "dc_lib/dc_npc_util/dc_shop_runtime.js",
           "required": true,
           "load_order": 7
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_dialogue_util.js",
+          "required": true,
+          "load_order": 8
         },
         {
           "type": "html",
