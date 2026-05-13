@@ -208,12 +208,7 @@ var DcDialogueUtilModule = (function(){
         continue;
       }
       if(type === "go_shop"){
-        out.push({
-          type: "go_shop",
-          shopJsonPath: String(a.shopJsonPath || a.filePath || a.path || ""),
-          shopId: String(a.shopId || ""),
-          shopAccessPolicy: String(a.shopAccessPolicy || "dialogue_only")
-        });
+        out.push({ type: "go_shop" });
         continue;
       }
       if(type === "store"){
@@ -284,6 +279,62 @@ var DcDialogueUtilModule = (function(){
     }
     for(var j=0;j<list.length;j++){ if(!evalOneCondition(player, npc, list[j])) return false; }
     return true;
+  }
+
+  function getRouteAction(route){
+    var actions = route && Array.isArray(route.actions) ? route.actions : [];
+    for(var i=0;i<actions.length;i++){
+      var a = actions[i] || {};
+      var type = String(a.type || "").toLowerCase();
+      if(type === "go_shop") return { type:"go_shop" };
+      if(type === "goto"){
+        return {
+          type:"goto",
+          value:String(a.value || route.goto || ""),
+          linkMode:String(a.linkMode || route.linkMode || "internal"),
+          filePath:String(a.filePath || route.filePath || "")
+        };
+      }
+    }
+    if(String(route && (route.actionType || route.type) || "").toLowerCase() === "go_shop") return { type:"go_shop" };
+    return {
+      type:"goto",
+      value:String(route && route.goto || ""),
+      linkMode:String(route && route.linkMode || "internal"),
+      filePath:String(route && route.filePath || "")
+    };
+  }
+
+  function openShopFromDialogue(player, npc, eventObj){
+    if(typeof dc_shop_trigger_openFromDialogue !== "function"){
+      throw new Error("dc_shop_trigger_openFromDialogue is not loaded.");
+    }
+    return dc_shop_trigger_openFromDialogue({ player:player, npc:npc, event:eventObj });
+  }
+
+  function resolveStartRoute(raw, player, npc, dialogueRel, eventObj, debug){
+    var node = unwrapNode(raw);
+    if(!node || String(node.type || "") !== "start") return null;
+    var routes = Array.isArray(node.routes) ? node.routes : [];
+    if(!routes.length) return null;
+    for(var i=0;i<routes.length;i++){
+      var route = routes[i] || {};
+      if(!evalConditions(player, npc, route)) continue;
+      var action = getRouteAction(route);
+      if(String(action.type || "").toLowerCase() === "go_shop"){
+        debugLog(npc, debug, "start route " + (i + 1) + " opens shop.");
+        return { type:"shop", opened:openShopFromDialogue(player, npc, eventObj) };
+      }
+      var active = { baseSubPath:baseSubPath(dialogueRel) };
+      var target = action.linkMode === "external" ? String(action.filePath || action.value || "") : String(action.value || "");
+      if(!target) throw new Error("Start route " + (i + 1) + " target is empty.");
+      var nextRel = resolveNextDialogueRel(active, action, target);
+      var nextRaw = readJson(normalizeDialoguePath(nextRel));
+      if(!nextRaw) throw new Error("Start route " + (i + 1) + " target JSON not found: " + String(nextRel || ""));
+      debugLog(npc, debug, "start route " + (i + 1) + " -> " + nextRel);
+      return { type:"dialogue", raw:nextRaw, dialogueRel:nextRel };
+    }
+    return null;
   }
 
   function componentString(comp){
@@ -420,6 +471,16 @@ var DcDialogueUtilModule = (function(){
     if(!raw){
       debugLog(npc, debug, "dialogue JSON read failed.");
       return null;
+    }
+    var routeResult = resolveStartRoute(raw, player, npc, dialogueRel, eventObj, debug);
+    if(routeResult && routeResult.type === "shop"){
+      return routeResult.opened;
+    }
+    if(routeResult && routeResult.type === "dialogue"){
+      raw = routeResult.raw;
+      dialogueRel = routeResult.dialogueRel;
+      normalizedDialoguePath = normalizeDialoguePath(dialogueRel);
+      debugLog(npc, debug, "route resolved dialogue=" + normalizedDialoguePath);
     }
     var nodeForCondition = unwrapNode(raw);
     if(!evalConditions(player, npc, nodeForCondition)){
@@ -563,18 +624,8 @@ var DcDialogueUtilModule = (function(){
       if(String(a.type || "").toLowerCase() === "go_shop"){
         closeHtmlGui(player);
         clearActive(player);
-        if(typeof dc_shop_open !== "function"){
-          var resShopMissing = { done:false, reason:"shop_runtime_missing" };
-          setLastResult(player, resShopMissing);
-          return resShopMissing;
-        }
-        var shopRes = dc_shop_open({ player: player, npc: npc, event: eventObj }, {
-          shopJsonPath: String(a.shopJsonPath || ""),
-          shopId: String(a.shopId || ""),
-          accessPolicy: String(a.shopAccessPolicy || "dialogue_only"),
-          source: "dialogue"
-        });
-        var resShop = { done:true, reason:"go_shop", shopId:String(a.shopId || ""), opened: shopRes != null };
+        var shopRes = openShopFromDialogue(player, npc, eventObj);
+        var resShop = { done:true, reason:"go_shop", opened: shopRes != null };
         setLastResult(player, resShop);
         return resShop;
       }

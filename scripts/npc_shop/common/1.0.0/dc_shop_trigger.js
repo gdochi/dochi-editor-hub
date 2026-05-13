@@ -74,12 +74,9 @@ function dc_shop_trigger_getShopPath(npc){
   return dc_shop_trigger_cleanPath(DcShopTriggerConfig.shopJsonPath || "");
 }
 
-/**
- * @param {NpcEvent.InteractEvent} e
- */
-function dc_shop_trigger_interact(e){
-  if(!DcShopTriggerConfig.enabled) return;
-  if(!e || !e.player || !e.npc) return;
+function dc_shop_trigger_open(e, source, accessPolicy){
+  if(!DcShopTriggerConfig.enabled) return null;
+  if(!e || !e.player || !e.npc) return null;
   if(typeof dc_shop_open !== "function"){
     throw new Error("dc_shop_open is not loaded.");
   }
@@ -92,13 +89,24 @@ function dc_shop_trigger_interact(e){
   var opts = {
     shopJsonPath: shopJsonPath,
     htmlPath: String(DcShopTriggerConfig.htmlPath || "html/dc_util/dc_gui_runtime.html"),
-    accessPolicy: "shop_guard",
-    source: "npc_interact"
+    accessPolicy: String(accessPolicy || "shop_guard"),
+    source: String(source || "npc_interact")
   };
   var guiJsonPath = String(DcShopTriggerConfig.guiJsonPath || "").trim();
   if(guiJsonPath) opts.guiJsonPath = guiJsonPath;
 
-  dc_shop_open(e, opts);
+  return dc_shop_open(e, opts);
+}
+
+/**
+ * @param {NpcEvent.InteractEvent} e
+ */
+function dc_shop_trigger_interact(e){
+  dc_shop_trigger_open(e, "npc_interact", "shop_guard");
+}
+
+function dc_shop_trigger_openFromDialogue(e){
+  return dc_shop_trigger_open(e, "dialogue", "dialogue_only");
 }
 
 function dc_shop_trigger_module(){
