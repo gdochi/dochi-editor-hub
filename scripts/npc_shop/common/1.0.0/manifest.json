@@ -2,9 +2,9 @@
   "id": "npc_shop/common/1.0.0",
   "package": "npc_shop",
   "version": "1.0.0",
-  "editor": "shopkeeper",
+  "editor": "npc_shop",
   "mc_version": "common",
-  "description": "Shop trigger package shared for Forge and Fabric",
+  "description": "NPC Shop trigger package shared for Forge and Fabric",
   "entry": "dc_shop_trigger.js",
   "files": [
     {

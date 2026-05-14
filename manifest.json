@@ -64,6 +64,16 @@
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"
       ]
+    },
+    "npc_shop:common": {
+      "package": "npc_shop",
+      "editor": "npc_shop",
+      "mc_version": "common",
+      "sub_path": "dc_shop",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_shop/common/1.0.0/manifest.json"
+      ]
     }
   },
   "packages": [
@@ -125,6 +135,16 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_util/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "npc_shop",
+      "editor": "npc_shop",
+      "mc_version": "common",
+      "sub_path": "dc_shop",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/npc_shop/common/1.0.0/manifest.json"
       ]
     }
   ]

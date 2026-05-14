@@ -1,6 +1,6 @@
 {
   "id": "dc_shop_trigger",
-  "name": "Shop Trigger",
+  "name": "NPC Shop Trigger",
   "path": "dc_shop/dc_shop_trigger.js",
   "prefix": "dc_shop",
   "requires_json": true,
