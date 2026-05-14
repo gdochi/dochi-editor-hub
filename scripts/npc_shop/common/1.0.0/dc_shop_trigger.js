@@ -7,7 +7,7 @@
 // 5) dc_lib/dc_npc_util/dc_cond_checker.js
 // 6) dc_lib/dc_npc_util/dc_reward_checker.js
 // 7) dc_lib/dc_npc_util/dc_shop_runtime.js
-// 8) dc_shop_trigger.js
+// 8) dc_lib/dc_shop/dc_shop_trigger.js
 
 var DcShopTriggerConfig = {
   enabled: true,
@@ -38,10 +38,17 @@ function dc_shop_trigger_readStore(store, key){
 }
 
 function dc_shop_trigger_readSelectionPath(raw){
-  var obj, prefix, path;
+  var obj, prefix, path, entries, i, entry;
   try{
     if(!raw) return "";
     obj = JSON.parse(String(raw));
+    entries = obj && obj.entries instanceof Array ? obj.entries : [];
+    for(i = 0; i < entries.length; i++){
+      entry = entries[i] || {};
+      if(String(entry.prefix || "") !== "dc_shop") continue;
+      path = dc_shop_trigger_cleanPath(entry.jsonPath || "");
+      if(path) return path;
+    }
     prefix = String(obj.prefix || "");
     if(prefix && prefix !== "dc_shop") return "";
     path = dc_shop_trigger_cleanPath(obj.jsonPath || "");

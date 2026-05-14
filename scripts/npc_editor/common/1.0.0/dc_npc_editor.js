@@ -11,6 +11,7 @@ STYLE_KEY:"npc_browser_script_style",
 DC_SELECTION_KEY:"npc_browser_dc_selection",
 DOCHI_LOCK_KEY:"npc_browser_dochi_lock",
 DIALOGUE_JSON_PATH_KEY:"dc_dialogue_json_path",
+SHOP_JSON_PATH_KEY:"dc_shop_json_path",
 CACHE_MAP_KEY:"npc_browser_cache_map",
 CACHE_LIST_KEY:"npc_browser_cache_list",
 CACHE_RANGE_KEY:"npc_browser_scan_range",
@@ -859,20 +860,56 @@ for(i=0;i<list.length;i++)if(normalizeRelPath(list[i]).toLowerCase()===wanted)re
 return false;
 }
 function normalizeDcSelection(selection){
-var sel=selection||{},scriptPath=normalizeRelPath(sel.scriptPath),jsonPath=normalizeRelPath(sel.jsonPath),prefix=String(sel.prefix||""),paths=[],rawPaths=sel.scriptPaths,i,p;
+var sel=selection||{},scriptPath=normalizeRelPath(sel.scriptPath),jsonPath=normalizeRelPath(sel.jsonPath),prefix=String(sel.prefix||""),paths=[],rawPaths=sel.scriptPaths,entries=[],rawEntries=sel.entries,i,p,first;
+if(rawEntries instanceof Array){
+for(i=0;i<rawEntries.length;i++)pushDcSelectionEntry(entries,rawEntries[i]);
+}
+if(!entries.length&&(scriptPath||jsonPath||prefix))pushDcSelectionEntry(entries,{scriptPath:scriptPath,jsonPath:jsonPath,prefix:prefix});
 if(rawPaths instanceof Array){
 for(i=0;i<rawPaths.length;i++){
 p=normalizeRelPath(rawPaths[i]);
-if(p)paths.push(p);
+if(p)pushUniquePath(paths,p);
 }
 }
-if(!paths.length&&scriptPath)paths.push(scriptPath);
-return {scriptPath:scriptPath,scriptPaths:paths,jsonPath:jsonPath,prefix:prefix};
+if(!paths.length){
+for(i=0;i<entries.length;i++)if(entries[i].scriptPath)pushUniquePath(paths,entries[i].scriptPath);
+if(!paths.length&&scriptPath)pushUniquePath(paths,scriptPath);
+}
+first=entries.length?entries[0]:{scriptPath:scriptPath,jsonPath:jsonPath,prefix:prefix};
+return {scriptPath:first.scriptPath||"",scriptPaths:paths,jsonPath:first.jsonPath||"",prefix:first.prefix||"",entries:entries};
+}
+function pushDcSelectionEntry(out,entry){
+var raw=entry||{},scriptPath=normalizeRelPath(raw.scriptPath||raw.path||""),jsonPath=normalizeRelPath(raw.jsonPath||""),prefix=String(raw.prefix||inferDcPrefix(scriptPath)||""),key,i,oldKey;
+if(!scriptPath&&!jsonPath&&!prefix)return;
+key=(prefix+"|"+scriptPath).toLowerCase();
+for(i=0;i<out.length;i++){
+oldKey=(String(out[i].prefix||"")+"|"+String(out[i].scriptPath||"")).toLowerCase();
+if(oldKey===key){
+if(jsonPath)out[i].jsonPath=jsonPath;
+return;
+}
+}
+out.push({scriptPath:scriptPath,jsonPath:jsonPath,prefix:prefix});
+}
+function isAllowedDcSelectionCombo(entries){
+var i,prefix,hasDialogue=false,hasShop=false,count=0,seen={};
+if(!entries||entries.length<=1)return true;
+for(i=0;i<entries.length;i++){
+prefix=String(entries[i].prefix||"");
+if(!prefix||seen[prefix])continue;
+seen[prefix]=true;
+count++;
+if(prefix==="dc_dialogue")hasDialogue=true;
+if(prefix==="dc_shop")hasShop=true;
+}
+if(count<=1)return true;
+return count===2&&hasDialogue&&hasShop;
 }
 function inferDcPrefix(path){
 var name=fileNameOnly(path).replace(/\.js$/i,"").toLowerCase();
 if(!name)return "";
 if(name==="dc_dialogue_trigger"||name.indexOf("dialogue")>=0)return "dc_dialogue";
+if(name==="dc_shop_trigger"||name.indexOf("shop")>=0)return "dc_shop";
 if(name.indexOf("dc_trainer")===0||name.indexOf("trainer")>=0)return "dc_trainer";
 if(name.indexOf("dc_soulmob")===0||name.indexOf("soulmob")>=0)return "dc_soulMob";
 if(name.indexOf("dc_taczmob")===0||name.indexOf("taczmob")>=0)return "dc_taczMob";
@@ -1031,22 +1068,39 @@ if(f.exists()&&f.isFile())return true;
 return false;
 }
 function validateDcApplySelection(selection){
-var sel=normalizeDcSelection(selection),candidate=findDcInstallableCandidate(sel.scriptPath),jsons;
-if(!sel.scriptPath)return {ok:false,error:"dcE apply requires a dc_lib script path."};
-if(!candidate)return {ok:false,error:"Selected dcE script is not an installable entry: "+sel.scriptPath};
+var sel=normalizeDcSelection(selection),entries=sel.entries||[],merged=[],i,j,entry,candidate,jsons,first;
+if(!entries.length)return {ok:false,error:"dcE apply requires a dc_lib script path."};
+for(i=0;i<entries.length;i++){
+entry=entries[i];
+candidate=findDcInstallableCandidate(entry.scriptPath);
+if(!entry.scriptPath)return {ok:false,error:"dcE apply requires a dc_lib script path."};
+if(!candidate)return {ok:false,error:"Selected dcE script is not an installable entry: "+entry.scriptPath};
 if(!candidate.available)return {ok:false,error:"dcE requirements missing: "+candidate.missing.join(", ")};
-if(sel.prefix&&sel.prefix!==candidate.prefix)return {ok:false,error:"Selected JSON prefix does not match the dcE script."};
-sel.prefix=candidate.prefix;
-sel.scriptPaths=candidate.applyScripts;
-if(candidate.requiresJson&&!sel.jsonPath)return {ok:false,error:"dcE apply requires a JSON path."};
+if(entry.prefix&&entry.prefix!==candidate.prefix)return {ok:false,error:"Selected JSON prefix does not match the dcE script: "+entry.scriptPath};
+entry.prefix=candidate.prefix;
+entries[i]=entry;
+}
+if(!isAllowedDcSelectionCombo(entries))return {ok:false,error:"dcE mode can combine only Dialogue Trigger and NPC Shop Trigger. Other scripts stay single-select."};
+for(i=0;i<entries.length;i++){
+entry=entries[i];
+candidate=findDcInstallableCandidate(entry.scriptPath);
+if(candidate.requiresJson&&!entry.jsonPath)return {ok:false,error:String(candidate.name||entry.scriptPath)+" requires a JSON path."};
 if(candidate.requiresJson){
-jsons=listDcJsonFiles(sel.prefix);
+jsons=listDcJsonFiles(entry.prefix);
 if(jsons.error)return {ok:false,error:jsons.error};
-if(!listContainsPath(jsons.files,sel.jsonPath)){
-if(sel.prefix==="dc_dialogue")return {ok:false,error:"Dialogue Trigger requires a JSON file with node.type=start: "+sel.jsonPath};
-return {ok:false,error:"Selected JSON file is not installed: "+sel.jsonPath};
+if(!listContainsPath(jsons.files,entry.jsonPath)){
+if(entry.prefix==="dc_dialogue")return {ok:false,error:"Dialogue Trigger requires a JSON file with node.type=start: "+entry.jsonPath};
+return {ok:false,error:"Selected JSON file is not installed: "+entry.jsonPath};
 }
 }
+for(j=0;j<candidate.applyScripts.length;j++)pushUniquePath(merged,candidate.applyScripts[j]);
+}
+first=entries[0]||{scriptPath:"",jsonPath:"",prefix:""};
+sel.entries=entries;
+sel.scriptPath=first.scriptPath||"";
+sel.jsonPath=first.jsonPath||"";
+sel.prefix=first.prefix||"";
+sel.scriptPaths=merged;
 return {ok:true,selection:sel};
 }
 function applyDochiScriptToNpc(player,npc,data,raw,existing){
@@ -1693,14 +1747,14 @@ return !!a&&!!b&&!!Array.isArray(a.tabs)&&!!Array.isArray(b.tabs)&&!!sameTabShap
 
 
 function defaultDochiLock(){
-return {locked:false,mode:"general",scriptPath:"",scriptPaths:[],jsonPath:"",prefix:""};
+return {locked:false,mode:"general",scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]};
 }
 function buildDochiLock(selection){
 var sel=normalizeDcSelection(selection);
-return {locked:true,mode:"dcE",scriptPath:sel.scriptPath,scriptPaths:sel.scriptPaths,jsonPath:sel.jsonPath,prefix:sel.prefix};
+return {locked:true,mode:"dcE",scriptPath:sel.scriptPath,scriptPaths:sel.scriptPaths,jsonPath:sel.jsonPath,prefix:sel.prefix,entries:sel.entries};
 }
 function normalizeDochiLock(lock){
-var raw=lock||{},out=defaultDochiLock(),paths=raw.scriptPaths,i,p;
+var raw=lock||{},out=defaultDochiLock(),paths=raw.scriptPaths,i,p,sel;
 out.locked=raw.locked===true||String(raw.locked||"")==="true";
 out.mode=String(raw.mode||"general");
 out.scriptPath=normalizeRelPath(raw.scriptPath);
@@ -1713,6 +1767,12 @@ if(p)out.scriptPaths.push(p);
 if(!out.scriptPaths.length&&out.scriptPath)out.scriptPaths.push(out.scriptPath);
 out.jsonPath=normalizeRelPath(raw.jsonPath);
 out.prefix=String(raw.prefix||"");
+sel=normalizeDcSelection({scriptPath:out.scriptPath,scriptPaths:out.scriptPaths,jsonPath:out.jsonPath,prefix:out.prefix,entries:raw.entries instanceof Array?raw.entries:[]});
+out.scriptPath=sel.scriptPath;
+out.scriptPaths=sel.scriptPaths;
+out.jsonPath=sel.jsonPath;
+out.prefix=sel.prefix;
+out.entries=sel.entries;
 if(out.locked&&!out.mode)out.mode="dcE";
 return out;
 }
@@ -1732,20 +1792,28 @@ store.put(CFG.DOCHI_LOCK_KEY,JSON.stringify(state));
 }
 function getNpcDcSelection(npc){
 var raw=String(npc.getStoreddata().get(CFG.DC_SELECTION_KEY)||"");
-if(!raw)return {scriptPath:"",jsonPath:"",prefix:""};
-return JSON.parse(raw);
+if(!raw)return normalizeDcSelection({});
+return normalizeDcSelection(JSON.parse(raw));
 }
 function setNpcDcSelection(npc,selection){
 var store=npc.getStoreddata();
-var sel=normalizeDcSelection(selection||{});
-if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length){
+var sel=normalizeDcSelection(selection||{}),entries=sel.entries||[],dialoguePath="",shopPath="",i,entry;
+if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length&&!entries.length){
 clearStoredDataKey(store,CFG.DC_SELECTION_KEY);
 clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
+clearStoredDataKey(store,CFG.SHOP_JSON_PATH_KEY);
 return;
 }
-store.put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||"")}));
-if(sel.prefix==="dc_dialogue"&&sel.jsonPath)store.put(CFG.DIALOGUE_JSON_PATH_KEY,String(sel.jsonPath||""));
+store.put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||""),entries:entries}));
+for(i=0;i<entries.length;i++){
+entry=entries[i]||{};
+if(entry.prefix==="dc_dialogue"&&entry.jsonPath)dialoguePath=String(entry.jsonPath||"");
+if(entry.prefix==="dc_shop"&&entry.jsonPath)shopPath=String(entry.jsonPath||"");
+}
+if(dialoguePath)store.put(CFG.DIALOGUE_JSON_PATH_KEY,dialoguePath);
 else clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
+if(shopPath)store.put(CFG.SHOP_JSON_PATH_KEY,shopPath);
+else clearStoredDataKey(store,CFG.SHOP_JSON_PATH_KEY);
 }
 function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");
@@ -1808,6 +1876,7 @@ segments=splitDcJsonRoot(spec.jsonRoot);
 if(segments&&segments.length)return segments;
 }
 if(prefix==="dc_dialogue")return ["dc_data","dc_dialogues"];
+if(prefix==="dc_shop")return ["dc_data","dc_shops"];
 if(prefix==="dc_trainer")return ["dc_data","dc_trainers","spec"];
 if(prefix==="dc_soulMob")return ["dc_mob","soulmob"];
 if(prefix==="dc_taczMob")return ["dc_mob","taczmob"];
@@ -1817,6 +1886,7 @@ function getDcJsonRootLabel(prefix){
 var spec=getDcEntrySpecForPrefix(prefix);
 if(spec&&spec.jsonRoot)return spec.jsonRoot;
 if(prefix==="dc_dialogue")return "dc_data/dc_dialogues";
+if(prefix==="dc_shop")return "dc_data/dc_shops";
 if(prefix==="dc_trainer")return "dc_data/dc_trainers/spec";
 if(prefix==="dc_soulMob")return "dc_mob/soulmob";
 if(prefix==="dc_taczMob")return "dc_mob/taczmob";

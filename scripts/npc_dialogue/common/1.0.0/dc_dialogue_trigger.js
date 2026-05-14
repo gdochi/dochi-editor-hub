@@ -37,10 +37,17 @@ function dc_dialogue_trigger_readStore(store, key){
 }
 
 function dc_dialogue_trigger_readSelectionPath(raw){
-  var obj, prefix, path;
+  var obj, prefix, path, entries, i, entry;
   try{
     if(!raw) return "";
     obj = JSON.parse(String(raw));
+    entries = obj && obj.entries instanceof Array ? obj.entries : [];
+    for(i = 0; i < entries.length; i++){
+      entry = entries[i] || {};
+      if(String(entry.prefix || "") !== "dc_dialogue") continue;
+      path = dc_dialogue_trigger_cleanPath(entry.jsonPath || "");
+      if(path) return path;
+    }
     prefix = String(obj.prefix || "");
     if(prefix && prefix !== "dc_dialogue") return "";
     path = dc_dialogue_trigger_cleanPath(obj.jsonPath || "");
