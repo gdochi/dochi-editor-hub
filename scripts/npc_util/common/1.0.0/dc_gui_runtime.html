@@ -12,7 +12,7 @@
     html,body{width:100%;height:100%}
     body{margin:0;overflow:hidden;background:transparent;font-family:Segoe UI, Arial, sans-serif}
     #viewport{position:fixed;inset:0;display:block;overflow:hidden}
-    #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:relative;transform:none;transform-origin:top left}
+    #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:absolute;left:0;top:0;transform:none;transform-origin:top left}
     #stageBg{position:absolute;inset:0;background:#000;overflow:hidden}
     #stageBg::before{content:"";position:absolute;inset:0;background:var(--bg-overlay, transparent);opacity:var(--bg-overlay-opacity, 0);pointer-events:none}
     #stageBgImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:cover;opacity:var(--bg-img-opacity, 1);filter:blur(var(--bg-blur, 0px));transform:scale(1.03)}
@@ -71,10 +71,7 @@
     }
     .itemSlotRenderer{
       position:absolute;
-      left:50%;
-      top:50%;
-      transform:translate(-50%, -50%);
-      pointer-events:auto;
+      pointer-events:none;
     }
     .itemSlotFallback{
       width:58%;
@@ -90,9 +87,9 @@
       font-weight:800;
       line-height:1.2;
       text-align:center;
-      overflow:hidden;
+      overflow:visible;
       white-space:nowrap;
-      text-overflow:ellipsis;
+      text-overflow:clip;
       text-shadow:0 2px 8px rgba(0,0,0,.36);
       pointer-events:none;
     }
@@ -261,10 +258,18 @@
       const { w: bw, h: bh } = getBaseResolution();
       const actual = getViewportSize({ w:bw, h:bh });
       const s = Math.min(actual.w / bw, actual.h / bh);
-      document.documentElement.style.setProperty("--stage-w", String(actual.w));
-      document.documentElement.style.setProperty("--stage-h", String(actual.h));
+      const scale = Math.max(0.25, Math.min(3, s));
+      const stageW = Math.round(bw * scale);
+      const stageH = Math.round(bh * scale);
+      document.documentElement.style.setProperty("--stage-w", String(stageW));
+      document.documentElement.style.setProperty("--stage-h", String(stageH));
       document.documentElement.style.setProperty("--stage-scale", "1");
-      document.documentElement.style.setProperty("--ui-scale", String(Math.max(0.25, Math.min(3, s))));
+      document.documentElement.style.setProperty("--ui-scale", String(scale));
+      const wrap = document.getElementById("stageWrap");
+      if(wrap){
+        wrap.style.left = `${Math.max(0, Math.round((actual.w - stageW) / 2))}px`;
+        wrap.style.top = `${Math.max(0, Math.round((actual.h - stageH) / 2))}px`;
+      }
     }
     function readImageCrop(source, prefix){
       const src = source && typeof source === "object" ? source : {};
@@ -1012,6 +1017,7 @@ prev.addEventListener('click', function(ev){
           wrap.style.top = `${Math.round(top)}px`;
           wrap.style.width = `${Math.round(itemSlotListMode ? layoutW : btnW)}px`;
           wrap.style.height = `${Math.round(cellH)}px`;
+          if(itemSlotListMode) wrap.style.pointerEvents = "auto";
 
           const btn = document.createElement("button");
           btn.type = "button";
@@ -1022,11 +1028,16 @@ prev.addEventListener('click', function(ev){
           const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
           const slot = Number(data.mcSlot);
           if(Number.isFinite(slot) && slot >= 0){
-            const renderSize = Math.max(16, Math.round(btnH * 0.72));
+            let renderPct = Number(item.choiceItemRenderScale ?? 72);
+            if(!Number.isFinite(renderPct)) renderPct = 72;
+            renderPct = Math.max(25, Math.min(150, renderPct)) / 100;
+            const renderSize = Math.max(8, Math.round(btnH * renderPct));
             const itemEl = document.createElement("div");
             itemEl.className = "itemSlotRenderer";
             itemEl.setAttribute("data-mc-slot", String(slot));
-            itemEl.setAttribute("data-mc-scale", String(Math.max(1, Math.round((renderSize / 16) * 100) / 100)));
+            itemEl.setAttribute("data-mc-scale", String(Math.max(0.25, Math.round((renderSize / 16) * 100) / 100)));
+            itemEl.style.left = `${Math.round((btnW - renderSize) / 2)}px`;
+            itemEl.style.top = `${Math.round((btnH - renderSize) / 2)}px`;
             itemEl.style.width = `${renderSize}px`;
             itemEl.style.height = `${renderSize}px`;
             btn.appendChild(itemEl);
@@ -1036,6 +1047,7 @@ prev.addEventListener('click', function(ev){
             btn.appendChild(fallback);
           }
           wireChoice(btn, ch);
+          if(itemSlotListMode) wireChoice(wrap, ch);
           wrap.appendChild(btn);
 
           if(itemSlotListMode){
@@ -1051,6 +1063,7 @@ prev.addEventListener('click', function(ev){
             stock.style.justifyContent = "flex-start";
             stock.style.fontSize = `${fontSize}px`;
             stock.style.textAlign = "left";
+            stock.style.overflow = "visible";
             stock.textContent = String((data && data.stockText) || (data && data.stock != null ? data.stock : "") || "");
             wrap.appendChild(stock);
 
@@ -1066,7 +1079,8 @@ prev.addEventListener('click', function(ev){
             price.style.justifyContent = "flex-start";
             price.style.fontSize = `${fontSize}px`;
             price.style.textAlign = "left";
-            price.textContent = String((data && data.price != null ? data.price : "") || (data && data.priceText) || "");
+            price.style.overflow = "visible";
+            price.textContent = String((data && data.priceText) || (data && data.price != null ? data.price : "") || "");
             wrap.appendChild(price);
             layout.appendChild(wrap);
             continue;

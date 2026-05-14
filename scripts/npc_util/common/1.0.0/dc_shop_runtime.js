@@ -385,11 +385,28 @@ var DcShopRuntimeModule = (function(){
     return true;
   }
 
+  function itemSlotCapacity(item, fallback){
+    var slotBase = Math.max(Number(item.choiceWidth || 0), Number(item.choiceHeight || 0), 24);
+    var slotSize = Math.max(1, Math.round(slotBase));
+    var gapY = Math.max(0, Number(item.choiceGapY || 0));
+    var height = Math.max(slotSize, Number(item.h || 0));
+    var layout = String(item.choiceSlotLayout || "").toLowerCase();
+    if(layout === "list"){
+      return Math.max(1, Math.floor((height + gapY) / (slotSize + gapY)));
+    }
+    var gapX = Math.max(0, Number(item.choiceGapX || 0));
+    var width = Math.max(slotSize, Number(item.w || 0));
+    var cols = Math.max(1, Math.floor((width + gapX) / (slotSize + gapX)));
+    var rows = Math.max(1, Math.floor((height + gapY) / (slotSize + gapY)));
+    return Math.max(1, cols * rows);
+  }
+
   function roleChoiceCount(guiJson, role, fallback){
     var elements = Array.isArray(guiJson && guiJson.elements) ? guiJson.elements : [];
     for(var i=0;i<elements.length;i++){
       var item = elements[i] || {};
       if(String(item.shopRole || "") === String(role || "")){
+        if(String(role || "") === "item_slots") return itemSlotCapacity(item, fallback);
         var n = parseInt(String(item.choiceCount || fallback), 10);
         return isNaN(n) || n < 1 ? fallback : n;
       }
@@ -486,7 +503,7 @@ var DcShopRuntimeModule = (function(){
           buy_button: [makeChoice("Buy", "buy_button", { shopAction:"buy" }, 0)],
           page_nav: [
             makeChoice("Prev", "page_nav", { shopAction:"page_prev" }, 0),
-            makeChoice((page + 1) + "/" + Math.max(1, maxPage + 1) + " Next", "page_nav", { shopAction:"page_next" }, 1)
+            makeChoice("Next", "page_nav", { shopAction:"page_next" }, 1)
           ]
         }
       }
@@ -526,7 +543,11 @@ var DcShopRuntimeModule = (function(){
 
   function sendToBrowser(player, eventName, payload){
     var br = cnpcext.getClientBridge(player.getMCEntity());
-    br.sendToBrowser(player.getMCEntity(), String(eventName || ""), JSON.stringify(payload || {}));
+    try{
+      br.sendToBrowser(player.getMCEntity(), String(eventName || ""), JSON.stringify(payload || {}));
+      return true;
+    }catch(err0){}
+    br.sendToBrowser(String(eventName || ""), JSON.stringify(payload || {}));
     return true;
   }
 
@@ -552,6 +573,13 @@ var DcShopRuntimeModule = (function(){
       payload.type = "dcDialogueUpdate";
     }
     setActive(ctx.player, active);
+    try{
+      if(ctx && ctx.event && typeof cnpcext !== "undefined" && cnpcext && typeof cnpcext.openHtmlGui === "function"){
+        var h = cnpcext.openHtmlGui(ctx.event, String(active.htmlPath || DEFAULT_HTML), 0, 0, JSON.stringify(data || payload));
+        setActive(ctx.player, active);
+        if(h != null) return true;
+      }
+    }catch(errReopen){}
     return sendToBrowser(ctx.player, "dcDialogueUpdate", payload);
   }
 
@@ -597,6 +625,7 @@ var DcShopRuntimeModule = (function(){
       selectedProductId: "",
       page: 0,
       pageSize: pageSize,
+      htmlPath: String(opts.htmlPath || DEFAULT_HTML),
       accessPolicy: accessPolicy,
       source: String(opts.source || "shop"),
       message: "Select an item.",
@@ -665,6 +694,10 @@ var DcShopRuntimeModule = (function(){
 
     var evName = String(e.eventName || payload.__event || "");
     if(evName === "__guiClosed" || evName === "done"){
+      var reopenUntil = parseInt(String(active.reopeningUntil || "0"), 10) || 0;
+      if(reopenUntil && Date.now() < reopenUntil){
+        return { handled:true, result: { done:false, reason:"refreshing" } };
+      }
       clearActive(player);
       var closed = { done:true, reason:"closed" };
       setLastResult(player, closed);
@@ -702,6 +735,7 @@ var DcShopRuntimeModule = (function(){
       handleBuy(ctx, shop, active);
     }
 
+    active.reopeningUntil = Date.now() + 1500;
     sendShopUpdate(ctx, shop, active);
     var result = { done:false, reason:"shop_choice", action:action };
     setLastResult(player, result);
