@@ -81,7 +81,7 @@
           "type": "json_dir",
           "path": "customnpcs/dc_data/dc_shops/",
           "required": true,
-          "note": "go_shop shopJsonPath resolves here unless a customnpcs/dc_data path is supplied."
+          "note": "go_shop opens the NPC's mapped shop through dc_shop_trigger. Shop JSON files live here."
         },
         {
           "type": "json",

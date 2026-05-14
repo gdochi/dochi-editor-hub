@@ -126,7 +126,7 @@
           "type": "script",
           "path": "dc_lib/dc_npc_util/dc_shop_runtime.js",
           "required": false,
-          "note": "Required when dialogue choices use go_shop actions."
+          "note": "Required when dialogue choices or start routes use go_shop actions."
         },
         {
           "type": "script",
