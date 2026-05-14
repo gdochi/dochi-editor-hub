@@ -532,6 +532,57 @@ return text;
 
     return { entitySlots: entitySlots, overlayEntities: overlayEntities };
   }
+
+  function pushOverlayItem(overlayItems, data, slot) {
+    if (!data || typeof data !== "object") return;
+    var nbt = String(data.itemNbt || data.nbt || data.snbt || "").trim();
+    var item = String(data.itemId || data.item || data.itemKey || "").trim();
+    if (!nbt && !item) item = "minecraft:air";
+
+    var count = parseInt(String(data.itemCount != null ? data.itemCount : (data.count != null ? data.count : 1)), 10);
+    if (isNaN(count) || count < 1) count = 1;
+
+    var entry = { slot: slot, count: count };
+    if (nbt) entry.nbt = nbt;
+    else entry.item = item;
+    overlayItems.push(entry);
+  }
+
+  function assignShopChoiceItemSlots(list, overlayItems, startSlot) {
+    var slot = startSlot;
+    if (!Array.isArray(list)) return slot;
+    for (var i = 0; i < list.length; i++) {
+      var choice = list[i];
+      if (!choice || typeof choice !== "object") {
+        slot += 1;
+        continue;
+      }
+      if (!choice.data || typeof choice.data !== "object") choice.data = {};
+      choice.data.mcSlot = slot;
+      pushOverlayItem(overlayItems, choice.data, slot);
+      slot += 1;
+    }
+    return slot;
+  }
+
+  function buildOverlayItems(bindings, options) {
+    var base = 0;
+    try{
+      if(typeof util_toInt === "function") base = util_toInt(options && options.itemSlotBase, 0);
+    }catch(err0){ base = 0; }
+    if (base < 0) base = 0;
+
+    var overlayItems = [];
+    var shop = bindings && bindings.shop && typeof bindings.shop === "object" ? bindings.shop : null;
+    var choices = shop && shop.choices && typeof shop.choices === "object" ? shop.choices : null;
+    if (!choices) return { overlayItems: overlayItems };
+
+    var slot = base;
+    slot = assignShopChoiceItemSlots(choices.item_slots, overlayItems, slot);
+    slot = assignShopChoiceItemSlots(choices.selected_slot, overlayItems, slot);
+    return { overlayItems: overlayItems };
+  }
+
   function normalizeImageLayoutForRuntime(gui) {
     if (!gui || typeof gui !== "object") return gui;
     var stage = gui.stage && typeof gui.stage === "object" ? gui.stage : null;
@@ -583,6 +634,7 @@ return text;
 
     gui = applyBindingFxToGui(gui, bindings);
     var overlay = buildOverlayEntities(ctx, gui, options);
+    var itemOverlay = buildOverlayItems(bindings, options);
     return {
       __overlayName: OVERLAY_NAME,
       sessionId: String((options && options.sessionId) || ""),
@@ -590,7 +642,8 @@ return text;
       gui: gui,
       bindings: bindings,
       entitySlots: overlay.entitySlots,
-      overlayEntities: overlay.overlayEntities
+      overlayEntities: overlay.overlayEntities,
+      overlayItems: itemOverlay.overlayItems
     };
   }
 

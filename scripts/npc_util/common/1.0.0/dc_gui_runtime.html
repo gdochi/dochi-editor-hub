@@ -52,6 +52,50 @@
       text-overflow:ellipsis;
       box-sizing:border-box;    }
     .choiceBtn:active{transform:translateY(1px)}
+    .choiceItemWrap{
+      position:absolute;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      overflow:visible;
+      box-sizing:border-box;
+      pointer-events:none;
+    }
+    .choiceItemWrap .choiceBtn{pointer-events:auto}
+    .itemSlotButton{
+      position:relative;
+      justify-content:center !important;
+      padding:0;
+      white-space:normal;
+    }
+    .itemSlotRenderer{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%, -50%);
+      pointer-events:auto;
+    }
+    .itemSlotFallback{
+      width:58%;
+      aspect-ratio:1;
+      border-radius:8px;
+      background:
+        linear-gradient(135deg, rgba(238,247,255,.9), rgba(127,190,255,.46) 46%, rgba(56,87,140,.28) 47%, rgba(16,26,42,.72));
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.22), 0 8px 18px rgba(0,0,0,.24);
+    }
+    .itemSlotPrice{
+      width:100%;
+      color:rgba(190,214,248,.94);
+      font-weight:800;
+      line-height:1.2;
+      text-align:center;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      text-shadow:0 2px 8px rgba(0,0,0,.36);
+      pointer-events:none;
+    }
 
     .mediaImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:contain}
     .entitySlot{position:absolute;left:50%;bottom:0;transform:translateX(-50%)}
@@ -831,38 +875,51 @@ prev.addEventListener('click', function(ev){
       const sx = node.__dc_sx || 1;
       const sy = node.__dc_sy || 1;
       const uiScale = node.__dc_uiScale || 1;
-
-      const pad = 0;
+      const nodeBox = node.__dc_box || { x:0, y:0, w:Math.max(1, Number(item.w || 1) * sx), h:Math.max(1, Number(item.h || 1) * sy) };
+      const role = String(item && item.shopRole || "").trim();
+      const itemSlotMode = role === "item_slots" || role === "selected_slot";
+      const priceLabelMode = role === "item_slots";
 
       const content = document.createElement("div");
       content.style.position = "absolute";
       content.style.inset = "0";
-      content.style.padding = `${Math.round(pad)}px`;
+      content.style.padding = "0";
       content.style.boxSizing = "border-box";
       content.style.overflow = "visible";
       box.appendChild(content);
 
-      const startX = Number(item.choiceStartX ?? 12) * sx;
-      const startY = Number(item.choiceStartY ?? 12) * sy;
-      const gapX = Number(item.choiceGapX ?? 0) * sx;
-      const gapY = Number(item.choiceGapY ?? 10) * sy;
-      const btnMinW = Math.max(60, Number(item.choiceWidth ?? 180) * sx);
-      const btnH = Math.max(24, Number(item.choiceHeight ?? 42) * sy);
-      const cols = Math.max(1, Number(item.choiceColumns ?? 2));
+      const count = Math.max(1, choices.length || Number(item.choiceCount || 1));
+      const startX = Math.max(0, Number(item.choiceStartX ?? 12)) * sx;
+      const startY = Math.max(0, Number(item.choiceStartY ?? 12)) * sy;
+      const gapX = Math.max(0, Number(item.choiceGapX ?? 0)) * sx;
+      const gapY = Math.max(0, Number(item.choiceGapY ?? 10)) * sy;
+      let btnMinW = Math.max(60, Number(item.choiceWidth ?? 180) * sx);
+      let btnH = Math.max(24, Number(item.choiceHeight ?? 42) * sy);
+      if(itemSlotMode){
+        const slotBase = Math.max(Number(item.choiceWidth || 72), Number(item.choiceHeight || 72), 24);
+        const slotSize = Math.max(24, Math.round(slotBase * uiScale));
+        btnMinW = slotSize;
+        btnH = slotSize;
+      }
+      const cols = Math.max(1, Math.min(count, Number(item.choiceColumns ?? 2)));
       const baseSize = Number(item.choiceBtnTextSize ?? 13);
-      const fontSize = Math.max(8, Math.round((isFinite(baseSize) ? baseSize : 13) * uiScale));
-      const stageW = Math.max(160, Number(getComputedStyle(document.documentElement).getPropertyValue("--stage-w")) || window.innerWidth || 1280);
-      const nodeBox = node.__dc_box || { x:0, w:Math.max(1, Number(item.w || 1) * sx) };
-      const availableW = Math.max(btnMinW, stageW - (Number(nodeBox.x || 0) + startX) - Math.max(12, 16 * uiScale));
+      const fontSize = Math.max(8, Math.round((Number.isFinite(baseSize) ? baseSize : 13) * uiScale));
+      const priceGapY = priceLabelMode ? Math.max(0, Number(item.choicePriceGapY ?? 6)) * sy : 0;
+      const priceLabelH = priceLabelMode ? Math.ceil(fontSize * 1.2) : 0;
+      const cellH = btnH + priceGapY + priceLabelH;
+      const availableW = Math.max(btnMinW, Number(nodeBox.w || 0) - startX);
+
       const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
       const measureCtx = measureCanvas.getContext("2d");
       if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
       const choiceWidths = choices.map((ch) => {
+        if(itemSlotMode) return btnMinW;
         const label = String(ch && ch.label || "");
         const textW = measureCtx ? measureCtx.measureText(label).width : label.length * fontSize * 0.62;
         const padded = textW + Math.max(28, 36 * uiScale);
         return Math.min(availableW, Math.max(btnMinW, Math.ceil(padded)));
       });
+
       let layoutW = btnMinW;
       for(let rowStart=0; rowStart<choiceWidths.length; rowStart+=cols){
         const row = choiceWidths.slice(rowStart, rowStart + cols);
@@ -870,46 +927,38 @@ prev.addEventListener('click', function(ev){
         layoutW = Math.max(layoutW, rowW);
       }
       layoutW = Math.min(availableW, layoutW);
+      const rows = Math.max(1, Math.ceil(count / cols));
+      const layoutH = rows * cellH + Math.max(0, rows - 1) * gapY;
+      const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "buy_button" || role === "page_nav";
+      const layoutLeft = centerRole ? Math.max(0, Math.round((Number(nodeBox.w || 0) - layoutW) / 2)) : Math.round(startX);
+      const layoutTop = centerRole ? Math.max(0, Math.round((Number(nodeBox.h || 0) - layoutH) / 2)) : Math.round(startY);
 
       const layout = document.createElement("div");
       layout.style.position = "absolute";
-      layout.style.left = `${Math.round(startX)}px`;
-      layout.style.top = `${Math.round(startY)}px`;
-      layout.style.display = "flex";
-      layout.style.flexWrap = "wrap";
-      layout.style.alignItems = "flex-start";
-      layout.style.justifyContent = "flex-start";
-      layout.style.alignContent = "flex-start";
-      layout.style.gap = `${Math.round(gapY)}px ${Math.round(gapX)}px`;
+      layout.style.left = `${layoutLeft}px`;
+      layout.style.top = `${layoutTop}px`;
       layout.style.width = `${Math.round(layoutW)}px`;
-            content.appendChild(layout);
+      layout.style.height = `${Math.round(layoutH)}px`;
+      layout.style.overflow = "visible";
+      content.appendChild(layout);
 
-      for(let i=0;i<choices.length;i++){
-        const ch = choices[i];
-        const btnW = choiceWidths[i] || btnMinW;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "choiceBtn";
-        btn.style.flex = `0 0 ${Math.round(btnW)}px`;
-        btn.style.width = `${Math.round(btnW)}px`;
-        btn.style.height = `${Math.round(btnH)}px`;
-        try{
-          const btnAlpha = clamp((Number(item.choiceBtnOpacity ?? 85) / 100), 0, 1);
-          const fillNone = (item.choiceBtnFillNone === true) || isNoneColorValue(item.choiceBtnFill);
-          const borderNone = (item.choiceBtnBorderNone === true) || isNoneColorValue(item.choiceBtnBorder);
-          btn.style.background = fillNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnFill || "rgba(10,14,22,0.75)"), btnAlpha);
-          btn.style.borderStyle = borderNone ? "none" : "solid";
-          btn.style.borderWidth = borderNone ? "0px" : "1px";
-          btn.style.borderColor = borderNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnBorder || "rgba(255,255,255,0.16)"), btnAlpha);
-          const align = String(item.choiceBtnTextAlign || "left").toLowerCase();
-          btn.style.textAlign = (align === "center" || align === "right") ? align : "left";
-          btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
-          btn.style.fontSize = String(fontSize) + "px";
-          btn.style.lineHeight = "1.2";
-        }catch(e){}
-        btn.textContent = String(ch.label || "");
-        btn.dataset.choiceIndex = String(ch.index);
-        
+      function applyButtonStyle(btn){
+        const btnAlpha = clamp((Number(item.choiceBtnOpacity ?? 85) / 100), 0, 1);
+        const fillNone = (item.choiceBtnFillNone === true) || isNoneColorValue(item.choiceBtnFill);
+        const borderNone = (item.choiceBtnBorderNone === true) || isNoneColorValue(item.choiceBtnBorder);
+        btn.style.background = fillNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnFill || "rgba(10,14,22,0.75)"), btnAlpha);
+        btn.style.borderStyle = borderNone ? "none" : "solid";
+        btn.style.borderWidth = borderNone ? "0px" : "1px";
+        btn.style.borderColor = borderNone ? "transparent" : applyAlphaToColor(String(item.choiceBtnBorder || "rgba(255,255,255,0.16)"), btnAlpha);
+        const align = String(item.choiceBtnTextAlign || (role ? "center" : "left")).toLowerCase();
+        btn.style.textAlign = (align === "center" || align === "right") ? align : "left";
+        btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
+        btn.style.fontSize = String(fontSize) + "px";
+        btn.style.lineHeight = "1.2";
+      }
+
+      function wireChoice(btn, ch){
+        btn.dataset.choiceIndex = String(ch && ch.index != null ? ch.index : 0);
         const fireChoice = (ev) => {
           try{ if(ev && typeof ev.preventDefault === "function") ev.preventDefault(); }catch(e){}
           try{ if(ev && typeof ev.stopPropagation === "function") ev.stopPropagation(); }catch(e){}
@@ -933,11 +982,77 @@ prev.addEventListener('click', function(ev){
             }
           }catch(e){}
         };
-        // Click can be flaky depending on cursor lock / tiny drags; fire on pointerdown too.
         try{ btn.addEventListener("pointerdown", fireChoice, { passive:false }); }catch(e){}
         try{ btn.addEventListener("touchstart", fireChoice, { passive:false }); }catch(e){}
         btn.addEventListener("mousedown", fireChoice);
         btn.addEventListener("click", fireChoice);
+      }
+
+      for(let i=0;i<choices.length;i++){
+        const ch = choices[i];
+        const btnW = choiceWidths[i] || btnMinW;
+        const row = Math.floor(i / cols);
+        const rowStart = row * cols;
+        let left = 0;
+        for(let k=rowStart;k<i;k++) left += (choiceWidths[k] || btnMinW) + gapX;
+        const top = row * (cellH + gapY);
+
+        if(itemSlotMode){
+          const wrap = document.createElement("div");
+          wrap.className = "choiceItemWrap";
+          wrap.style.left = `${Math.round(left)}px`;
+          wrap.style.top = `${Math.round(top)}px`;
+          wrap.style.width = `${Math.round(btnW)}px`;
+          wrap.style.height = `${Math.round(cellH)}px`;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choiceBtn itemSlotButton";
+          btn.style.width = `${Math.round(btnW)}px`;
+          btn.style.height = `${Math.round(btnH)}px`;
+          applyButtonStyle(btn);
+          const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
+          const slot = Number(data.mcSlot);
+          if(Number.isFinite(slot) && slot >= 0){
+            const renderSize = Math.max(16, Math.round(btnH * 0.72));
+            const itemEl = document.createElement("div");
+            itemEl.className = "itemSlotRenderer";
+            itemEl.setAttribute("data-mc-slot", String(slot));
+            itemEl.setAttribute("data-mc-scale", String(Math.max(1, Math.round((renderSize / 16) * 100) / 100)));
+            itemEl.style.width = `${renderSize}px`;
+            itemEl.style.height = `${renderSize}px`;
+            btn.appendChild(itemEl);
+          }else{
+            const fallback = document.createElement("div");
+            fallback.className = "itemSlotFallback";
+            btn.appendChild(fallback);
+          }
+          wireChoice(btn, ch);
+          wrap.appendChild(btn);
+
+          if(priceLabelMode){
+            const price = document.createElement("div");
+            price.className = "itemSlotPrice";
+            price.style.marginTop = `${Math.round(priceGapY)}px`;
+            price.style.fontSize = `${fontSize}px`;
+            price.textContent = String((data && data.priceText) || (data && data.price != null ? data.price : "") || "Price");
+            wrap.appendChild(price);
+          }
+          layout.appendChild(wrap);
+          continue;
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choiceBtn";
+        btn.style.position = "absolute";
+        btn.style.left = `${Math.round(left)}px`;
+        btn.style.top = `${Math.round(top)}px`;
+        btn.style.width = `${Math.round(btnW)}px`;
+        btn.style.height = `${Math.round(btnH)}px`;
+        applyButtonStyle(btn);
+        btn.textContent = String(ch && ch.label || "");
+        wireChoice(btn, ch);
         layout.appendChild(btn);
       }
 

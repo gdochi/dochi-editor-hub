@@ -417,6 +417,26 @@ var DcShopRuntimeModule = (function(){
     return "Money: " + money + " (" + currencyName(currency) + ")";
   }
 
+  function stockLabel(ctx, shop, product){
+    var stock = getStock(ctx, shop, product);
+    return stock < 0 ? "inf" : String(stock);
+  }
+
+  function productChoiceData(ctx, shop, product, action){
+    var currency = currencyFor(shop, product);
+    return {
+      shopAction: String(action || "select"),
+      productId: String(product.id || ""),
+      itemId: productItemId(product),
+      itemCount: 1,
+      itemName: String(product.name || product.id || ""),
+      price: product.price,
+      priceText: String(product.price) + " " + currencyName(currency),
+      stock: getStock(ctx, shop, product),
+      stockText: stockLabel(ctx, shop, product)
+    };
+  }
+
   function buildBindings(ctx, shop, active){
     var cats = getCategories(shop);
     var selectedCategory = String(active.categoryId || "");
@@ -442,10 +462,7 @@ var DcShopRuntimeModule = (function(){
     for(var j=0;j<pageSize;j++){
       var product = catProducts[start + j];
       if(product){
-        var cur = currencyFor(shop, product);
-        var stock = getStock(ctx, shop, product);
-        var s = stock < 0 ? "inf" : String(stock);
-        itemChoices.push(makeChoice(product.name + " - " + product.price + " (" + s + ")", "item_slots", { shopAction:"select", productId:product.id }, start + j));
+        itemChoices.push(makeChoice(product.name, "item_slots", productChoiceData(ctx, shop, product, "select"), start + j));
       }else{
         itemChoices.push(makeChoice("", "item_slots", { shopAction:"noop" }, start + j));
       }
@@ -465,7 +482,7 @@ var DcShopRuntimeModule = (function(){
         choices: {
           category_buttons: categoryChoices,
           item_slots: itemChoices,
-          selected_slot: [makeChoice(selected ? selected.name : "", "selected_slot", { shopAction:"noop" }, 0)],
+          selected_slot: [selected ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop"), 0) : makeChoice("", "selected_slot", { shopAction:"noop" }, 0)],
           buy_button: [makeChoice("Buy", "buy_button", { shopAction:"buy" }, 0)],
           page_nav: [
             makeChoice("Prev", "page_nav", { shopAction:"page_prev" }, 0),
