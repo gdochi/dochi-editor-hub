@@ -76,7 +76,7 @@
     .itemSlotFallback{
       width:58%;
       aspect-ratio:1;
-      border-radius:8px;
+      border-radius:2px;
       background:
         linear-gradient(135deg, rgba(238,247,255,.9), rgba(127,190,255,.46) 46%, rgba(56,87,140,.28) 47%, rgba(16,26,42,.72));
       box-shadow:inset 0 0 0 1px rgba(255,255,255,.22), 0 8px 18px rgba(0,0,0,.24);
@@ -913,7 +913,8 @@ prev.addEventListener('click', function(ev){
       const priceGapY = priceLabelMode && !itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 6)) * sy : 0;
       const priceLabelH = priceLabelMode && !itemSlotListMode ? Math.ceil(fontSize * 1.2) : 0;
       const cellH = btnH + priceGapY + priceLabelH;
-      const infoGapX = Math.max(0, Number(item.choiceInfoGapX ?? 18)) * sx;
+      const infoGapX = (itemSlotListMode ? Math.max(0, Number(item.choiceGapX ?? 0)) : Math.max(0, Number(item.choiceInfoGapX ?? 18))) * sx;
+      const stockPriceGapX = itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 24)) * sx : 0;
       const stockWidth = Math.max(42, Number(item.choiceStockWidth ?? 72)) * sx;
       const priceWidth = Math.max(42, Number(item.choicePriceWidth ?? 84)) * sx;
       const availableW = Math.max(btnMinW, Number(nodeBox.w || 0) - startX);
@@ -922,7 +923,7 @@ prev.addEventListener('click', function(ev){
       const measureCtx = measureCanvas.getContext("2d");
       if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
       const choiceWidths = choices.map((ch) => {
-        if(itemSlotMode) return btnMinW;
+        if(itemSlotMode || role) return btnMinW;
         const label = String(ch && ch.label || "");
         const textW = measureCtx ? measureCtx.measureText(label).width : label.length * fontSize * 0.62;
         const padded = textW + Math.max(28, 36 * uiScale);
@@ -931,7 +932,7 @@ prev.addEventListener('click', function(ev){
 
       let layoutW = btnMinW;
       if(itemSlotListMode){
-        layoutW = btnMinW + infoGapX + stockWidth + priceWidth;
+        layoutW = btnMinW + infoGapX + stockWidth + stockPriceGapX + priceWidth;
       }else{
         for(let rowStart=0; rowStart<choiceWidths.length; rowStart+=cols){
           const row = choiceWidths.slice(rowStart, rowStart + cols);
@@ -968,6 +969,12 @@ prev.addEventListener('click', function(ev){
         btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
         btn.style.fontSize = String(fontSize) + "px";
         btn.style.lineHeight = "1.2";
+        if(itemSlotMode){
+          btn.style.borderRadius = `${Math.max(0, Math.round(2 * uiScale))}px`;
+          btn.style.padding = "0";
+        }else if(role){
+          btn.style.borderRadius = `${Math.max(0, Math.round(3 * uiScale))}px`;
+        }
       }
 
       function wireChoice(btn, ch){
@@ -1070,7 +1077,7 @@ prev.addEventListener('click', function(ev){
             const price = document.createElement("div");
             price.className = "itemSlotPrice";
             price.style.position = "absolute";
-            price.style.left = `${Math.round(btnW + infoGapX + stockWidth)}px`;
+            price.style.left = `${Math.round(btnW + infoGapX + stockWidth + stockPriceGapX)}px`;
             price.style.top = "0";
             price.style.width = `${Math.round(priceWidth)}px`;
             price.style.height = `${Math.round(btnH)}px`;
