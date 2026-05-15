@@ -538,20 +538,13 @@
       const sx = stageW / base.w;
       const sy = stageH / base.h;
       const uiScale = Math.min(sx, sy);
-      const norm = item && item.responsive && item.responsive.normalized ? item.responsive.normalized : null;
-      const box = norm
-        ? {
-            x: Number(norm.x || 0) * stageW,
-            y: Number(norm.y || 0) * stageH,
-            w: Math.max(1, Number(norm.width || 0) * stageW),
-            h: Math.max(1, Number(norm.height || 0) * stageH)
-          }
-        : {
-            x: Number(item.x || 0) * sx,
-            y: Number(item.y || 0) * sy,
-            w: Math.max(1, Number(item.w || 1) * sx),
-            h: Math.max(1, Number(item.h || 1) * sy)
-          };
+      // Editor x/y/w/h are source of truth. Responsive.normalized can be stale in older JSON.
+      const box = {
+        x: Number(item.x || 0) * sx,
+        y: Number(item.y || 0) * sy,
+        w: Math.max(1, Number(item.w || 1) * sx),
+        h: Math.max(1, Number(item.h || 1) * sy)
+      };
 
       const node = document.createElement("div");
       node.className = "el";
