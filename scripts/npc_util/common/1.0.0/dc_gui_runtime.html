@@ -8,9 +8,10 @@
       --stage-w:1280;
       --stage-h:720;
       --ui-scale:1;
+      --gui-font-family:Segoe UI, Arial, sans-serif;
     }
     html,body{width:100%;height:100%}
-    body{margin:0;overflow:hidden;background:transparent;font-family:Segoe UI, Arial, sans-serif}
+    body{margin:0;overflow:hidden;background:transparent;font-family:var(--gui-font-family)}
     #viewport{position:fixed;inset:0;display:block;overflow:hidden}
     #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:absolute;left:0;top:0;transform:none;transform-origin:top left}
     #stageBg{position:absolute;inset:0;background:#000;overflow:hidden}
@@ -192,6 +193,54 @@
       if(raw.charAt(0) === "/") raw = raw.slice(1);
       const base = (window.cnpc && window.cnpc.assetUrl) ? window.cnpc.assetUrl : "cnpc://";
       return base + raw;
+    }
+
+    function getFontFormatByPath(path){
+      const ext = String(path || "").split(".").pop().toLowerCase();
+      return ({ ttf:"truetype", otf:"opentype", woff:"woff", woff2:"woff2" })[ext] || "";
+    }
+
+    function quoteFontFamily(name){
+      const raw = String(name || "").trim();
+      if(!raw) return "";
+      if(/^['"].*['"]$/.test(raw)) return raw;
+      if(/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(raw)) return raw;
+      return '"' + raw.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+    }
+
+    function normalizeGuiFontConfig(){
+      const raw = GUI && GUI.font && typeof GUI.font === "object" ? GUI.font : {};
+      const source = String(raw.source || raw.mode || "default").trim().toLowerCase();
+      const path = String(raw.path || raw.assetPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+      return {
+        source: source === "system" || source === "asset-loader" ? source : "default",
+        family: String(raw.family || (source === "asset-loader" ? "dochi_gui_font" : "")).trim(),
+        path,
+        format: String(raw.format || getFontFormatByPath(path)).trim()
+      };
+    }
+
+    let guiFontStyleNode = null;
+    function applyGuiFont(){
+      const font = normalizeGuiFontConfig();
+      if(font.source === "asset-loader" && font.path){
+        const family = font.family || "dochi_gui_font";
+        if(!guiFontStyleNode){
+          guiFontStyleNode = document.createElement("style");
+          guiFontStyleNode.dataset.dochiGuiFont = "1";
+          document.head.appendChild(guiFontStyleNode);
+        }
+        const format = font.format ? ' format("' + font.format.replace(/"/g, '\\"') + '")' : "";
+        guiFontStyleNode.textContent = '@font-face{font-family:' + quoteFontFamily(family) + ';src:url("' + assetUrl(font.path).replace(/"/g, '\\"') + '")' + format + ';font-display:swap;}';
+        document.documentElement.style.setProperty("--gui-font-family", quoteFontFamily(family) + ", Segoe UI, Arial, sans-serif");
+        return;
+      }
+      if(guiFontStyleNode) guiFontStyleNode.textContent = "";
+      if(font.source === "system" && font.family){
+        document.documentElement.style.setProperty("--gui-font-family", quoteFontFamily(font.family) + ", Segoe UI, Arial, sans-serif");
+      }else{
+        document.documentElement.style.setProperty("--gui-font-family", "Segoe UI, Arial, sans-serif");
+      }
     }
 
     function clamp(n, a, b){
@@ -1082,12 +1131,14 @@ prev.addEventListener('click', function(ev){
             if(!Number.isFinite(renderPct)) renderPct = 100;
             renderPct = Math.max(25, Math.min(150, renderPct)) / 100;
             const renderSize = Math.max(8, Math.round(btnH * renderPct));
+            const renderOffsetX = (Number(item.choiceItemRenderOffsetX || 0) || 0) * sx;
+            const renderOffsetY = (Number(item.choiceItemRenderOffsetY || 0) || 0) * sy;
             const itemEl = document.createElement("div");
             itemEl.className = "itemSlotRenderer";
             itemEl.setAttribute("data-mc-slot", String(slot));
             setItemRendererScale(itemEl, renderSize);
-            itemEl.style.left = `${Math.round((btnW - renderSize) / 2)}px`;
-            itemEl.style.top = `${Math.round((btnH - renderSize) / 2)}px`;
+            itemEl.style.left = `${Math.round((btnW - renderSize) / 2 + renderOffsetX)}px`;
+            itemEl.style.top = `${Math.round((btnH - renderSize) / 2 + renderOffsetY)}px`;
             btn.appendChild(itemEl);
           }else{
             const fallback = document.createElement("div");
@@ -1375,6 +1426,7 @@ var stopPagerEv = function(ev){
     function render(){
       DCLOG("render()", { w: window.innerWidth, h: window.innerHeight, elements: Array.isArray(GUI && GUI.elements) ? GUI.elements.length : 0, choices: (BIND.choice||INIT.choice||[]).length });
       clearRuntimeTimers();
+      applyGuiFont();
       setScale();
       setBackground();
       const stage = document.getElementById("stage");

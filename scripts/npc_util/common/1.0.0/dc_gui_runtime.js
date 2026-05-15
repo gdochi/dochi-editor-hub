@@ -634,6 +634,14 @@ return text;
         if (item.dialogImageOffsetX == null) item.dialogImageOffsetX = 0;
         if (item.dialogImageOffsetY == null) item.dialogImageOffsetY = 0;
       }
+      if (String(item.type || "").toLowerCase() === "choice") {
+        var role = String(item.shopRole || "").toLowerCase();
+        if (role === "item_slots" || role === "selected_slot") {
+          if (item.choiceItemRenderScale == null) item.choiceItemRenderScale = 100;
+          if (item.choiceItemRenderOffsetX == null) item.choiceItemRenderOffsetX = 0;
+          if (item.choiceItemRenderOffsetY == null) item.choiceItemRenderOffsetY = 0;
+        }
+      }
     }
     return gui;
   }
