@@ -439,9 +439,9 @@ var DcShopRuntimeModule = (function(){
     return stock < 0 ? "inf" : String(stock);
   }
 
-  function productChoiceData(ctx, shop, product, action){
+  function productChoiceData(ctx, shop, product, action, mcSlot){
     var currency = currencyFor(shop, product);
-    return {
+    var data = {
       shopAction: String(action || "select"),
       productId: String(product.id || ""),
       itemId: productItemId(product),
@@ -452,6 +452,9 @@ var DcShopRuntimeModule = (function(){
       stock: getStock(ctx, shop, product),
       stockText: stockLabel(ctx, shop, product)
     };
+    var slot = parseInt(String(mcSlot), 10);
+    if(!isNaN(slot) && slot >= 0) data.mcSlot = slot;
+    return data;
   }
 
   function buildBindings(ctx, shop, active){
@@ -476,14 +479,19 @@ var DcShopRuntimeModule = (function(){
 
     var itemChoices = [];
     var start = page * pageSize;
+    var selectedVisibleSlot = -1;
     for(var j=0;j<pageSize;j++){
       var product = catProducts[start + j];
       if(product){
+        if(selected && String(product.id || "") === String(selected.id || "")) selectedVisibleSlot = j;
         itemChoices.push(makeChoice(product.name, "item_slots", productChoiceData(ctx, shop, product, "select"), start + j));
       }else{
         itemChoices.push(makeChoice("", "item_slots", { shopAction:"noop" }, start + j));
       }
     }
+    var selectedChoice = selected
+      ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", selectedVisibleSlot), 0)
+      : makeChoice("", "selected_slot", { shopAction:"noop" }, 0);
 
     return {
       shop: {
@@ -499,7 +507,7 @@ var DcShopRuntimeModule = (function(){
         choices: {
           category_buttons: categoryChoices,
           item_slots: itemChoices,
-          selected_slot: [selected ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop"), 0) : makeChoice("", "selected_slot", { shopAction:"noop" }, 0)],
+          selected_slot: [selectedChoice],
           buy_button: [makeChoice("Buy", "buy_button", { shopAction:"buy" }, 0)],
           page_nav: [
             makeChoice("Prev", "page_nav", { shopAction:"page_prev" }, 0),
@@ -551,7 +559,7 @@ var DcShopRuntimeModule = (function(){
     return true;
   }
 
-  function sendShopUpdate(ctx, shop, active){
+  function sendShopUpdate(ctx, shop, active, forceReopen){
     var guiJson = readJson(active.guiJsonPath);
     var payload = {
       __overlayName: OVERLAY_NAME,
@@ -572,6 +580,12 @@ var DcShopRuntimeModule = (function(){
       }
       payload.type = "dcDialogueUpdate";
     }
+    if(!forceReopen){
+      setActive(ctx.player, active);
+      return sendToBrowser(ctx.player, "dcDialogueUpdate", payload);
+    }
+    active.reopenCloseSkips = (parseInt(String(active.reopenCloseSkips || "0"), 10) || 0) + 1;
+    active.reopeningUntil = Date.now() + 5000;
     setActive(ctx.player, active);
     try{
       if(ctx && ctx.event && typeof cnpcext !== "undefined" && cnpcext && typeof cnpcext.openHtmlGui === "function"){
@@ -694,7 +708,13 @@ var DcShopRuntimeModule = (function(){
 
     var evName = String(e.eventName || payload.__event || "");
     if(evName === "__guiClosed" || evName === "done"){
+      var skipClose = parseInt(String(active.reopenCloseSkips || "0"), 10) || 0;
       var reopenUntil = parseInt(String(active.reopeningUntil || "0"), 10) || 0;
+      if(skipClose > 0 && reopenUntil && Date.now() < reopenUntil){
+        active.reopenCloseSkips = skipClose - 1;
+        setActive(player, active);
+        return { handled:true, result: { done:false, reason:"refreshing" } };
+      }
       if(reopenUntil && Date.now() < reopenUntil){
         return { handled:true, result: { done:false, reason:"refreshing" } };
       }
@@ -715,28 +735,31 @@ var DcShopRuntimeModule = (function(){
     var ctx = { player: player, npc: npc, world: pickWorld(player, npc), event: e, opts:{} };
     var shop = readJson(String(active.shopJsonPath || ""));
     checkRestock(ctx, shop);
+    var forceReopen = false;
 
     if(action === "category"){
       active.categoryId = String(dataObj.categoryId || firstCategoryId(shop));
       active.page = 0;
       active.selectedProductId = "";
       active.message = "Select an item.";
+      forceReopen = true;
     }else if(action === "select"){
       active.selectedProductId = String(dataObj.productId || "");
       active.message = productText(findProduct(shop, active.selectedProductId));
     }else if(action === "page_prev"){
       active.page = Math.max(0, (parseInt(String(active.page || 0), 10) || 0) - 1);
+      forceReopen = true;
     }else if(action === "page_next"){
       var list = productsForCategory(shop, active.categoryId);
       var pageSize = Math.max(1, parseInt(String(active.pageSize || 8), 10) || 8);
       var maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
       active.page = Math.min(maxPage, (parseInt(String(active.page || 0), 10) || 0) + 1);
+      forceReopen = true;
     }else if(action === "buy"){
       handleBuy(ctx, shop, active);
     }
 
-    active.reopeningUntil = Date.now() + 1500;
-    sendShopUpdate(ctx, shop, active);
+    sendShopUpdate(ctx, shop, active, forceReopen);
     var result = { done:false, reason:"shop_choice", action:action };
     setLastResult(player, result);
     return { handled:true, result: result };

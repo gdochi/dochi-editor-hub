@@ -1035,8 +1035,8 @@ prev.addEventListener('click', function(ev){
           const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
           const slot = Number(data.mcSlot);
           if(Number.isFinite(slot) && slot >= 0){
-            let renderPct = Number(item.choiceItemRenderScale ?? 72);
-            if(!Number.isFinite(renderPct)) renderPct = 72;
+            let renderPct = Number(item.choiceItemRenderScale ?? 100);
+            if(!Number.isFinite(renderPct)) renderPct = 100;
             renderPct = Math.max(25, Math.min(150, renderPct)) / 100;
             const renderSize = Math.max(8, Math.round(btnH * renderPct));
             const itemEl = document.createElement("div");

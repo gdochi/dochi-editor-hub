@@ -548,7 +548,7 @@ return text;
     overlayItems.push(entry);
   }
 
-  function assignShopChoiceItemSlots(list, overlayItems, startSlot) {
+  function assignShopChoiceItemSlots(list, overlayItems, startSlot, usedSlots) {
     var slot = startSlot;
     if (!Array.isArray(list)) return slot;
     for (var i = 0; i < list.length; i++) {
@@ -558,9 +558,19 @@ return text;
         continue;
       }
       if (!choice.data || typeof choice.data !== "object") choice.data = {};
-      choice.data.mcSlot = slot;
-      pushOverlayItem(overlayItems, choice.data, slot);
-      slot += 1;
+      var explicitSlot = parseInt(String(choice.data.mcSlot != null ? choice.data.mcSlot : ""), 10);
+      var hasExplicitSlot = !isNaN(explicitSlot) && explicitSlot >= 0;
+      var useSlot = hasExplicitSlot ? explicitSlot : slot;
+      choice.data.mcSlot = useSlot;
+      if(!usedSlots[String(useSlot)]){
+        pushOverlayItem(overlayItems, choice.data, useSlot);
+        usedSlots[String(useSlot)] = true;
+      }
+      if(hasExplicitSlot){
+        if(useSlot >= slot) slot = useSlot + 1;
+      }else{
+        slot += 1;
+      }
     }
     return slot;
   }
@@ -578,8 +588,9 @@ return text;
     if (!choices) return { overlayItems: overlayItems };
 
     var slot = base;
-    slot = assignShopChoiceItemSlots(choices.item_slots, overlayItems, slot);
-    slot = assignShopChoiceItemSlots(choices.selected_slot, overlayItems, slot);
+    var usedSlots = {};
+    slot = assignShopChoiceItemSlots(choices.item_slots, overlayItems, slot, usedSlots);
+    slot = assignShopChoiceItemSlots(choices.selected_slot, overlayItems, slot, usedSlots);
     return { overlayItems: overlayItems };
   }
 
