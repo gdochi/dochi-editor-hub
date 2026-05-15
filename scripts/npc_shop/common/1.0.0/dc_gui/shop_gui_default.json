@@ -1,7 +1,7 @@
 {
   "guiType": "shop",
-  "id": "shop_gui_default",
-  "globalStyleBase": "dark",
+  "id": "npc_shop_gui",
+  "globalStyleBase": "none",
   "themeMix": {
     "pixel": 0,
     "medieval": 0,
@@ -42,7 +42,7 @@
       "radius": 0,
       "padding": 0,
       "borderWidth": 0,
-      "opacity": 22,
+      "opacity": 60,
       "fill": "#111111",
       "fillNone": false,
       "border": "none",
@@ -357,7 +357,14 @@
       "choiceBtnTextAlign": "center",
       "choiceBtnFill": "#2d2d2d",
       "choiceBtnBorder": "#f0f0f0",
-      "choiceBtnOpacity": 92
+      "choiceBtnOpacity": 92,
+      "choiceStockPriceGapX": 56
     }
-  ]
+  ],
+  "font": {
+    "source": "default",
+    "family": "",
+    "path": "",
+    "format": ""
+  }
 }
