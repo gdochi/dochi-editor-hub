@@ -392,7 +392,16 @@ var DcShopRuntimeModule = (function(){
     var height = Math.max(slotSize, Number(item.h || 0));
     var layout = String(item.choiceSlotLayout || "").toLowerCase();
     if(layout === "list"){
-      return Math.max(1, Math.floor((height + gapY) / (slotSize + gapY)));
+      var infoGapX = Math.max(0, Number(item.choiceGapX || 0));
+      var stockPriceGapX = Math.max(0, Number(item.choicePriceGapY != null ? item.choicePriceGapY : 24));
+      var stockWidth = Math.max(42, Number(item.choiceStockWidth != null ? item.choiceStockWidth : 72));
+      var priceWidth = Math.max(42, Number(item.choicePriceWidth != null ? item.choicePriceWidth : 84));
+      var colGapX = Math.max(0, Number(item.choiceInfoGapX != null ? item.choiceInfoGapX : 24));
+      var cellW = slotSize + infoGapX + stockWidth + stockPriceGapX + priceWidth;
+      var widthList = Math.max(cellW, Number(item.w || 0));
+      var colsList = Math.max(1, Math.floor((widthList + colGapX) / (cellW + colGapX)));
+      var rowsList = Math.max(1, Math.floor((height + gapY) / (slotSize + gapY)));
+      return Math.max(1, colsList * rowsList);
     }
     var gapX = Math.max(0, Number(item.choiceGapX || 0));
     var width = Math.max(slotSize, Number(item.w || 0));
@@ -426,7 +435,7 @@ var DcShopRuntimeModule = (function(){
   function stockText(ctx, shop, product){
     if(!product) return "Stock: -";
     var s = getStock(ctx, shop, product);
-    return s < 0 ? "Stock: inf" : "Stock: " + s;
+    return s < 0 ? "Stock: ∞" : "Stock: " + s;
   }
 
   function balanceText(ctx, currency){
@@ -436,11 +445,13 @@ var DcShopRuntimeModule = (function(){
 
   function stockLabel(ctx, shop, product){
     var stock = getStock(ctx, shop, product);
-    return stock < 0 ? "inf" : String(stock);
+    return stock < 0 ? "∞" : String(stock);
   }
 
   function productChoiceData(ctx, shop, product, action, mcSlot){
     var currency = currencyFor(shop, product);
+    var kind = currencyKind(currency);
+    var itemCurrency = kind === "item";
     var data = {
       shopAction: String(action || "select"),
       productId: String(product.id || ""),
@@ -448,10 +459,16 @@ var DcShopRuntimeModule = (function(){
       itemCount: 1,
       itemName: String(product.name || product.id || ""),
       price: product.price,
-      priceText: String(product.price) + " " + currencyName(currency),
+      priceText: itemCurrency ? String(product.price) : String(product.price) + " " + currencyName(currency),
       stock: getStock(ctx, shop, product),
-      stockText: stockLabel(ctx, shop, product)
+      stockText: stockLabel(ctx, shop, product),
+      currencyType: kind,
+      currencyName: currencyName(currency)
     };
+    if(itemCurrency){
+      data.currencyItemId = currencyItemId(currency);
+      data.currencyItemCount = 1;
+    }
     var slot = parseInt(String(mcSlot), 10);
     if(!isNaN(slot) && slot >= 0) data.mcSlot = slot;
     return data;

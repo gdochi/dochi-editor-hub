@@ -73,6 +73,12 @@
       position:absolute;
       pointer-events:none;
     }
+    .itemSlotCurrencyRenderer{
+      position:relative;
+      display:inline-block;
+      flex:0 0 auto;
+      pointer-events:none;
+    }
     .itemSlotFallback{
       width:58%;
       aspect-ratio:1;
@@ -907,7 +913,7 @@ prev.addEventListener('click', function(ev){
         btnMinW = slotSize;
         btnH = slotSize;
       }
-      const cols = Math.max(1, Math.min(count, Number(item.choiceColumns ?? 2)));
+      let cols = Math.max(1, Math.min(count, Number(item.choiceColumns ?? 2)));
       const baseSize = Number(item.choiceBtnTextSize ?? 13);
       const fontSize = Math.max(8, Math.round((Number.isFinite(baseSize) ? baseSize : 13) * uiScale));
       const priceGapY = priceLabelMode && !itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 6)) * sy : 0;
@@ -917,6 +923,8 @@ prev.addEventListener('click', function(ev){
       const stockPriceGapX = itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 24)) * sx : 0;
       const stockWidth = Math.max(42, Number(item.choiceStockWidth ?? 72)) * sx;
       const priceWidth = Math.max(42, Number(item.choicePriceWidth ?? 84)) * sx;
+      const listColGapX = itemSlotListMode ? Math.max(0, Number(item.choiceInfoGapX ?? 24)) * sx : gapX;
+      let listCellW = 0;
       const availableW = Math.max(btnMinW, Number(nodeBox.w || 0) - startX);
 
       const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
@@ -932,7 +940,10 @@ prev.addEventListener('click', function(ev){
 
       let layoutW = btnMinW;
       if(itemSlotListMode){
-        layoutW = btnMinW + infoGapX + stockWidth + stockPriceGapX + priceWidth;
+        listCellW = btnMinW + infoGapX + stockWidth + stockPriceGapX + priceWidth;
+        const targetW = Math.max(listCellW, Number(nodeBox.w || 0) - startX);
+        cols = Math.max(1, Math.min(count, Math.floor((targetW + listColGapX) / (listCellW + listColGapX))));
+        layoutW = cols * listCellW + Math.max(0, cols - 1) * listColGapX;
       }else{
         for(let rowStart=0; rowStart<choiceWidths.length; rowStart+=cols){
           const row = choiceWidths.slice(rowStart, rowStart + cols);
@@ -1008,13 +1019,45 @@ prev.addEventListener('click', function(ev){
         btn.addEventListener("click", fireChoice);
       }
 
+      function setItemRendererScale(el, renderSize){
+        const px = Math.max(8, Math.round(renderSize || 8));
+        el.setAttribute("data-mc-scale", String(Math.max(0.25, Math.round((px / 32) * 100) / 100)));
+        el.style.width = `${px}px`;
+        el.style.height = `${px}px`;
+      }
+
+      function appendPriceContent(node, data, text){
+        const rawText = String(text || "");
+        const currencySlot = Number(data && data.currencyMcSlot);
+        if(Number.isFinite(currencySlot) && currencySlot >= 0){
+          const iconSize = Math.max(12, Math.min(btnH, Math.round(fontSize * 1.25)));
+          const icon = document.createElement("span");
+          icon.className = "itemSlotCurrencyRenderer";
+          icon.setAttribute("data-mc-slot", String(currencySlot));
+          setItemRendererScale(icon, iconSize);
+          icon.style.marginRight = `${Math.max(4, Math.round(fontSize * 0.32))}px`;
+          node.appendChild(icon);
+        }
+        const span = document.createElement("span");
+        span.textContent = rawText;
+        span.style.overflow = "hidden";
+        span.style.textOverflow = "ellipsis";
+        span.style.whiteSpace = "nowrap";
+        span.style.minWidth = "0";
+        node.appendChild(span);
+      }
+
       for(let i=0;i<choices.length;i++){
         const ch = choices[i];
         const btnW = choiceWidths[i] || btnMinW;
         const row = Math.floor(i / cols);
         const rowStart = row * cols;
         let left = 0;
-        for(let k=rowStart;k<i;k++) left += (choiceWidths[k] || btnMinW) + gapX;
+        if(itemSlotListMode){
+          left = (i % cols) * (listCellW + listColGapX);
+        }else{
+          for(let k=rowStart;k<i;k++) left += (choiceWidths[k] || btnMinW) + gapX;
+        }
         const top = row * (cellH + gapY);
 
         if(itemSlotMode){
@@ -1022,7 +1065,7 @@ prev.addEventListener('click', function(ev){
           wrap.className = "choiceItemWrap";
           wrap.style.left = `${Math.round(left)}px`;
           wrap.style.top = `${Math.round(top)}px`;
-          wrap.style.width = `${Math.round(itemSlotListMode ? layoutW : btnW)}px`;
+          wrap.style.width = `${Math.round(itemSlotListMode ? listCellW : btnW)}px`;
           wrap.style.height = `${Math.round(cellH)}px`;
           if(itemSlotListMode) wrap.style.pointerEvents = "auto";
 
@@ -1042,11 +1085,9 @@ prev.addEventListener('click', function(ev){
             const itemEl = document.createElement("div");
             itemEl.className = "itemSlotRenderer";
             itemEl.setAttribute("data-mc-slot", String(slot));
-            itemEl.setAttribute("data-mc-scale", String(Math.max(0.25, Math.round((renderSize / 16) * 100) / 100)));
+            setItemRendererScale(itemEl, renderSize);
             itemEl.style.left = `${Math.round((btnW - renderSize) / 2)}px`;
             itemEl.style.top = `${Math.round((btnH - renderSize) / 2)}px`;
-            itemEl.style.width = `${renderSize}px`;
-            itemEl.style.height = `${renderSize}px`;
             btn.appendChild(itemEl);
           }else{
             const fallback = document.createElement("div");
@@ -1086,8 +1127,8 @@ prev.addEventListener('click', function(ev){
             price.style.justifyContent = "flex-start";
             price.style.fontSize = `${fontSize}px`;
             price.style.textAlign = "left";
-            price.style.overflow = "visible";
-            price.textContent = String((data && data.priceText) || (data && data.price != null ? data.price : "") || "");
+            price.style.overflow = "hidden";
+            appendPriceContent(price, data, (data && data.priceText) || (data && data.price != null ? data.price : "") || "");
             wrap.appendChild(price);
             layout.appendChild(wrap);
             continue;
@@ -1098,7 +1139,11 @@ prev.addEventListener('click', function(ev){
             price.className = "itemSlotPrice";
             price.style.marginTop = `${Math.round(priceGapY)}px`;
             price.style.fontSize = `${fontSize}px`;
-            price.textContent = String((data && data.priceText) || (data && data.price != null ? data.price : "") || "");
+            price.style.display = "flex";
+            price.style.alignItems = "center";
+            price.style.justifyContent = "center";
+            price.style.overflow = "hidden";
+            appendPriceContent(price, data, (data && data.priceText) || (data && data.price != null ? data.price : "") || "");
             wrap.appendChild(price);
           }
           layout.appendChild(wrap);

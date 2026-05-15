@@ -548,6 +548,13 @@ return text;
     overlayItems.push(entry);
   }
 
+  function pushCurrencyOverlayItem(overlayItems, data, slot) {
+    if (!data || typeof data !== "object") return;
+    var item = String(data.currencyItemId || data.currencyItem || "").trim();
+    if (!item) return;
+    overlayItems.push({ slot: slot, item: item, count: 1 });
+  }
+
   function assignShopChoiceItemSlots(list, overlayItems, startSlot, usedSlots) {
     var slot = startSlot;
     if (!Array.isArray(list)) return slot;
@@ -566,11 +573,22 @@ return text;
         pushOverlayItem(overlayItems, choice.data, useSlot);
         usedSlots[String(useSlot)] = true;
       }
-      if(hasExplicitSlot){
-        if(useSlot >= slot) slot = useSlot + 1;
-      }else{
-        slot += 1;
+      var nextSlot = hasExplicitSlot ? slot : useSlot + 1;
+      if(hasExplicitSlot && useSlot >= nextSlot) nextSlot = useSlot + 1;
+      var currencyItem = String(choice.data.currencyItemId || choice.data.currencyItem || "").trim();
+      if(currencyItem){
+        var explicitCurrencySlot = parseInt(String(choice.data.currencyMcSlot != null ? choice.data.currencyMcSlot : ""), 10);
+        var hasExplicitCurrencySlot = !isNaN(explicitCurrencySlot) && explicitCurrencySlot >= 0;
+        var currencySlot = hasExplicitCurrencySlot ? explicitCurrencySlot : nextSlot;
+        while(usedSlots[String(currencySlot)]) currencySlot += 1;
+        choice.data.currencyMcSlot = currencySlot;
+        if(!usedSlots[String(currencySlot)]){
+          pushCurrencyOverlayItem(overlayItems, choice.data, currencySlot);
+          usedSlots[String(currencySlot)] = true;
+        }
+        if(currencySlot >= nextSlot) nextSlot = currencySlot + 1;
       }
+      slot = nextSlot;
     }
     return slot;
   }
