@@ -530,7 +530,15 @@
       const selected = getShopChoiceData("selected_slot", 0);
       const selectedProductId = selected ? String(selected.productId || "") : "";
       if(!selectedProductId) return null;
-      return hasItemCurrencySlot(selected) ? selected : null;
+      if(hasItemCurrencySlot(selected)) return selected;
+      const slots = getShopChoices("item_slots") || [];
+      for(let i=0;i<slots.length;i++){
+        const data = slots[i] && slots[i].data && typeof slots[i].data === "object" ? slots[i].data : null;
+        if(!data || !hasItemCurrencySlot(data)) continue;
+        if(String(data.productId || "") !== selectedProductId) continue;
+        return data;
+      }
+      return null;
     }
 
     function getShopText(role){
