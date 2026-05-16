@@ -68,7 +68,7 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
  if(!state.canOpen){sendPlayerMessage(player,"NPC Editor access denied.");return;}
  if(!state.initialized){
   initData={ok:true,npcs:[],factions:[],scanRange:range,overlayEntities:[],admin:state,locale:i18n.locale,localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales(),i18nError:i18n.error,debug:CFG.DEBUG};
-  payload=JSON.stringify(initData);
+  payload=stringifyBrowserPayload(initData)
   debugMsg(player,"openHtmlGui bootstrap payload="+payload.length+" html="+CFG.HTML);
   cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);
   debugMsg(player,"openHtmlGui bootstrap returned");
@@ -83,7 +83,7 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
  initData.localeOptions=listNpcEditorLocales();
  initData.i18nError=i18n.error;
  initData.debug=CFG.DEBUG;
- payload=JSON.stringify(initData);
+ payload=stringifyBrowserPayload(initData)
  debugMsg(player,"openHtmlGui normal payload="+payload.length+" html="+CFG.HTML);
  cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);
  debugMsg(player,"openHtmlGui normal returned");
@@ -243,6 +243,18 @@ return locale||"en_us";
 function countObjectKeys(obj){
 if(!obj)return 0;
 return Object.keys(obj).length;
+}
+function stringifyBrowserPayload(obj){
+return escapeBrowserJson(JSON.stringify(obj))
+}
+function escapeBrowserJson(json){
+json=String(json==null?"{}":json)
+// CNPCExtended dispatches browser events through executeJavaScript; ASCII JSON avoids charset mojibake in that bridge.
+return json.replace(/[\u007f-\uffff]/g,function(ch){
+var code=ch.charCodeAt(0).toString(16)
+while(code.length<4)code="0"+code
+return "\\u"+code
+})
 }
 function translateNpcNameForPlayer(player,name){
 name=String(name||"");
@@ -1449,7 +1461,7 @@ pushBrowser(player,"adminActionResult",{ok:true,action:"keybind_save"});
 sendAdminState(player);
 }
 function pushBrowser(player,eventName,obj){
-var payload=JSON.stringify(obj);
+var payload=stringifyBrowserPayload(obj)
 debugMsg(player,"sendToBrowser "+String(eventName)+" payload="+payload.length);
 cnpcext.getClientBridge(player.getMCEntity()).sendToBrowser(String(eventName),payload);
 }
