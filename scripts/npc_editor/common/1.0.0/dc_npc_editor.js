@@ -562,7 +562,7 @@ function buildNpcBrowserInitFromList(player,list,range){
 var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,scriptEnabled,previewSlot,previewNbt,dochiLock,overlayEntities=[],previewEnabled=getStoredPreviewEnabled(player);
 for(i=0;i<list.length;i++){
 n=list[i];
-try{n=getNpcByUuid(player,String(n.getUUID()))||n;}catch(resolveErr){}
+if(!n)continue;
 name="";title="";faction="";
 name=translateNpcNameForPlayer(player,String(n.display.getName()||""));
 title=String(n.display.getTitle()||"");

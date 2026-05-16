@@ -298,16 +298,13 @@ listenServer();
 renderAdminState();
 rebuildFactionSelect();
 syncScanRange(APP_STATE.scanRange);
+if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
+APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
+}
 applyFilter();
-requestRefresh();
-setTimeout(requestRefresh,700);
 clearScriptState("");
 updateStyleUi();
 renderKeyboardPicker();
-if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
-APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
-applyFilter();
-}
 applyI18n(document.body);
 startI18nObserver();
 if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");

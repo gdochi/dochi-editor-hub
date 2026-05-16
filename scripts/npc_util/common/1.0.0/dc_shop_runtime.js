@@ -448,7 +448,7 @@ var DcShopRuntimeModule = (function(){
     return stock < 0 ? "∞" : String(stock);
   }
 
-  function productChoiceData(ctx, shop, product, action, mcSlot){
+  function productChoiceData(ctx, shop, product, action, slotInfo){
     var currency = currencyFor(shop, product);
     var kind = currencyKind(currency);
     var itemCurrency = kind === "item";
@@ -469,13 +469,40 @@ var DcShopRuntimeModule = (function(){
       data.currencyItemId = currencyItemId(currency);
       data.currencyItemCount = 1;
     }
-    var slot = parseInt(String(mcSlot), 10);
-    if(!isNaN(slot) && slot >= 0) data.mcSlot = slot;
+    if(slotInfo && typeof slotInfo === "object"){
+      var itemSlot = parseInt(String(slotInfo.itemSlot), 10);
+      if(!isNaN(itemSlot) && itemSlot >= 0) data.mcSlot = itemSlot;
+      var currencySlot = parseInt(String(slotInfo.currencySlot), 10);
+      if(itemCurrency && !isNaN(currencySlot) && currencySlot >= 0) data.currencyMcSlot = currencySlot;
+    }else{
+      var slot = parseInt(String(slotInfo), 10);
+      if(!isNaN(slot) && slot >= 0) data.mcSlot = slot;
+    }
     return data;
+  }
+
+  function buildProductSlotInfo(ctx, shop){
+    var list = getProducts(shop);
+    var map = {};
+    var overlays = [];
+    for(var i=0;i<list.length;i++){
+      var product = list[i];
+      var id = String(product.id || "");
+      var itemSlot = i * 2;
+      var currencySlot = itemSlot + 1;
+      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot };
+      overlays.push({ slot:itemSlot, item:productItemId(product), count:1 });
+      var currency = currencyFor(shop, product);
+      if(currencyKind(currency) === "item"){
+        overlays.push({ slot:currencySlot, item:currencyItemId(currency), count:1 });
+      }
+    }
+    return { map:map, overlays:overlays };
   }
 
   function buildBindings(ctx, shop, active){
     var cats = getCategories(shop);
+    var slotInfo = buildProductSlotInfo(ctx, shop);
     var selectedCategory = String(active.categoryId || "");
     if(!categoryExists(shop, selectedCategory)) selectedCategory = firstCategoryId(shop);
     var pageSize = Math.max(1, parseInt(String(active.pageSize || 8), 10) || 8);
@@ -496,18 +523,16 @@ var DcShopRuntimeModule = (function(){
 
     var itemChoices = [];
     var start = page * pageSize;
-    var selectedVisibleSlot = -1;
     for(var j=0;j<pageSize;j++){
       var product = catProducts[start + j];
       if(product){
-        if(selected && String(product.id || "") === String(selected.id || "")) selectedVisibleSlot = j;
-        itemChoices.push(makeChoice(product.name, "item_slots", productChoiceData(ctx, shop, product, "select"), start + j));
+        itemChoices.push(makeChoice(product.name, "item_slots", productChoiceData(ctx, shop, product, "select", slotInfo.map[String(product.id || "")]), start + j));
       }else{
         itemChoices.push(makeChoice("", "item_slots", { shopAction:"noop" }, start + j));
       }
     }
     var selectedChoice = selected
-      ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", selectedVisibleSlot), 0)
+      ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", slotInfo.map[String(selected.id || "")]), 0)
       : makeChoice("", "selected_slot", { shopAction:"noop" }, 0);
 
     return {
@@ -517,10 +542,11 @@ var DcShopRuntimeModule = (function(){
           title: String(shop.name || shop.shopName || getShopId(shop, active.shopId)),
           message: textMessage,
           selected_slot: selected ? selected.name : "No item",
-          price: selected ? ("Price: " + selected.price + " " + currencyName(currency)) : "Price: -",
+          price: selected ? ("Price: " + selected.price + (currencyKind(currency) === "item" ? "" : " " + currencyName(currency))) : "Price: -",
           stock: stockText(ctx, shop, selected),
           balance: balanceText(ctx, currency)
         },
+        overlayItems: slotInfo.overlays,
         choices: {
           category_buttons: categoryChoices,
           item_slots: itemChoices,
@@ -759,19 +785,16 @@ var DcShopRuntimeModule = (function(){
       active.page = 0;
       active.selectedProductId = "";
       active.message = "Select an item.";
-      forceReopen = true;
     }else if(action === "select"){
       active.selectedProductId = String(dataObj.productId || "");
       active.message = productText(findProduct(shop, active.selectedProductId));
     }else if(action === "page_prev"){
       active.page = Math.max(0, (parseInt(String(active.page || 0), 10) || 0) - 1);
-      forceReopen = true;
     }else if(action === "page_next"){
       var list = productsForCategory(shop, active.categoryId);
       var pageSize = Math.max(1, parseInt(String(active.pageSize || 8), 10) || 8);
       var maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
       active.page = Math.min(maxPage, (parseInt(String(active.page || 0), 10) || 0) + 1);
-      forceReopen = true;
     }else if(action === "buy"){
       handleBuy(ctx, shop, active);
     }

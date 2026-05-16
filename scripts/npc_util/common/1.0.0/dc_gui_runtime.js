@@ -593,6 +593,27 @@ return text;
     return slot;
   }
 
+  function pushPrebuiltOverlayItem(overlayItems, entry, usedSlots) {
+    if(!entry || typeof entry !== "object") return;
+    var slot = parseInt(String(entry.slot != null ? entry.slot : ""), 10);
+    if(isNaN(slot) || slot < 0) return;
+    if(usedSlots[String(slot)]) return;
+    var out = { slot: slot };
+    if(entry.nbt != null && String(entry.nbt || "").trim()) out.nbt = String(entry.nbt || "");
+    else out.item = String(entry.item || entry.itemId || "minecraft:air");
+    var count = parseInt(String(entry.count != null ? entry.count : 1), 10);
+    out.count = isNaN(count) || count < 1 ? 1 : count;
+    overlayItems.push(out);
+    usedSlots[String(slot)] = true;
+  }
+
+  function pushPrebuiltShopOverlayItems(shop, overlayItems, usedSlots) {
+    var list = shop && Array.isArray(shop.overlayItems) ? shop.overlayItems : [];
+    for(var i=0;i<list.length;i++){
+      pushPrebuiltOverlayItem(overlayItems, list[i], usedSlots);
+    }
+  }
+
   function buildOverlayItems(bindings, options) {
     var base = 0;
     try{
@@ -607,6 +628,7 @@ return text;
 
     var slot = base;
     var usedSlots = {};
+    pushPrebuiltShopOverlayItems(shop, overlayItems, usedSlots);
     slot = assignShopChoiceItemSlots(choices.item_slots, overlayItems, slot, usedSlots);
     slot = assignShopChoiceItemSlots(choices.selected_slot, overlayItems, slot, usedSlots);
     return { overlayItems: overlayItems };
