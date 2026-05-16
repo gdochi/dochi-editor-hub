@@ -76,10 +76,12 @@
     }
     .itemSlotCurrencyRenderer{
       position:relative;
+      top:2px;
       display:inline-block;
       flex:0 0 auto;
       pointer-events:none;
     }
+    .shopRuntimeMcSlotProxy{position:absolute;pointer-events:none;background:transparent;border:0;margin:0;padding:0;overflow:visible}
     .itemSlotFallback{
       width:58%;
       aspect-ratio:1;
@@ -156,6 +158,7 @@
 
     let runtimeTimers = [];
     let HAS_PAGER = false;
+    let RUNTIME_MC_SLOT_PROXIES = [];
     function clearRuntimeTimers(){
       for(let i=0;i<runtimeTimers.length;i++){
         try{ clearTimeout(runtimeTimers[i]); }catch{}
@@ -526,6 +529,50 @@
       return isItemCurrency && Number.isFinite(currencySlot) && currencySlot >= 0;
     }
 
+    function allOverlayItems(){
+      const out = [];
+      const lists = [INIT && INIT.overlayItems, BIND && BIND.overlayItems, BIND && BIND.shop && BIND.shop.overlayItems];
+      for(let l=0;l<lists.length;l++){
+        const arr = Array.isArray(lists[l]) ? lists[l] : [];
+        for(let i=0;i<arr.length;i++){
+          if(arr[i] && typeof arr[i] === "object") out.push(arr[i]);
+        }
+      }
+      return out;
+    }
+
+    function overlayItemId(entry){
+      if(!entry || typeof entry !== "object") return "";
+      if(entry.item != null || entry.itemId != null) return String(entry.item || entry.itemId || "");
+      const raw = String(entry.nbt || "");
+      const m = raw.match(/(?:id|Name)\s*[:=]\s*["']?([a-z0-9_:.\/-]+)/i);
+      return m ? String(m[1] || "") : "";
+    }
+
+    function findOverlaySlotForItem(itemId){
+      const target = String(itemId || "").trim();
+      if(!target) return -1;
+      const list = allOverlayItems();
+      let best = -1;
+      for(let i=0;i<list.length;i++){
+        const entry = list[i] || {};
+        if(overlayItemId(entry) !== target) continue;
+        const slot = Number(entry.slot);
+        if(!Number.isFinite(slot) || slot < 0) continue;
+        if(best < 0 || slot < best) best = slot;
+      }
+      return best;
+    }
+
+    function resolveCurrencySlot(data){
+      if(!data || typeof data !== "object") return -1;
+      const itemId = String(data.currencyItemId || data.currencyItem || "").trim();
+      const mapped = findOverlaySlotForItem(itemId);
+      if(mapped >= 0) return mapped;
+      const direct = Number(data.currencyMcSlot);
+      return Number.isFinite(direct) && direct >= 0 ? direct : -1;
+    }
+
     function getShopPriceData(){
       const selected = getShopChoiceData("selected_slot", 0);
       const selectedProductId = selected ? String(selected.productId || "") : "";
@@ -539,6 +586,29 @@
         return data;
       }
       return null;
+    }
+
+    function getShopBalanceData(){
+      const shop = getShopBind();
+      const data = shop && shop.balanceData && typeof shop.balanceData === "object" ? shop.balanceData : null;
+      if(data) return data;
+      const text = String(getShopText("balance") || "");
+      const match = text.match(/(-?\d+)/);
+      const priceData = getShopPriceData();
+      let itemId = "";
+      if(priceData && String(priceData.currencyType || "").toLowerCase() === "item") itemId = String(priceData.currencyItemId || priceData.currencyItem || "");
+      if(!itemId){
+        const nameMatch = text.match(/\(([^)]+)\)/);
+        const rawName = nameMatch ? String(nameMatch[1] || "").trim() : "";
+        if(rawName) itemId = rawName.indexOf(":") >= 0 ? rawName : "minecraft:" + rawName;
+      }
+      if(!itemId) return null;
+      return {
+        currencyType: "item",
+        currencyItemId: itemId,
+        currencyMcSlot: findOverlaySlotForItem(itemId),
+        amountText: match ? match[1] : "0"
+      };
     }
 
     function getShopText(role){
@@ -557,40 +627,116 @@
       el.style.height = `${px}px`;
     }
 
-    function renderShopPriceValue(lines, data, fallbackText, uiScale, textSizePx){
-      if(!lines || !data || typeof data !== "object") return false;
-      const isItemCurrency = String(data.currencyType || "").toLowerCase() === "item";
-      const currencySlot = Number(data.currencyMcSlot);
-      if(!isItemCurrency || !Number.isFinite(currencySlot) || currencySlot < 0) return false;
-      const amountText = String((data.priceText != null ? data.priceText : data.price) ?? "").trim();
-      if(!amountText) return false;
+    function queueRuntimeMcSlotProxy(anchor, slot, reason){
+      const slotNum = Number(slot);
+      if(!anchor || !Number.isFinite(slotNum) || slotNum < 0) return;
+      anchor.setAttribute("data-dc-mc-slot-proxy-source", String(slotNum));
+      RUNTIME_MC_SLOT_PROXIES.push({ anchor:anchor, slot:slotNum, reason:String(reason || "") });
+    }
 
-      const fallback = String(fallbackText || "Price:");
-      const colon = fallback.indexOf(":");
-      const labelText = colon >= 0 ? fallback.slice(0, colon + 1) : "Price:";
-      const iconSize = Math.max(14, Math.round(textSizePx * 1.35));
-      const gap = Math.max(5, Math.round(8 * uiScale));
+    function flushRuntimeMcSlotProxies(){
+      const stage = document.getElementById("stage");
+      if(!stage) return;
+      const stageRect = stage.getBoundingClientRect();
+      for(let i=0;i<RUNTIME_MC_SLOT_PROXIES.length;i++){
+        const item = RUNTIME_MC_SLOT_PROXIES[i] || {};
+        const anchor = item.anchor;
+        if(!anchor || !document.body.contains(anchor)) continue;
+        const rect = anchor.getBoundingClientRect();
+        if(!(rect.width > 0 && rect.height > 0)) continue;
+        const proxy = document.createElement("div");
+        proxy.className = "shopRuntimeMcSlotProxy";
+        proxy.setAttribute("data-mc-slot", String(item.slot));
+        const scale = anchor.getAttribute("data-mc-scale");
+        if(scale) proxy.setAttribute("data-mc-scale", scale);
+        proxy.style.left = `${Math.round(rect.left - stageRect.left)}px`;
+        proxy.style.top = `${Math.round(rect.top - stageRect.top)}px`;
+        proxy.style.width = `${Math.max(8, Math.round(rect.width))}px`;
+        proxy.style.height = `${Math.max(8, Math.round(rect.height))}px`;
+        proxy.style.zIndex = "999";
+        stage.appendChild(proxy);
+      }
+    }
 
-      lines.textContent = "";
-      lines.style.display = "flex";
-      lines.style.alignItems = "center";
-      lines.style.gap = `${gap}px`;
-      lines.style.whiteSpace = "nowrap";
+    function textLabel(fullText, fallback){
+      const raw = String(fullText || "");
+      const colon = raw.indexOf(":");
+      return colon >= 0 ? raw.slice(0, colon + 1) : String(fallback || "");
+    }
+
+    function appendCurrencyAmountLine(parent, labelText, data, amountText, uiScale, textSizePx, reason){
+      const currencySlot = resolveCurrencySlot(data);
+      const amount = String(amountText ?? "").trim();
+      if(!data || String(data.currencyType || "").toLowerCase() !== "item" || !Number.isFinite(currencySlot) || currencySlot < 0 || !amount) return false;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
+      row.style.whiteSpace = "nowrap";
 
       const label = document.createElement("span");
       label.textContent = labelText;
-      lines.appendChild(label);
+      row.appendChild(label);
 
+      const iconSize = Math.max(14, Math.round(textSizePx * 1.35));
       const icon = document.createElement("span");
       icon.className = "itemSlotCurrencyRenderer";
-      icon.setAttribute("data-mc-slot", String(currencySlot));
       setRuntimeItemRendererSize(icon, iconSize);
-      lines.appendChild(icon);
+      queueRuntimeMcSlotProxy(icon, currencySlot, reason);
+      row.appendChild(icon);
 
-      const amount = document.createElement("span");
-      amount.textContent = amountText;
-      amount.style.fontWeight = "800";
-      lines.appendChild(amount);
+      const value = document.createElement("span");
+      value.textContent = amount;
+      value.style.fontWeight = "800";
+      row.appendChild(value);
+      parent.appendChild(row);
+      return true;
+    }
+
+    function renderShopPriceValue(lines, data, fallbackText, uiScale, textSizePx){
+      if(!lines || !data || typeof data !== "object") return false;
+      const amountText = String((data.priceText != null ? data.priceText : data.price) ?? "").trim();
+      lines.textContent = "";
+      lines.style.display = "block";
+      return appendCurrencyAmountLine(lines, textLabel(fallbackText, "Price:"), data, amountText, uiScale, textSizePx, "price");
+    }
+
+    function renderShopBalanceValue(lines, data, fallbackText, uiScale, textSizePx){
+      if(!lines || !data || typeof data !== "object") return false;
+      const amountText = String(data.amountText ?? "").trim();
+      lines.textContent = "";
+      lines.style.display = "block";
+      return appendCurrencyAmountLine(lines, textLabel(fallbackText, "Money:"), data, amountText, uiScale, textSizePx, "balance");
+    }
+
+    function renderShopPriceBalanceValue(lines, uiScale, textSizePx){
+      if(!lines) return false;
+      const priceData = getShopPriceData();
+      const balanceData = getShopBalanceData();
+      const priceText = getShopText("price") || "Price: -";
+      const balanceText = getShopText("balance") || "Money: -";
+
+      lines.textContent = "";
+      lines.style.display = "flex";
+      lines.style.flexDirection = "column";
+      lines.style.justifyContent = "center";
+      lines.style.alignItems = "flex-start";
+      lines.style.gap = `${Math.max(3, Math.round(4 * uiScale))}px`;
+      lines.style.whiteSpace = "nowrap";
+
+      const priceRendered = appendCurrencyAmountLine(lines, textLabel(priceText, "Price:"), priceData, priceData ? (priceData.priceText != null ? priceData.priceText : priceData.price) : "", uiScale, textSizePx, "price");
+      if(!priceRendered){
+        const row = document.createElement("div");
+        row.textContent = priceText;
+        lines.appendChild(row);
+      }
+
+      const balanceRendered = appendCurrencyAmountLine(lines, textLabel(balanceText, "Money:"), balanceData, balanceData ? balanceData.amountText : "", uiScale, textSizePx, "balance");
+      if(!balanceRendered){
+        const row = document.createElement("div");
+        row.textContent = balanceText;
+        lines.appendChild(row);
+      }
       return true;
     }
 
@@ -935,6 +1081,12 @@ prev.addEventListener('click', function(ev){
       if(speakerNode) speakerNode.style.fontSize = String(speakerPx) + 'px';
       const richShopPriceRendered = shopRole === "price" && renderShopPriceValue(lines, getShopPriceData(), fullText, uiScale, textSizePx);
 
+      const richShopBalanceRendered = shopRole === "balance" && renderShopBalanceValue(lines, getShopBalanceData(), fullText, uiScale, textSizePx);
+
+      const richShopPriceBalanceRendered = shopRole === "price_balance" && renderShopPriceBalanceValue(lines, uiScale, textSizePx);
+
+      const richShopValueRendered = richShopPriceRendered || richShopBalanceRendered || richShopPriceBalanceRendered;
+
       const indicatorShape = getDialogCursorShape(cursorStyle, cursorCustom);
       const indicator = document.createElement("div");
       indicator.className = indicatorShape.className + ((anim === "none" || cursorStyle === "none") ? " hidden" : "");
@@ -960,7 +1112,7 @@ prev.addEventListener('click', function(ev){
       node.appendChild(indicator);
       stage.appendChild(node);
 
-      if(!richShopPriceRendered) setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps);
+      if(!richShopValueRendered) setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps);
     }
 
     function renderImage(stage, item, runtimePath){
@@ -1122,6 +1274,7 @@ prev.addEventListener('click', function(ev){
             if(window.cnpc && typeof window.cnpc.sendEvent === "function"){
               const payload = {
                 __overlayName: String((INIT && INIT.__overlayName) || 'dc_gui_runtime'),
+                __runtimeOwner: String((INIT && INIT.__runtimeOwner) || ''),
                 __event: 'choice',
                 sessionId: String((INIT && INIT.sessionId) || ''),
                 index: Number(btn.dataset.choiceIndex || "0"),
@@ -1511,6 +1664,7 @@ var stopPagerEv = function(ev){
       const stage = document.getElementById("stage");
       if(!stage) return;
       stage.innerHTML = "";
+      RUNTIME_MC_SLOT_PROXIES = [];
 
       const elements = applyTextFxToElements(Array.isArray(GUI.elements) ? GUI.elements.slice() : []);
       HAS_PAGER = false;
@@ -1561,6 +1715,7 @@ var stopPagerEv = function(ev){
         }
         // unknown element type
       }
+      flushRuntimeMcSlotProxies();
     }
 
     function parseRuntimeUpdatePayload(raw){

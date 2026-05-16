@@ -26,6 +26,8 @@ var HashMap=Java.type("java.util.HashMap");
 var ArrayList=Java.type("java.util.ArrayList");
 var LANG_RESOURCE_CACHE={};
 var DC_ENTRY_SPEC_ERRORS=[];
+var DC_ENTRY_SPEC_CACHE=null;
+var DC_JSON_FILE_CACHE={};
 
 function init(e){
 ensureDcAdminsRoot();
@@ -968,8 +970,9 @@ function fileNameOnly(path){
 var p=normalizeRelPath(path),parts=p.split("/");
 return parts[parts.length-1]||p;
 }
-function getDcEntrySpecs(){
-return loadDcEntrySpecsFromFiles();
+function getDcEntrySpecs(refresh){
+if(refresh===true||!DC_ENTRY_SPEC_CACHE)DC_ENTRY_SPEC_CACHE=loadDcEntrySpecsFromFiles();
+return DC_ENTRY_SPEC_CACHE;
 }
 function findDcEntrySpecRoots(){
 var File=Java.type("java.io.File"),out=[],seen={},roots=findCustomNpcsRoots(),i;
@@ -1070,8 +1073,8 @@ var specs=getDcEntrySpecs(),i,wanted=String(prefix||"");
 for(i=0;i<specs.length;i++)if(String(specs[i].prefix||"")===wanted)return specs[i];
 return null;
 }
-function listDcInstallableScripts(){
-var scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(),warnings=copyDcEntrySpecErrors(),out=[],i,candidate,primaryRoot="";
+function listDcInstallableScripts(refresh){
+var scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(refresh===true),warnings=copyDcEntrySpecErrors(),out=[],i,candidate,primaryRoot="";
 if(scriptRoots.length)primaryRoot=String(scriptRoots[0].getAbsolutePath()).replace(/\\/g,"/");
 if(!scriptRoots.length)return {root:"",label:"dc_lib",files:[],warnings:warnings,error:"No dc_lib folder found."};
 for(i=0;i<specs.length;i++){
@@ -1227,7 +1230,7 @@ return {ok:true};
 }
 
 function onNpcScriptFileList(e,data){
-var mode=String(data.mode||"general"),found=mode==="dcE"?listDcInstallableScripts():listEcmaScriptFiles(mode),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s,text;
+var mode=String(data.mode||"general"),refresh=data.refresh===true,found=mode==="dcE"?listDcInstallableScripts(refresh):listEcmaScriptFiles(mode),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s,text;
 if(!query)out=files;
 else if(mode==="dcE"){
 for(i=0;i<files.length;i++){
@@ -1898,14 +1901,18 @@ else clearStoredDataKey(store,CFG.SHOP_JSON_PATH_KEY);
 }
 function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");
-var found=listDcJsonFiles(prefix),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s;
+var found=listDcJsonFiles(prefix,data.refresh===true),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s;
 if(query){for(i=0;i<files.length;i++){s=files[i];if(String(s).toLowerCase().indexOf(query)>=0)out.push(s);}}else out=files;
 pushBrowser(e.player,"npcDcJsonFileList",{ok:!found.error,root:root,label:getDcJsonRootLabel(prefix),prefix:prefix,files:out,error:found.error||""});
 }
-function listDcJsonFiles(prefix){
-var root=resolveDcJsonRoot(prefix),out=[],seen={},checked,rootPath;
+function listDcJsonFiles(prefix,refresh){
+var root=resolveDcJsonRoot(prefix),out=[],seen={},checked,rootPath,cacheKey,cached;
 if(!root)return {root:"",files:[],error:"No JSON root found."};
 rootPath=String(root.getAbsolutePath()).replace(/\\/g,"/");
+cacheKey=makeDcJsonCacheKey(prefix,rootPath);
+if(refresh===true)delete DC_JSON_FILE_CACHE[cacheKey];
+cached=DC_JSON_FILE_CACHE[cacheKey];
+if(cached)return copyDcJsonFileResult(cached);
 walkJsonFiles(root,root,out,seen);
 if(prefix==="dc_dialogue"){
 checked=filterDialogueStartJsonFiles(root,out);
@@ -1913,7 +1920,14 @@ if(!checked.ok)return {root:rootPath,files:[],error:checked.error};
 out=checked.files;
 }
 out.sort();
+DC_JSON_FILE_CACHE[cacheKey]={root:rootPath,files:copyStringArray(out)};
 return {root:rootPath,files:out};
+}
+function makeDcJsonCacheKey(prefix,rootPath){
+return String(prefix||"").toLowerCase()+"|"+String(rootPath||"").toLowerCase();
+}
+function copyDcJsonFileResult(result){
+return {root:String(result&&result.root||""),files:copyStringArray(result&&result.files||[])};
 }
 function filterDialogueStartJsonFiles(root,files){
 var out=[],i,rel,check;

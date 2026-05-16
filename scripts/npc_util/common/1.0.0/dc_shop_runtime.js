@@ -5,6 +5,7 @@
 
 var DcShopRuntimeModule = (function(){
   var OVERLAY_NAME = "dc_gui_runtime";
+  var RUNTIME_OWNER = "shop";
   var DEFAULT_HTML = "html/dc_util/dc_gui_runtime.html";
   var DEFAULT_GUI_JSON = "customnpcs/dc_data/dc_gui/shop_gui_default.json";
 
@@ -97,6 +98,10 @@ var DcShopRuntimeModule = (function(){
     id = id.replace(/[^A-Za-z0-9_\-:.]/g, "_");
     if(!id) throw new Error("Shop ID becomes empty after normalization");
     return id;
+  }
+
+  function newSessionId(){
+    return String(Date.now() + "_" + Math.floor(Math.random() * 900000 + 100000));
   }
 
   function getCategories(shop){
@@ -435,7 +440,7 @@ var DcShopRuntimeModule = (function(){
   function stockText(ctx, shop, product){
     if(!product) return "Stock: -";
     var s = getStock(ctx, shop, product);
-    return s < 0 ? "Stock: ∞" : "Stock: " + s;
+    return s < 0 ? "Stock: \u221e" : "Stock: " + s;
   }
 
   function balanceText(ctx, currency){
@@ -445,7 +450,7 @@ var DcShopRuntimeModule = (function(){
 
   function stockLabel(ctx, shop, product){
     var stock = getStock(ctx, shop, product);
-    return stock < 0 ? "∞" : String(stock);
+    return stock < 0 ? "\u221e" : String(stock);
   }
 
   function productChoiceData(ctx, shop, product, action, slotInfo){
@@ -485,21 +490,62 @@ var DcShopRuntimeModule = (function(){
     var list = getProducts(shop);
     var map = {};
     var overlays = [];
+    var usedOverlaySlots = {};
+    var currencySlots = {};
+    var nextCurrencySlot = 2;
+    var itemSlotBase = 16;
+
+    function pushOverlay(slot, itemId){
+      var slotNum = parseInt(String(slot), 10);
+      if(isNaN(slotNum) || slotNum < 0 || !itemId) return;
+      var key = String(slotNum);
+      if(usedOverlaySlots[key]) return;
+      usedOverlaySlots[key] = true;
+      overlays.push({ slot:slotNum, item:String(itemId), count:1 });
+    }
+
+    function priceCurrencySlotFor(currency){
+      var itemId = currencyItemId(currency);
+      var key = String(itemId || "");
+      if(currencySlots[key] != null) return currencySlots[key];
+      var slot = nextCurrencySlot;
+      nextCurrencySlot += 1;
+      currencySlots[key] = slot;
+      pushOverlay(slot, itemId);
+      return slot;
+    }
+
     for(var i=0;i<list.length;i++){
       var product = list[i];
       var id = String(product.id || "");
-      var itemSlot = i * 3;
+      var itemSlot = itemSlotBase + (i * 2);
       var currencySlot = itemSlot + 1;
-      var priceCurrencySlot = itemSlot + 2;
-      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot, priceCurrencySlot:priceCurrencySlot };
-      overlays.push({ slot:itemSlot, item:productItemId(product), count:1 });
+      var priceCurrencySlot = -1;
       var currency = currencyFor(shop, product);
-      if(currencyKind(currency) === "item"){
-        overlays.push({ slot:currencySlot, item:currencyItemId(currency), count:1 });
-        overlays.push({ slot:priceCurrencySlot, item:currencyItemId(currency), count:1 });
-      }
+      if(currencyKind(currency) === "item") priceCurrencySlot = priceCurrencySlotFor(currency);
+      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot, priceCurrencySlot:priceCurrencySlot };
+      pushOverlay(itemSlot, productItemId(product));
+      if(currencyKind(currency) === "item") pushOverlay(currencySlot, currencyItemId(currency));
     }
-    return { map:map, overlays:overlays };
+    return { map:map, overlays:overlays, usedOverlaySlots:usedOverlaySlots, currencySlots:currencySlots, nextCurrencySlot:nextCurrencySlot };
+  }
+
+  function ensureCurrencyOverlaySlot(slotInfo, currency){
+    if(!slotInfo || typeof slotInfo !== "object") return -1;
+    if(currencyKind(currency) !== "item") return -1;
+    var itemId = currencyItemId(currency);
+    var key = String(itemId || "");
+    if(slotInfo.currencySlots && slotInfo.currencySlots[key] != null) return slotInfo.currencySlots[key];
+    if(!slotInfo.currencySlots) slotInfo.currencySlots = {};
+    if(!slotInfo.usedOverlaySlots) slotInfo.usedOverlaySlots = {};
+    var slot = parseInt(String(slotInfo.nextCurrencySlot != null ? slotInfo.nextCurrencySlot : 2), 10);
+    if(isNaN(slot) || slot < 0) slot = 2;
+    while(slotInfo.usedOverlaySlots[String(slot)]) slot += 1;
+    slotInfo.nextCurrencySlot = slot + 1;
+    slotInfo.currencySlots[key] = slot;
+    slotInfo.usedOverlaySlots[String(slot)] = true;
+    slotInfo.overlays.push({ slot:slot, item:itemId, count:1 });
+    return slot;
   }
 
   function buildBindings(ctx, shop, active){
@@ -513,6 +559,7 @@ var DcShopRuntimeModule = (function(){
     var page = Math.max(0, Math.min(maxPage, parseInt(String(active.page || 0), 10) || 0));
     var selected = findProduct(shop, active.selectedProductId);
     var currency = currencyFor(shop, selected || null);
+    var balanceCurrencySlot = ensureCurrencyOverlaySlot(slotInfo, currency);
     var textMessage = String(active.message || "");
     if(!textMessage) textMessage = selected ? productText(selected) : "Select an item.";
 
@@ -552,6 +599,13 @@ var DcShopRuntimeModule = (function(){
           balance: balanceText(ctx, currency)
         },
         overlayItems: slotInfo.overlays,
+        balanceData: {
+          currencyType: currencyKind(currency),
+          currencyName: currencyName(currency),
+          currencyItemId: currencyKind(currency) === "item" ? currencyItemId(currency) : "",
+          currencyMcSlot: balanceCurrencySlot,
+          amountText: String(getMoney(ctx, currency))
+        },
         choices: {
           category_buttons: categoryChoices,
           item_slots: itemChoices,
@@ -586,6 +640,14 @@ var DcShopRuntimeModule = (function(){
     return JSON.parse(String(raw));
   }
 
+  function matchesActiveEvent(active, payload){
+    var sid = String(payload && payload.sessionId || "");
+    if(!sid || String(active && active.sessionId || "") !== sid) return false;
+    var owner = String((payload && (payload.__runtimeOwner || payload.runtimeOwner)) || "");
+    if(owner && owner !== String(active && active.runtimeOwner || RUNTIME_OWNER)) return false;
+    return true;
+  }
+
   function setLastResult(player, result){
     var td = temp(player);
     td.put(KEY.LAST_RESULT, JSON.stringify(result || {}));
@@ -609,8 +671,10 @@ var DcShopRuntimeModule = (function(){
 
   function sendShopUpdate(ctx, shop, active, forceReopen){
     var guiJson = readJson(active.guiJsonPath);
+    if(forceReopen) active.sessionId = newSessionId();
     var payload = {
       __overlayName: OVERLAY_NAME,
+      __runtimeOwner: RUNTIME_OWNER,
       type: "dcDialogueUpdate",
       sessionId: String(active.sessionId || ""),
       bindings: buildBindings(ctx, shop, active)
@@ -620,6 +684,7 @@ var DcShopRuntimeModule = (function(){
     }
     var data = DcGuiRuntimeModule.buildInitData({ player:ctx.player, npc:ctx.npc }, guiJson, {
       sessionId: active.sessionId,
+      runtimeOwner: RUNTIME_OWNER,
       bindings: payload.bindings
     });
     if(data && typeof data === "object"){
@@ -632,8 +697,6 @@ var DcShopRuntimeModule = (function(){
       setActive(ctx.player, active);
       return sendToBrowser(ctx.player, "dcDialogueUpdate", payload);
     }
-    active.reopenCloseSkips = (parseInt(String(active.reopenCloseSkips || "0"), 10) || 0) + 1;
-    active.reopeningUntil = Date.now() + 5000;
     setActive(ctx.player, active);
     try{
       if(ctx && ctx.event && typeof cnpcext !== "undefined" && cnpcext && typeof cnpcext.openHtmlGui === "function"){
@@ -676,10 +739,11 @@ var DcShopRuntimeModule = (function(){
 
     var categoryId = firstCategoryId(shop);
     var pageSize = roleChoiceCount(guiJson, "item_slots", 8);
-    var sessionId = String(Date.now() + "_" + Math.floor(Math.random() * 900000 + 100000));
+    var sessionId = newSessionId();
     var active = {
       sessionId: sessionId,
       overlayName: OVERLAY_NAME,
+      runtimeOwner: RUNTIME_OWNER,
       shopId: getShopId(shop, opts.shopId),
       shopJsonPath: shopPath,
       guiJsonPath: guiPath,
@@ -690,8 +754,7 @@ var DcShopRuntimeModule = (function(){
       htmlPath: String(opts.htmlPath || DEFAULT_HTML),
       accessPolicy: accessPolicy,
       source: String(opts.source || "shop"),
-      message: "Select an item.",
-      openedAt: Date.now()
+      message: "Select an item."
     };
 
     closeHtmlGui(ctx.player);
@@ -702,6 +765,7 @@ var DcShopRuntimeModule = (function(){
       guiJsonPath: guiPath,
       htmlPath: String(opts.htmlPath || DEFAULT_HTML),
       sessionId: sessionId,
+      runtimeOwner: RUNTIME_OWNER,
       bindings: buildBindings(ctx, shop, active)
     });
     if(handle == null) throw new Error("openDcGuiRuntime returned null for shop GUI: " + guiPath);
@@ -752,20 +816,10 @@ var DcShopRuntimeModule = (function(){
     }
     payload = payload && typeof payload === "object" ? payload : {};
     if(payload.__overlayName && String(payload.__overlayName) !== String(active.overlayName || OVERLAY_NAME)) return null;
-    if(payload.sessionId && active.sessionId && String(payload.sessionId) !== String(active.sessionId)) return null;
 
     var evName = String(e.eventName || payload.__event || "");
+    if((evName === "choice" || evName === "__guiClosed" || evName === "done") && !matchesActiveEvent(active, payload)) return null;
     if(evName === "__guiClosed" || evName === "done"){
-      var skipClose = parseInt(String(active.reopenCloseSkips || "0"), 10) || 0;
-      var reopenUntil = parseInt(String(active.reopeningUntil || "0"), 10) || 0;
-      if(skipClose > 0 && reopenUntil && Date.now() < reopenUntil){
-        active.reopenCloseSkips = skipClose - 1;
-        setActive(player, active);
-        return { handled:true, result: { done:false, reason:"refreshing" } };
-      }
-      if(reopenUntil && Date.now() < reopenUntil){
-        return { handled:true, result: { done:false, reason:"refreshing" } };
-      }
       clearActive(player);
       var closed = { done:true, reason:"closed" };
       setLastResult(player, closed);
@@ -838,3 +892,5 @@ if(typeof NpcEventModule !== "undefined" && NpcEventModule && typeof NpcEventMod
     module: dc_shop_runtime_module()
   });
 }
+
+

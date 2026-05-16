@@ -698,6 +698,7 @@ return text;
     var itemOverlay = buildOverlayItems(bindings, options);
     return {
       __overlayName: OVERLAY_NAME,
+      __runtimeOwner: String((options && options.runtimeOwner) || ""),
       sessionId: String((options && options.sessionId) || ""),
       speaker: speakerName,
       gui: gui,

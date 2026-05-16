@@ -11,6 +11,7 @@
 
 var DcDialogueUtilModule = (function(){
   var OVERLAY_NAME = "dc_gui_runtime";
+  var RUNTIME_OWNER = "dialogue";
   var DEFAULT_GUI_JSON = "customnpcs/dc_data/dc_gui/sample_gui.json";
   var McComponent = null;
   var McText = null;
@@ -503,6 +504,14 @@ var DcDialogueUtilModule = (function(){
     try{ return JSON.parse(String(raw)); }catch(e){ return null; }
   }
 
+  function matchesActiveEvent(active, payload){
+    var sid = String(payload && payload.sessionId || "");
+    if(!sid || String(active && active.sessionId || "") !== sid) return false;
+    var owner = String((payload && (payload.__runtimeOwner || payload.runtimeOwner)) || "");
+    if(owner && owner !== String(active && active.runtimeOwner || RUNTIME_OWNER)) return false;
+    return true;
+  }
+
   function setLastResult(player, result){
     var td = temp(player);
     if(!td) return;
@@ -563,6 +572,7 @@ var DcDialogueUtilModule = (function(){
       guiJsonPath: guiJsonPath,
       htmlPath: String(opts.htmlPath || "html/dc_util/dc_gui_runtime.html"),
       sessionId: sessionId,
+      runtimeOwner: RUNTIME_OWNER,
       debug: opts.debug === true,
       bindings: mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), opts.pendingFx)
     };
@@ -572,12 +582,12 @@ var DcDialogueUtilModule = (function(){
     setActive(player, {
       sessionId: sessionId,
       overlayName: OVERLAY_NAME,
+      runtimeOwner: RUNTIME_OWNER,
       mode: String(opts.mode || "generic"),
       returnGoto: String(opts.returnGoto || ""),
       baseSubPath: baseSubPath(dialogueRel),
       dialogueJsonPath: dialogueRel,
-      guiJsonPath: guiJsonPath,
-      openedAt: Date.now()
+      guiJsonPath: guiJsonPath
     });
 
     var openTarget = eventObj || { player: player, npc: npc };
@@ -593,6 +603,7 @@ var DcDialogueUtilModule = (function(){
     var mergedBindings = mergeChoiceFxIntoBindings(buildBindings(raw, player, npc), pendingFx);
     var payload = {
       __overlayName: OVERLAY_NAME,
+      __runtimeOwner: RUNTIME_OWNER,
       type: "dcDialogueUpdate",
       sessionId: sessionId,
       dialogueJsonPath: String(nextRel || ""),
@@ -622,12 +633,12 @@ var DcDialogueUtilModule = (function(){
     setActive(player, {
       sessionId: sessionId,
       overlayName: OVERLAY_NAME,
+      runtimeOwner: RUNTIME_OWNER,
       mode: String(active.mode || "generic"),
       returnGoto: String(active.returnGoto || ""),
       baseSubPath: baseSubPath(nextRel),
       dialogueJsonPath: String(nextRel || ""),
-      guiJsonPath: String(active.guiJsonPath || ""),
-      openedAt: Number(active.openedAt || Date.now())
+      guiJsonPath: String(active.guiJsonPath || "")
     });
     return true;
   }
@@ -800,18 +811,14 @@ var DcDialogueUtilModule = (function(){
     if(!active) return null;
 
     if(payload.__overlayName && String(payload.__overlayName) !== String(active.overlayName || OVERLAY_NAME)) return null;
-    // __guiClosed can arrive with no payload/sessionId; accept current session.
-    if(payload.sessionId && active.sessionId && String(payload.sessionId) !== String(active.sessionId)) return null;
 
     var evName = String(e.eventName || "");
+    if((evName === "choice" || evName === "__guiClosed" || evName === "done") && !matchesActiveEvent(active, payload)) return null;
     if(evName === "choice"){
       var res = handleChoice(player, npc, active, payload, e);
       return { handled:true, result: res };
     }
     if(evName === "__guiClosed" || evName === "done"){
-      if(!payload.sessionId && active.openedAt && (Date.now() - Number(active.openedAt || 0)) < 1200){
-        return { handled:true, result:{ done:false, reason:"stale_close_ignored" } };
-      }
       clearActive(player);
       var res2 = { done:true, reason:"closed" };
       setLastResult(player, res2);

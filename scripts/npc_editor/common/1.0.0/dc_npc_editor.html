@@ -366,9 +366,9 @@ byId("pickerCloseBtn").onclick=closeFilePicker;
 byId("pickerUpBtn").onclick=pickerGoUp;
 byId("pickerRefreshBtn").onclick=function(){
 if(String(APP_STATE.picker.mode||"general")==="dcJson"){
-requestDcJsonFileList(getActiveDcPrefix(normalizeDcSelection(APP_STATE.script.dcSelection)),String(byId("pickerSearchInput").value||""));
+requestDcJsonFileList(getActiveDcPrefix(normalizeDcSelection(APP_STATE.script.dcSelection)),String(byId("pickerSearchInput").value||""),true);
 }else{
-requestScriptFileList(APP_STATE.picker.mode);
+requestScriptFileList(APP_STATE.picker.mode,true);
 }
 };
 byId("pickerSearchInput").addEventListener("input",renderPickerState);
@@ -1131,8 +1131,8 @@ function openFilePicker(){if(String(APP_STATE.script.pendingStyle||APP_STATE.scr
 function openDcScriptPicker(){APP_STATE.picker.mode="dcScript";APP_STATE.picker.current="/";APP_STATE.picker.selectedFile="";APP_STATE.picker.rootLabel="dc_lib";byId("pickerSearchInput").value="";byId("filePickerModal").classList.add("show");requestScriptFileList("dcE");}
 function openDcJsonPicker(){var sel=normalizeDcSelection(APP_STATE.script.dcSelection),prefix=getActiveDcPrefix(sel);if(!prefix){setStatus("Select a dc script first.","status-warn");return;}APP_STATE.picker.mode="dcJson";APP_STATE.picker.current="/";APP_STATE.picker.selectedFile="";APP_STATE.picker.rootLabel=getDcJsonRootLabel(prefix);byId("pickerSearchInput").value="";byId("filePickerModal").classList.add("show");requestDcJsonFileList(prefix,"");}
 function closeFilePicker(){byId("filePickerModal").classList.remove("show");}
-function requestScriptFileList(mode){sendEvt("npc_script_file_list",{query:"",mode:mode||APP_STATE.picker.mode||"general"});}
-function requestDcJsonFileList(prefix,query){sendEvt("npc_dc_json_file_list",{prefix:String(prefix||""),query:String(query||"")});}
+function requestScriptFileList(mode,refresh){sendEvt("npc_script_file_list",{query:"",mode:mode||APP_STATE.picker.mode||"general",refresh:refresh===true});}
+function requestDcJsonFileList(prefix,query,refresh){sendEvt("npc_dc_json_file_list",{prefix:String(prefix||""),query:String(query||""),refresh:refresh===true});}
 function addSelectedFileFromInput(closePicker){var p=String(byId("newFileInput").value||APP_STATE.picker.selectedFile||"").trim(),mode=String(APP_STATE.picker.mode||"general");if(!p){setStatus("Select a file first.","status-warn");return;}if(mode==="dcJson"){selectDcJsonPath(p);if(closePicker)closeFilePicker();return;}if(mode==="dcScript"||String(APP_STATE.script.pendingStyle||APP_STATE.script.data.scriptStyle||"general")==="dcE"){selectDcScriptPath(p);if(closePicker)closeFilePicker();return;}addFileToSelectedTab(p);if(closePicker)closeFilePicker();}
 function setDisplay(id,show){byId(id).style.display=show?"":"none";}
 function emptyDcSelection(){return {scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]};}
