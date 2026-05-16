@@ -1104,7 +1104,9 @@ sel.scriptPaths=merged;
 return {ok:true,selection:sel};
 }
 function applyDochiScriptToNpc(player,npc,data,raw,existing){
-var check=validateDcApplySelection(data.dcSelection||{}),selection,tabs,scriptEnabled,expectedState,res,lock,files=[],i;
+var check,selection,tabs,scriptEnabled,expectedState,res,lock,files=[],i;
+if(data.clearDcSelection===true){clearDochiScriptFromNpc(player,npc,data,existing);return;}
+check=validateDcApplySelection(data.dcSelection||{});
 if(!check.ok){pushBrowser(player,"npcScriptApplyResult",{ok:false,error:check.error});return;}
 selection=check.selection;
 scriptEnabled=(data.scriptEnabled===true||data.scriptEnabled===false)?data.scriptEnabled:existing.scriptEnabled;
@@ -1118,6 +1120,21 @@ setNpcScriptStyle(npc,"dcE");
 setNpcDcSelection(npc,selection);
 setNpcDochiLock(npc,lock);
 pushBrowser(player,"npcScriptApplyResult",{ok:true,uuid:String(npc.getUUID()),scriptStyle:"dcE",dcSelection:selection,dochiLock:lock});
+pushNpcList(player,getStoredScanRange(player));
+}
+function clearDochiScriptFromNpc(player,npc,data,existing){
+var scriptEnabled=(data.scriptEnabled===true||data.scriptEnabled===false)?data.scriptEnabled:(!existing||existing.scriptEnabled===true),res,payload;
+res=clearNpcScripts(npc,scriptEnabled);
+if(!res.ok){pushBrowser(player,"npcScriptApplyResult",{ok:false,error:res.error||"Dochi remove failed"});return;}
+setNpcScriptStyle(npc,"dcE");
+setNpcDcSelection(npc,{});
+setNpcDochiLock(npc,{locked:false});
+refreshNpcClient(npc);
+payload=buildNpcScriptDataPayload(npc);
+payload.ok=true;
+payload.clearDcSelection=true;
+payload.scriptEnabled=scriptEnabled;
+pushBrowser(player,"npcScriptApplyResult",payload);
 pushNpcList(player,getStoredScanRange(player));
 }
 
