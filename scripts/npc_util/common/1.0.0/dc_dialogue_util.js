@@ -374,7 +374,8 @@ var DcDialogueUtilModule = (function(){
       shopJsonPath = dc_shop_trigger_getShopPath(npc);
     }
     if(!shopJsonPath) throw new Error("go_shop shopJsonPath is empty.");
-    return dc_shop_open({ player:player, npc:npc, event:eventObj }, {
+    var target = (eventObj && eventObj.player && eventObj.npc) ? eventObj : { player:player, npc:npc, event:eventObj };
+    return dc_shop_open(target, {
       shopJsonPath: shopJsonPath,
       accessPolicy: "dialogue_only",
       source: "dialogue"

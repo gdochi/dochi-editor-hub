@@ -10,12 +10,20 @@ var DcGuiRuntimeModule = (function () {
   var LOCALE_PREF_KEY = "npc_browser_locale_pref";
   var LANG_RESOURCE_CACHE = {};
 
+  function unwrapEventTarget(target) {
+    try {
+      if (target && target.event && target.event.player && target.event.npc) return target.event;
+    } catch (err) {}
+    return target;
+  }
+
   function getContext(target, maybeNpc, maybeOpts) {
     if (target && target.player && target.npc) {
       var opts = null;
+      var eventTarget = unwrapEventTarget(target);
       if (maybeNpc && typeof maybeNpc === "object") opts = maybeNpc;
       if (!opts && maybeOpts && typeof maybeOpts === "object") opts = maybeOpts;
-      return { player: target.player, npc: target.npc, event: target, opts: opts || {} };
+      return { player: target.player, npc: target.npc, event: eventTarget, opts: opts || {} };
     }
     if (target && typeof target.getMCEntity === "function") {
       return { player: target, npc: maybeNpc, event: null, opts: (maybeOpts && typeof maybeOpts === "object") ? maybeOpts : {} };

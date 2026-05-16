@@ -82,12 +82,20 @@ var DcShopRuntimeModule = (function(){
     player.message(msg);
   }
 
+  function unwrapEventTarget(target){
+    try{
+      if(target && target.event && target.event.player) return target.event;
+    }catch(err){}
+    return target;
+  }
+
   function getContext(target, maybeNpc, maybeOpts){
-    var eventObj = target && target.player ? target : null;
-    var player = eventObj ? eventObj.player : target;
-    var npc = eventObj ? (eventObj.npc || maybeNpc) : maybeNpc;
+    var rawEvent = target && target.player ? unwrapEventTarget(target) : null;
+    var eventObj = rawEvent && rawEvent.player ? rawEvent : null;
+    var player = target && target.player ? target.player : target;
+    var npc = target && target.player ? (target.npc || maybeNpc) : maybeNpc;
     var opts = {};
-    if(eventObj && maybeNpc && typeof maybeNpc === "object") opts = maybeNpc;
+    if(target && target.player && maybeNpc && typeof maybeNpc === "object") opts = maybeNpc;
     else if(maybeOpts && typeof maybeOpts === "object") opts = maybeOpts;
     return { event: eventObj, player: player, npc: npc, world: pickWorld(player, npc), opts: opts || {} };
   }
