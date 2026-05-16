@@ -149,7 +149,9 @@ var DcShopRuntimeModule = (function(){
         baseStock: base,
         categoryId: categoryId,
         currency: p.currency && typeof p.currency === "object" ? p.currency : { type:"global" },
-        text: p.text
+        text: p.text,
+        maxBuy: p.maxBuy,
+        maxQuantity: p.maxQuantity
       });
     }
     return out;
@@ -461,18 +463,50 @@ var DcShopRuntimeModule = (function(){
     return stock < 0 ? "\u221e" : String(stock);
   }
 
-  function productChoiceData(ctx, shop, product, action, slotInfo){
+  function normalizeQuantity(value){
+    var n = parseInt(String(value == null ? 1 : value), 10);
+    if(isNaN(n) || n < 1) n = 1;
+    return Math.max(1, Math.min(999, n));
+  }
+
+  function maxBuyQuantity(ctx, shop, product){
+    if(!product) return 1;
+    var rawLimit = product.maxBuy != null ? product.maxBuy : (product.maxQuantity != null ? product.maxQuantity : (shop && (shop.maxBuy != null ? shop.maxBuy : shop.maxQuantity)));
+    var limit = normalizeQuantity(rawLimit != null ? rawLimit : 999);
+    var stock = getStock(ctx, shop, product);
+    if(stock >= 0) limit = Math.min(limit, Math.max(1, stock));
+    return Math.max(1, limit);
+  }
+
+  function clampActiveQuantity(ctx, shop, active, product){
+    if(!active) return 1;
+    var qty = normalizeQuantity(active.quantity);
+    if(product){
+      var maxQty = maxBuyQuantity(ctx, shop, product);
+      if(qty > maxQty) qty = maxQty;
+    }else{
+      qty = 1;
+    }
+    active.quantity = qty;
+    return qty;
+  }
+
+  function productChoiceData(ctx, shop, product, action, slotInfo, quantity){
     var currency = currencyFor(shop, product);
     var kind = currencyKind(currency);
     var itemCurrency = kind === "item";
+    var qty = normalizeQuantity(quantity || 1);
+    var totalPrice = Math.max(0, product.price * qty);
     var data = {
       shopAction: String(action || "select"),
       productId: String(product.id || ""),
       itemId: productItemId(product),
       itemCount: 1,
       itemName: String(product.name || product.id || ""),
-      price: product.price,
-      priceText: itemCurrency ? String(product.price) : String(product.price) + " " + currencyName(currency),
+      quantity: qty,
+      unitPrice: product.price,
+      price: totalPrice,
+      priceText: itemCurrency ? String(totalPrice) : String(totalPrice) + " " + currencyName(currency),
       stock: getStock(ctx, shop, product),
       stockText: stockLabel(ctx, shop, product),
       currencyType: kind,
@@ -564,7 +598,9 @@ var DcShopRuntimeModule = (function(){
     var maxPage = Math.max(0, Math.ceil(catProducts.length / pageSize) - 1);
     var page = Math.max(0, Math.min(maxPage, parseInt(String(active.page || 0), 10) || 0));
     var selected = findProduct(shop, active.selectedProductId);
+    var qty = clampActiveQuantity(ctx, shop, active, selected);
     var currency = currencyFor(shop, selected || null);
+    var totalPrice = selected ? selected.price * qty : 0;
     var balanceCurrencySlot = ensureCurrencyOverlaySlot(slotInfo, currency);
     var textMessage = String(active.message || "");
     if(!textMessage) textMessage = selected ? productText(selected) : "Select an item.";
@@ -590,7 +626,7 @@ var DcShopRuntimeModule = (function(){
       ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", {
           itemSlot: slotInfo.map[String(selected.id || "")].itemSlot,
           currencySlot: slotInfo.map[String(selected.id || "")].priceCurrencySlot
-        }), 0)
+        }, qty), 0)
       : makeChoice("", "selected_slot", { shopAction:"noop" }, 0);
 
     return {
@@ -600,7 +636,7 @@ var DcShopRuntimeModule = (function(){
           title: String(shop.name || shop.shopName || getShopId(shop, active.shopId)),
           message: textMessage,
           selected_slot: selected ? selected.name : "No item",
-          price: selected ? ("Price: " + selected.price + (currencyKind(currency) === "item" ? "" : " " + currencyName(currency))) : "Price: -",
+          price: selected ? ("Price: " + totalPrice + (currencyKind(currency) === "item" ? "" : " " + currencyName(currency))) : "Price: -",
           stock: stockText(ctx, shop, selected),
           balance: balanceText(ctx, currency)
         },
@@ -616,6 +652,11 @@ var DcShopRuntimeModule = (function(){
           category_buttons: categoryChoices,
           item_slots: itemChoices,
           selected_slot: [selectedChoice],
+          quantity_selector: [
+            makeChoice("<", "quantity_selector", { shopAction:"quantity_dec" }, 0),
+            makeChoice(String(qty), "quantity_selector", { shopAction:"quantity_value", quantity:qty }, 1),
+            makeChoice(">", "quantity_selector", { shopAction:"quantity_inc" }, 2)
+          ],
           buy_button: [makeChoice("Buy", "buy_button", { shopAction:"buy" }, 0)],
           page_nav: [
             makeChoice("Prev", "page_nav", { shopAction:"page_prev" }, 0),
@@ -762,6 +803,7 @@ var DcShopRuntimeModule = (function(){
       guiJsonPath: guiPath,
       categoryId: categoryId,
       selectedProductId: "",
+      quantity: 1,
       page: 0,
       pageSize: pageSize,
       htmlPath: String(opts.htmlPath || DEFAULT_HTML),
@@ -799,7 +841,11 @@ var DcShopRuntimeModule = (function(){
       active.message = "Out of stock.";
       return;
     }
-    var qty = 1;
+    var qty = clampActiveQuantity(ctx, shop, active, product);
+    if(stock >= 0 && stock < qty){
+      active.message = "Not enough stock.";
+      return;
+    }
     var currency = currencyFor(shop, product);
     var cost = product.price * qty;
     var money = getMoney(ctx, currency);
@@ -816,7 +862,7 @@ var DcShopRuntimeModule = (function(){
       return;
     }
     if(stock > 0) setStock(ctx, shop, product, stock - qty);
-    active.message = "Purchased " + product.name + ".";
+    active.message = "Purchased " + product.name + " x" + qty + ".";
   }
 
   function handleHtmlEvent(e){
@@ -859,9 +905,11 @@ var DcShopRuntimeModule = (function(){
       active.categoryId = String(dataObj.categoryId || firstCategoryId(shop));
       active.page = 0;
       active.selectedProductId = "";
+      active.quantity = 1;
       active.message = "Select an item.";
     }else if(action === "select"){
       active.selectedProductId = String(dataObj.productId || "");
+      active.quantity = 1;
       active.message = productText(findProduct(shop, active.selectedProductId));
     }else if(action === "page_prev"){
       active.page = Math.max(0, (parseInt(String(active.page || 0), 10) || 0) - 1);
@@ -870,6 +918,13 @@ var DcShopRuntimeModule = (function(){
       var pageSize = Math.max(1, parseInt(String(active.pageSize || 8), 10) || 8);
       var maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
       active.page = Math.min(maxPage, (parseInt(String(active.page || 0), 10) || 0) + 1);
+    }else if(action === "quantity_dec"){
+      active.quantity = Math.max(1, normalizeQuantity(active.quantity) - 1);
+    }else if(action === "quantity_inc"){
+      active.quantity = normalizeQuantity(active.quantity) + 1;
+      clampActiveQuantity(ctx, shop, active, findProduct(shop, active.selectedProductId));
+    }else if(action === "quantity_value"){
+      clampActiveQuantity(ctx, shop, active, findProduct(shop, active.selectedProductId));
     }else if(action === "buy"){
       handleBuy(ctx, shop, active);
     }

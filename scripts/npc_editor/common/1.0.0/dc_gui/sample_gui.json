@@ -1,11 +1,11 @@
 {
   "guiType": "dialogue",
   "id": "sample_dialogue_gui",
-  "globalStyleBase": "none",
-  "themeMix": {
-    "pixel": 0,
-    "medieval": 0,
-    "cyber": 0
+  "font": {
+    "source": "default",
+    "family": "",
+    "path": "",
+    "format": ""
   },
   "stage": {
     "width": 1280,
@@ -23,41 +23,21 @@
     "backgroundBlur": 0,
     "backgroundImage": "",
     "backgroundImagePath": "",
-    "placementMode": "snap",
+    "placementMode": "grid",
     "grid": {
-      "width": 32,
-      "height": 32
+      "width": 16,
+      "height": 16
     }
   },
   "elements": [
     {
       "id": "entity_1",
       "type": "entity",
-      "themeMode": "inherit",
-      "medievalVariant": "general",
-      "anchorPreset": "top-left",
       "x": 96,
       "y": 96,
       "w": 256,
       "h": 320,
       "z": 1,
-      "responsive": {
-        "anchorPreset": "top-left",
-        "baseResolution": {
-          "width": 1280,
-          "height": 720
-        },
-        "normalized": {
-          "x": 0.075,
-          "y": 0.1333,
-          "width": 0.2,
-          "height": 0.4444
-        },
-        "anchorOffset": {
-          "x": 96,
-          "y": 96
-        }
-      },
       "align": "center",
       "radius": 14,
       "padding": 12,
@@ -124,6 +104,9 @@
       "choiceWidth": 180,
       "choiceHeight": 42,
       "choiceColumns": 2,
+      "choiceBtnImage": "",
+      "choiceBtnImagePath": "",
+      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -135,31 +118,11 @@
     {
       "id": "image_1",
       "type": "image",
-      "themeMode": "inherit",
-      "medievalVariant": "general",
-      "anchorPreset": "top-left",
       "x": 928,
       "y": 64,
       "w": 256,
       "h": 288,
       "z": 2,
-      "responsive": {
-        "anchorPreset": "top-left",
-        "baseResolution": {
-          "width": 1280,
-          "height": 720
-        },
-        "normalized": {
-          "x": 0.725,
-          "y": 0.0889,
-          "width": 0.2,
-          "height": 0.4
-        },
-        "anchorOffset": {
-          "x": 928,
-          "y": 64
-        }
-      },
       "align": "center",
       "radius": 14,
       "padding": 12,
@@ -226,6 +189,9 @@
       "choiceWidth": 180,
       "choiceHeight": 42,
       "choiceColumns": 2,
+      "choiceBtnImage": "",
+      "choiceBtnImagePath": "",
+      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -237,31 +203,11 @@
     {
       "id": "dialog_1",
       "type": "dialog",
-      "themeMode": "inherit",
-      "medievalVariant": "general",
-      "anchorPreset": "top-left",
       "x": 96,
-      "y": 448,
+      "y": 512,
       "w": 1088,
-      "h": 256,
+      "h": 160,
       "z": 3,
-      "responsive": {
-        "anchorPreset": "top-left",
-        "baseResolution": {
-          "width": 1280,
-          "height": 720
-        },
-        "normalized": {
-          "x": 0.075,
-          "y": 0.6222,
-          "width": 0.85,
-          "height": 0.3556
-        },
-        "anchorOffset": {
-          "x": 96,
-          "y": 448
-        }
-      },
       "align": "left",
       "radius": 16,
       "padding": 18,
@@ -328,6 +274,9 @@
       "choiceWidth": 180,
       "choiceHeight": 42,
       "choiceColumns": 2,
+      "choiceBtnImage": "",
+      "choiceBtnImagePath": "",
+      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -339,31 +288,11 @@
     {
       "id": "pager_1",
       "type": "pager",
-      "themeMode": "inherit",
-      "medievalVariant": "general",
-      "anchorPreset": "top-left",
       "x": 928,
       "y": 384,
       "w": 256,
       "h": 64,
       "z": 4,
-      "responsive": {
-        "anchorPreset": "top-left",
-        "baseResolution": {
-          "width": 1280,
-          "height": 720
-        },
-        "normalized": {
-          "x": 0.725,
-          "y": 0.5333,
-          "width": 0.2,
-          "height": 0.0889
-        },
-        "anchorOffset": {
-          "x": 928,
-          "y": 384
-        }
-      },
       "align": "center",
       "radius": 14,
       "padding": 12,
@@ -430,6 +359,9 @@
       "choiceWidth": 180,
       "choiceHeight": 42,
       "choiceColumns": 2,
+      "choiceBtnImage": "",
+      "choiceBtnImagePath": "",
+      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -445,31 +377,11 @@
     {
       "id": "choice_1",
       "type": "choice",
-      "themeMode": "inherit",
-      "medievalVariant": "general",
-      "anchorPreset": "top-left",
       "x": 832,
-      "y": 624,
+      "y": 604,
       "w": 352,
-      "h": 84,
+      "h": 60,
       "z": 5,
-      "responsive": {
-        "anchorPreset": "top-left",
-        "baseResolution": {
-          "width": 1280,
-          "height": 720
-        },
-        "normalized": {
-          "x": 0.65,
-          "y": 0.8667,
-          "width": 0.275,
-          "height": 0.1167
-        },
-        "anchorOffset": {
-          "x": 832,
-          "y": 624
-        }
-      },
       "align": "left",
       "radius": 20,
       "padding": 20,
@@ -528,14 +440,17 @@
       "entityFollowCursor": true,
       "entityAnimate": true,
       "entityScale": 1,
-      "choiceCount": 6,
+      "choiceCount": 2,
       "choiceStartX": 0,
       "choiceStartY": 0,
       "choiceGapX": 10,
-      "choiceGapY": 10,
-      "choiceWidth": 175,
-      "choiceHeight": 37,
-      "choiceColumns": 4,
+      "choiceGapY": 0,
+      "choiceWidth": 166,
+      "choiceHeight": 36,
+      "choiceColumns": 2,
+      "choiceBtnImage": "",
+      "choiceBtnImagePath": "",
+      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "",

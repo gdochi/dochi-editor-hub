@@ -103,6 +103,7 @@
     }
 
     .mediaImg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:contain}
+    #stageBgImg,.mediaImg,.choiceBtn,.pageBtn{image-rendering:pixelated;image-rendering:crisp-edges}
     .entitySlot{position:absolute;left:50%;bottom:0;transform:translateX(-50%)}
 
     .dialogIndicator{
@@ -198,7 +199,7 @@
 
     function getFontFormatByPath(path){
       const ext = String(path || "").split(".").pop().toLowerCase();
-      return ({ ttf:"truetype", otf:"opentype", woff:"woff", woff2:"woff2" })[ext] || "";
+      return ({ woff:"woff", woff2:"woff2" })[ext] || "";
     }
 
     function quoteFontFamily(name){
@@ -242,6 +243,38 @@
       }else{
         document.documentElement.style.setProperty("--gui-font-family", "Segoe UI, Arial, sans-serif");
       }
+    }
+
+    const runtimeFontFaceCache = {};
+    function fontKeyFromPath(path){
+      let clean = String(path || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+      if(!clean) return "";
+      let hash = 0;
+      for(let i=0;i<clean.length;i++) hash = ((hash << 5) - hash + clean.charCodeAt(i)) | 0;
+      return "dochi_font_" + Math.abs(hash);
+    }
+
+    function ensureRuntimeFontFace(path){
+      const clean = String(path || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+      if(!clean) return "";
+      const format = getFontFormatByPath(clean);
+      if(!format) return "";
+      const family = fontKeyFromPath(clean);
+      if(runtimeFontFaceCache[clean]) return runtimeFontFaceCache[clean];
+      const node = document.createElement("style");
+      node.dataset.dochiRuntimeFont = family;
+      node.textContent = '@font-face{font-family:' + quoteFontFamily(family) + ';src:url("' + assetUrl(clean).replace(/"/g, '\\"') + '") format("' + format.replace(/"/g, '\\"') + '");font-display:swap;}';
+      document.head.appendChild(node);
+      runtimeFontFaceCache[clean] = quoteFontFamily(family);
+      return runtimeFontFaceCache[clean];
+    }
+
+    function resolveDialogFontFamily(item){
+      const path = String(item && item.dialogTextFontPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+      if(path) return ensureRuntimeFontFace(path);
+      const family = String(item && item.dialogTextFont || "").trim();
+      if(family && family !== "inherit" && family !== "default") return quoteFontFamily(family);
+      return "";
     }
 
     function clamp(n, a, b){
@@ -379,6 +412,87 @@
         img.src = assetUrl(path);
       }
     }
+    function textureRuntimePath(owner, imageKey, pathKey){
+      if(!owner || typeof owner !== "object") return "";
+      return String(owner[pathKey] || owner[imageKey] || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+    }
+
+    function normalizeTextureCrop(raw){
+      if(!raw || typeof raw !== "object") return null;
+      const w = Math.max(0, Number(raw.w || 0) || 0);
+      const h = Math.max(0, Number(raw.h || 0) || 0);
+      if(raw.enabled === false || w <= 0 || h <= 0) return null;
+      return {
+        x:Math.max(0, Number(raw.x || 0) || 0),
+        y:Math.max(0, Number(raw.y || 0) || 0),
+        w:w,
+        h:h,
+        sourceW:Math.max(0, Number(raw.sourceW || 0) || 0),
+        sourceH:Math.max(0, Number(raw.sourceH || 0) || 0)
+      };
+    }
+
+    function cropPercent(value, total){
+      if(!(total > 0)) return 0;
+      return Math.max(0, Math.min(100, (value / total) * 100));
+    }
+
+    function applyTextureBackground(node, path, crop){
+      const clean = String(path || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+      if(!node || !clean) return false;
+      node.style.backgroundImage = 'url("' + assetUrl(clean).replace(/"/g, '\\"') + '")';
+      node.style.backgroundRepeat = "no-repeat";
+      node.style.backgroundPosition = "center";
+      node.style.backgroundSize = "100% 100%";
+      node.style.backgroundColor = "transparent";
+      node.style.imageRendering = "pixelated";
+      if(crop && crop.w > 0 && crop.h > 0 && crop.sourceW > 0 && crop.sourceH > 0){
+        node.style.backgroundSize = String((crop.sourceW / crop.w) * 100) + "% " + String((crop.sourceH / crop.h) * 100) + "%";
+        node.style.backgroundPosition = String(cropPercent(crop.x, crop.sourceW - crop.w)) + "% " + String(cropPercent(crop.y, crop.sourceH - crop.h)) + "%";
+      }
+      return true;
+    }
+
+    function stripButtonChromeForTexture(btn){
+      if(!btn) return;
+      btn.style.borderStyle = "none";
+      btn.style.borderWidth = "0px";
+      btn.style.borderColor = "transparent";
+      btn.style.boxShadow = "none";
+    }
+
+    function getChoiceTextureEntry(item, index){
+      const list = Array.isArray(item && item.choiceBtnTextures) ? item.choiceBtnTextures : [];
+      const idx = Number(index);
+      if(Number.isFinite(idx) && idx >= 0 && idx < list.length && list[idx] && typeof list[idx] === "object") return list[idx];
+      return null;
+    }
+
+    function applyChoiceButtonTexture(btn, item, index){
+      const entry = getChoiceTextureEntry(item, index);
+      const entryPath = textureRuntimePath(entry, "image", "imagePath");
+      const sharedPath = textureRuntimePath(item, "choiceBtnImage", "choiceBtnImagePath");
+      const path = entryPath || sharedPath;
+      const crop = entryPath ? normalizeTextureCrop(entry && entry.imageCrop) : readImageCrop(item, "choiceBtnImage");
+      if(!applyTextureBackground(btn, path, crop)) return false;
+      stripButtonChromeForTexture(btn);
+      return true;
+    }
+
+    function applySlotButtonTexture(btn, item){
+      const path = textureRuntimePath(item, "choiceSlotItemImage", "choiceSlotItemImagePath");
+      if(!path) return false;
+      if(!applyTextureBackground(btn, path, readImageCrop(item, "choiceSlotItemImage"))) return false;
+      stripButtonChromeForTexture(btn);
+      return true;
+    }
+
+    function applySlotCardTexture(node, item){
+      const path = textureRuntimePath(item, "choiceSlotBgImage", "choiceSlotBgImagePath");
+      if(!path) return false;
+      return applyTextureBackground(node, path, readImageCrop(item, "choiceSlotBgImage"));
+    }
+
     function setBackground(){
       const bg = GUI && GUI.stage ? GUI.stage : {};
       const baseColor = (bg.backgroundColorNone || isNoneColorValue(bg.backgroundColor)) ? "transparent" : String(bg.backgroundColor || "transparent");
@@ -946,6 +1060,8 @@
           prev.style.height = String(Math.round(btnH)) + 'px';
           next.style.width = String(Math.round(btnW)) + 'px';
           next.style.height = String(Math.round(btnH)) + 'px';
+          if(applyChoiceButtonTexture(prev, item, 0)) stripButtonChromeForTexture(prev);
+          if(applyChoiceButtonTexture(next, item, 1)) stripButtonChromeForTexture(next);
           counter.style.fontSize = String(Math.max(10, Math.round(12 * uiScale))) + 'px';
 
           var syncNavPos = function(){
@@ -1043,6 +1159,12 @@ prev.addEventListener('click', function(ev){
       lines.style.color = (item.dialogTextColorNone || isNoneColorValue(item.dialogTextColor)) ? "transparent" : String(item.dialogTextColor || "rgba(255,255,255,.9)");
       const speakerPx = Math.max(10, Math.round((textSizeBase + 4) * uiScale));
       if(speakerNode) speakerNode.style.fontSize = String(speakerPx) + 'px';
+      const dialogFontFamily = resolveDialogFontFamily(item);
+      if(dialogFontFamily){
+        lines.style.fontFamily = dialogFontFamily + ", var(--gui-font-family)";
+        if(speakerNode) speakerNode.style.fontFamily = dialogFontFamily + ", var(--gui-font-family)";
+      }
+
       const richShopPriceRendered = shopRole === "price" && renderShopPriceValue(lines, getShopPriceData(), fullText, uiScale, textSizePx);
 
       const richShopBalanceRendered = shopRole === "balance" && renderShopBalanceValue(lines, getShopBalanceData(), fullText, uiScale, textSizePx);
@@ -1135,7 +1257,7 @@ prev.addEventListener('click', function(ev){
       box.appendChild(content);
 
       const count = Math.max(1, choices.length || Number(item.choiceCount || 1));
-      const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "buy_button" || role === "page_nav";
+      const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "quantity_selector" || role === "buy_button" || role === "page_nav";
       const rawStartX = Math.max(0, Number(item.choiceStartX ?? 12)) * sx;
       const rawStartY = Math.max(0, Number(item.choiceStartY ?? 12)) * sy;
       const startX = centerRole ? 0 : rawStartX;
@@ -1222,6 +1344,9 @@ prev.addEventListener('click', function(ev){
         }else if(role){
           btn.style.borderRadius = `${Math.max(0, Math.round(3 * uiScale))}px`;
         }
+        const visualIndexRaw = parseInt(String(btn && btn.dataset ? (btn.dataset.choiceVisualIndex || "-1") : "-1"), 10);
+        const visualIndex = Number.isFinite(visualIndexRaw) ? visualIndexRaw : -1;
+        applyChoiceButtonTexture(btn, item, visualIndex);
       }
 
       function wireChoice(btn, ch){
@@ -1319,7 +1444,9 @@ prev.addEventListener('click', function(ev){
           }
           btn.style.width = `${Math.round(btnW)}px`;
           btn.style.height = `${Math.round(btnH)}px`;
+          btn.dataset.choiceVisualIndex = String(i);
           applyButtonStyle(btn);
+          const slotTextured = applySlotButtonTexture(btn, item);
           const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
           const slot = Number(data.mcSlot);
           if(Number.isFinite(slot) && slot >= 0){
@@ -1336,7 +1463,7 @@ prev.addEventListener('click', function(ev){
             itemEl.style.left = `${Math.round((btnW - renderSize) / 2 + renderOffsetX)}px`;
             itemEl.style.top = `${Math.round((btnH - renderSize) / 2 + renderOffsetY)}px`;
             btn.appendChild(itemEl);
-          }else{
+          }else if(!slotTextured){
             const fallback = document.createElement("div");
             fallback.className = "itemSlotFallback";
             btn.appendChild(fallback);
@@ -1344,6 +1471,7 @@ prev.addEventListener('click', function(ev){
           wireChoice(btn, ch);
           if(itemSlotListMode) wireChoice(wrap, ch);
           wrap.appendChild(btn);
+          applySlotCardTexture(wrap, item);
 
           if(itemSlotListMode){
             const stock = document.createElement("div");
@@ -1405,6 +1533,7 @@ prev.addEventListener('click', function(ev){
         btn.style.top = `${Math.round(top)}px`;
         btn.style.width = `${Math.round(btnW)}px`;
         btn.style.height = `${Math.round(btnH)}px`;
+        btn.dataset.choiceVisualIndex = String(i);
         applyButtonStyle(btn);
         btn.textContent = String(ch && ch.label || "");
         wireChoice(btn, ch);
@@ -1488,6 +1617,7 @@ prev.addEventListener('click', function(ev){
       prev.textContent = "\u25C0";
       prev.style.width = String(Math.round(btnW)) + 'px';
       prev.style.height = String(Math.round(btnH)) + 'px';
+      if(applyChoiceButtonTexture(prev, item, 0)) stripButtonChromeForTexture(prev);
       prev.setAttribute('data-page-prev','1');
 
       var counter = document.createElement('div');
@@ -1501,6 +1631,7 @@ prev.addEventListener('click', function(ev){
       next.textContent = "\u25B6";
       next.style.width = String(Math.round(btnW)) + 'px';
       next.style.height = String(Math.round(btnH)) + 'px';
+      if(applyChoiceButtonTexture(next, item, 1)) stripButtonChromeForTexture(next);
       next.setAttribute('data-page-next','1');
 
       nav.appendChild(prev);
