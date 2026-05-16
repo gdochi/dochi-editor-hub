@@ -10,8 +10,7 @@
     "dc_npc_util/dc_cfg_checker.js",
     "dc_npc_util/dc_util_common.js",
     "dc_npc_util/dc_gui_runtime.js",
-    "dc_npc_util/dc_cond_checker
-    .js",
+    "dc_npc_util/dc_cond_checker.js",
     "dc_npc_util/dc_reward_checker.js",
     "dc_npc_util/dc_shop_runtime.js",
     "dc_npc_util/dc_dialogue_util.js"

@@ -580,7 +580,9 @@ return text;
         var explicitCurrencySlot = parseInt(String(choice.data.currencyMcSlot != null ? choice.data.currencyMcSlot : ""), 10);
         var hasExplicitCurrencySlot = !isNaN(explicitCurrencySlot) && explicitCurrencySlot >= 0;
         var currencySlot = hasExplicitCurrencySlot ? explicitCurrencySlot : nextSlot;
-        while(usedSlots[String(currencySlot)]) currencySlot += 1;
+        if(!hasExplicitCurrencySlot){
+          while(usedSlots[String(currencySlot)]) currencySlot += 1;
+        }
         choice.data.currencyMcSlot = currencySlot;
         if(!usedSlots[String(currencySlot)]){
           pushCurrencyOverlayItem(overlayItems, choice.data, currencySlot);
