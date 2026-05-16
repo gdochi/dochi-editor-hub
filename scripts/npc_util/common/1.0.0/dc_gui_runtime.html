@@ -519,6 +519,27 @@
       return ch && ch.data && typeof ch.data === "object" ? ch.data : null;
     }
 
+    function hasItemCurrencySlot(data){
+      if(!data || typeof data !== "object") return false;
+      const isItemCurrency = String(data.currencyType || "").toLowerCase() === "item";
+      const currencySlot = Number(data.currencyMcSlot);
+      return isItemCurrency && Number.isFinite(currencySlot) && currencySlot >= 0;
+    }
+
+    function getShopPriceData(){
+      const selected = getShopChoiceData("selected_slot", 0);
+      if(hasItemCurrencySlot(selected)) return selected;
+      const selectedProductId = selected ? String(selected.productId || "") : "";
+      const slots = getShopChoices("item_slots") || [];
+      for(let i=0;i<slots.length;i++){
+        const data = slots[i] && slots[i].data && typeof slots[i].data === "object" ? slots[i].data : null;
+        if(!data || !hasItemCurrencySlot(data)) continue;
+        if(selectedProductId && String(data.productId || "") !== selectedProductId) continue;
+        return data;
+      }
+      return selected;
+    }
+
     function getShopText(role){
       const shop = getShopBind();
       if(!shop || !shop.text || typeof shop.text !== "object") return null;
@@ -911,7 +932,7 @@ prev.addEventListener('click', function(ev){
       lines.style.color = (item.dialogTextColorNone || isNoneColorValue(item.dialogTextColor)) ? "transparent" : String(item.dialogTextColor || "rgba(255,255,255,.9)");
       const speakerPx = Math.max(10, Math.round((textSizeBase + 4) * uiScale));
       if(speakerNode) speakerNode.style.fontSize = String(speakerPx) + 'px';
-      const richShopPriceRendered = shopRole === "price" && renderShopPriceValue(lines, getShopChoiceData("selected_slot", 0), fullText, uiScale, textSizePx);
+      const richShopPriceRendered = shopRole === "price" && renderShopPriceValue(lines, getShopPriceData(), fullText, uiScale, textSizePx);
 
       const indicatorShape = getDialogCursorShape(cursorStyle, cursorCustom);
       const indicator = document.createElement("div");
