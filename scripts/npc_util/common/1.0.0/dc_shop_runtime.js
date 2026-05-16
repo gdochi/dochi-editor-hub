@@ -526,14 +526,12 @@ var DcShopRuntimeModule = (function(){
     for(var i=0;i<list.length;i++){
       var product = list[i];
       var id = String(product.id || "");
-      var itemSlot = itemSlotBase + (i * 2);
-      var currencySlot = itemSlot + 1;
+      var itemSlot = itemSlotBase + i;
       var priceCurrencySlot = -1;
       var currency = currencyFor(shop, product);
       if(currencyKind(currency) === "item") priceCurrencySlot = priceCurrencySlotFor(currency);
-      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot, priceCurrencySlot:priceCurrencySlot };
+      map[id] = { itemSlot:itemSlot, currencySlot:priceCurrencySlot, priceCurrencySlot:priceCurrencySlot };
       pushOverlay(itemSlot, productItemId(product));
-      if(currencyKind(currency) === "item") pushOverlay(currencySlot, currencyItemId(currency));
     }
     return { map:map, overlays:overlays, usedOverlaySlots:usedOverlaySlots, currencySlots:currencySlots, nextCurrencySlot:nextCurrencySlot };
   }

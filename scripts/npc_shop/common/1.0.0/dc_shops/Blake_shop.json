@@ -1,0 +1,353 @@
+{
+  "schema": 1,
+  "shopId": "Blake_shop",
+  "name": "Blake's Shop",
+  "gui": {
+    "source": "default",
+    "guiJsonPath": "",
+    "guiOffset": "shop_gui_default"
+  },
+  "access": {
+    "conditionMode": "and",
+    "failMessage": "You cannot use this shop yet.",
+    "conditions": []
+  },
+  "currency": {
+    "type": "item",
+    "id": "apocalypsenow:money_block"
+  },
+  "restock": {
+    "enabled": true,
+    "ticks": 12000
+  },
+  "categories": [
+    {
+      "id": "storage",
+      "name": "Storage"
+    },
+    {
+      "id": "machines",
+      "name": "Machines"
+    },
+    {
+      "id": "grid_wireless",
+      "name": "Grid / Wireless"
+    },
+    {
+      "id": "parts",
+      "name": "Parts"
+    }
+  ],
+  "products": [
+    {
+      "id": "1k_storage_part",
+      "name": "1K Storage Part",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:1k_storage_part"
+      },
+      "price": 6,
+      "baseStock": -1,
+      "categoryId": "storage",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage component.",
+        "Original trader price: 6 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "controller",
+      "name": "Controller",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:controller"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage controller.",
+        "Original trader price: 4 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "cable",
+      "name": "Cable",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:cable"
+      },
+      "price": 2,
+      "baseStock": -1,
+      "categoryId": "parts",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage cable.",
+        "Original trader price: 2 money."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "4k_storage_part",
+      "name": "4K Storage Part",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:4k_storage_part"
+      },
+      "price": 8,
+      "baseStock": -1,
+      "categoryId": "storage",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage component.",
+        "Original trader price: 8 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "disk_manipulator",
+      "name": "Disk Manipulator",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:disk_manipulator"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage machine.",
+        "Original trader price: 4 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "destructor",
+      "name": "Destructor",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:destructor"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage machine.",
+        "Original trader price: 4 money."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "storage_housing",
+      "name": "Storage Housing",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:storage_housing"
+      },
+      "price": 2,
+      "baseStock": -1,
+      "categoryId": "storage",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage component.",
+        "Original trader price: 2 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "disk_drive",
+      "name": "Disk Drive",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:disk_drive"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage disk drive.",
+        "Original trader price: 4 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "constructor",
+      "name": "Constructor",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:constructor"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage machine.",
+        "Original trader price: 4 money."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "wireless_crafting_grid",
+      "name": "Wireless Crafting Grid",
+      "item": {
+        "type": "id",
+        "id": "refinedstorageaddons:wireless_crafting_grid"
+      },
+      "price": 2,
+      "baseStock": -1,
+      "categoryId": "grid_wireless",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Wireless crafting grid.",
+        "Original trader price: 2 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "crafting_grid",
+      "name": "Crafting Grid",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:crafting_grid"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "grid_wireless",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage crafting grid.",
+        "Original trader price: 4 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "exporter",
+      "name": "Exporter",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:exporter"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage machine.",
+        "Original trader price: 4 money."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "wireless_transmitter",
+      "name": "Wireless Transmitter",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:wireless_transmitter"
+      },
+      "price": 2,
+      "baseStock": -1,
+      "categoryId": "grid_wireless",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage wireless transmitter.",
+        "Original trader price: 2 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "machine_casing",
+      "name": "Machine Casing",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:machine_casing"
+      },
+      "price": 1,
+      "baseStock": -1,
+      "categoryId": "parts",
+      "currency": {
+        "type": "global"
+      },
+      "text": [
+        "Refined Storage part.",
+        "Original trader price: 1 money_block."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "importer",
+      "name": "Importer",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:importer"
+      },
+      "price": 4,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage machine.",
+        "Original trader price: 4 money."
+      ],
+      "enabled": true
+    },
+    {
+      "id": "relay",
+      "name": "Relay",
+      "item": {
+        "type": "id",
+        "id": "refinedstorage:relay"
+      },
+      "price": 6,
+      "baseStock": -1,
+      "categoryId": "machines",
+      "currency": {
+        "type": "item",
+        "id": "apocalypsenow:money"
+      },
+      "text": [
+        "Refined Storage relay.",
+        "Original trader price: 6 money."
+      ],
+      "enabled": true
+    }
+  ]
+}

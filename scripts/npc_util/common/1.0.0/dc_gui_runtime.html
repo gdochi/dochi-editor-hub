@@ -81,7 +81,6 @@
       flex:0 0 auto;
       pointer-events:none;
     }
-    .shopRuntimeMcSlotProxy{position:absolute;pointer-events:none;background:transparent;border:0;margin:0;padding:0;overflow:visible}
     .itemSlotFallback{
       width:58%;
       aspect-ratio:1;
@@ -158,7 +157,6 @@
 
     let runtimeTimers = [];
     let HAS_PAGER = false;
-    let RUNTIME_MC_SLOT_PROXIES = [];
     function clearRuntimeTimers(){
       for(let i=0;i<runtimeTimers.length;i++){
         try{ clearTimeout(runtimeTimers[i]); }catch{}
@@ -627,86 +625,42 @@
       el.style.height = `${px}px`;
     }
 
-    function queueRuntimeMcSlotProxy(anchor, slot, reason){
-      const slotNum = Number(slot);
-      if(!anchor || !Number.isFinite(slotNum) || slotNum < 0) return;
-      anchor.setAttribute("data-dc-mc-slot-proxy-source", String(slotNum));
-      RUNTIME_MC_SLOT_PROXIES.push({ anchor:anchor, slot:slotNum, reason:String(reason || "") });
-    }
-
-    function flushRuntimeMcSlotProxies(){
-      const stage = document.getElementById("stage");
-      if(!stage) return;
-      const stageRect = stage.getBoundingClientRect();
-      for(let i=0;i<RUNTIME_MC_SLOT_PROXIES.length;i++){
-        const item = RUNTIME_MC_SLOT_PROXIES[i] || {};
-        const anchor = item.anchor;
-        if(!anchor || !document.body.contains(anchor)) continue;
-        const rect = anchor.getBoundingClientRect();
-        if(!(rect.width > 0 && rect.height > 0)) continue;
-        const proxy = document.createElement("div");
-        proxy.className = "shopRuntimeMcSlotProxy";
-        proxy.setAttribute("data-mc-slot", String(item.slot));
-        const scale = anchor.getAttribute("data-mc-scale");
-        if(scale) proxy.setAttribute("data-mc-scale", scale);
-        proxy.style.left = `${Math.round(rect.left - stageRect.left)}px`;
-        proxy.style.top = `${Math.round(rect.top - stageRect.top)}px`;
-        proxy.style.width = `${Math.max(8, Math.round(rect.width))}px`;
-        proxy.style.height = `${Math.max(8, Math.round(rect.height))}px`;
-        proxy.style.zIndex = "999";
-        stage.appendChild(proxy);
-      }
-    }
-
     function textLabel(fullText, fallback){
       const raw = String(fullText || "");
       const colon = raw.indexOf(":");
       return colon >= 0 ? raw.slice(0, colon + 1) : String(fallback || "");
     }
 
-    function appendCurrencyAmountLine(parent, labelText, data, amountText, uiScale, textSizePx, reason){
-      const currencySlot = resolveCurrencySlot(data);
+    function appendPlainAmountLine(parent, labelText, amountText, uiScale){
       const amount = String(amountText ?? "").trim();
-      if(!data || String(data.currencyType || "").toLowerCase() !== "item" || !Number.isFinite(currencySlot) || currencySlot < 0 || !amount) return false;
-      const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.alignItems = "center";
-      row.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
-      row.style.whiteSpace = "nowrap";
+      if(!parent || !amount) return false;
+      parent.textContent = "";
+      parent.style.display = "flex";
+      parent.style.alignItems = "center";
+      parent.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
+      parent.style.whiteSpace = "nowrap";
 
       const label = document.createElement("span");
       label.textContent = labelText;
-      row.appendChild(label);
-
-      const iconSize = Math.max(14, Math.round(textSizePx * 1.35));
-      const icon = document.createElement("span");
-      icon.className = "itemSlotCurrencyRenderer";
-      setRuntimeItemRendererSize(icon, iconSize);
-      queueRuntimeMcSlotProxy(icon, currencySlot, reason);
-      row.appendChild(icon);
+      parent.appendChild(label);
 
       const value = document.createElement("span");
       value.textContent = amount;
       value.style.fontWeight = "800";
-      row.appendChild(value);
-      parent.appendChild(row);
+      parent.appendChild(value);
       return true;
     }
 
     function renderShopPriceValue(lines, data, fallbackText, uiScale, textSizePx){
       if(!lines || !data || typeof data !== "object") return false;
       const amountText = String((data.priceText != null ? data.priceText : data.price) ?? "").trim();
-      lines.textContent = "";
-      lines.style.display = "block";
-      return appendCurrencyAmountLine(lines, textLabel(fallbackText, "Price:"), data, amountText, uiScale, textSizePx, "price");
+      return appendPlainAmountLine(lines, textLabel(fallbackText, "Price:"), amountText, uiScale);
     }
 
     function renderShopBalanceValue(lines, data, fallbackText, uiScale, textSizePx){
       if(!lines || !data || typeof data !== "object") return false;
       const amountText = String(data.amountText ?? "").trim();
-      lines.textContent = "";
-      lines.style.display = "block";
-      return appendCurrencyAmountLine(lines, textLabel(fallbackText, "Money:"), data, amountText, uiScale, textSizePx, "balance");
+      return appendPlainAmountLine(lines, textLabel(fallbackText, "Money:"), amountText, uiScale);
     }
 
     function renderShopPriceBalanceValue(lines, uiScale, textSizePx){
@@ -715,13 +669,17 @@
       const balanceData = getShopBalanceData();
       const priceText = getShopText("price") || "Price: -";
       const balanceText = getShopText("balance") || "Money: -";
+      const cleanLabel = (value, fallback) => {
+        const label = textLabel(value, fallback);
+        return String(label || fallback || "").replace(/:\s*$/, "");
+      };
       const amountFromText = (value) => {
         const raw = String(value || "");
         const colon = raw.indexOf(":");
         return (colon >= 0 ? raw.slice(colon + 1) : raw).trim();
       };
       const priceAmount = priceData
-        ? String((priceData.price != null ? priceData.price : priceData.priceText) ?? "").trim()
+        ? String((priceData.priceText != null ? priceData.priceText : priceData.price) ?? "").trim()
         : amountFromText(priceText);
       const balanceAmount = balanceData
         ? String(balanceData.amountText ?? "").trim()
@@ -734,6 +692,10 @@
       lines.style.alignItems = "center";
       lines.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
       lines.style.whiteSpace = "nowrap";
+
+      const label = document.createElement("span");
+      label.textContent = `${cleanLabel(priceText, "Price:")} / ${cleanLabel(balanceText, "Money:")}:`;
+      lines.appendChild(label);
 
       const value = document.createElement("span");
       value.textContent = `${priceAmount || "-"} / ${balanceAmount || "-"}`;
@@ -1666,7 +1628,6 @@ var stopPagerEv = function(ev){
       const stage = document.getElementById("stage");
       if(!stage) return;
       stage.innerHTML = "";
-      RUNTIME_MC_SLOT_PROXIES = [];
 
       const elements = applyTextFxToElements(Array.isArray(GUI.elements) ? GUI.elements.slice() : []);
       HAS_PAGER = false;
@@ -1717,7 +1678,6 @@ var stopPagerEv = function(ev){
         }
         // unknown element type
       }
-      flushRuntimeMcSlotProxies();
     }
 
     function parseRuntimeUpdatePayload(raw){

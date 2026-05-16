@@ -563,6 +563,13 @@ return text;
     overlayItems.push({ slot: slot, item: item, count: 1 });
   }
 
+  function choiceHasItemData(data) {
+    if (!data || typeof data !== "object") return false;
+    if (String(data.itemId || data.item || data.itemKey || "").trim()) return true;
+    if (String(data.itemNbt || data.nbt || data.snbt || "").trim()) return true;
+    return false;
+  }
+
   function assignShopChoiceItemSlots(list, overlayItems, startSlot, usedSlots) {
     var slot = startSlot;
     if (!Array.isArray(list)) return slot;
@@ -575,7 +582,15 @@ return text;
       if (!choice.data || typeof choice.data !== "object") choice.data = {};
       var explicitSlot = parseInt(String(choice.data.mcSlot != null ? choice.data.mcSlot : ""), 10);
       var hasExplicitSlot = !isNaN(explicitSlot) && explicitSlot >= 0;
+      if(!hasExplicitSlot && !choiceHasItemData(choice.data)){
+        try{ delete choice.data.mcSlot; }catch(errDel){}
+        slot += 1;
+        continue;
+      }
       var useSlot = hasExplicitSlot ? explicitSlot : slot;
+      if(!hasExplicitSlot){
+        while(usedSlots[String(useSlot)]) useSlot += 1;
+      }
       choice.data.mcSlot = useSlot;
       if(!usedSlots[String(useSlot)]){
         pushOverlayItem(overlayItems, choice.data, useSlot);
