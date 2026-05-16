@@ -510,6 +510,15 @@
       return out;
     }
 
+    function getShopChoiceData(role, index){
+      const list = getShopChoices(role);
+      if(!Array.isArray(list) || !list.length) return null;
+      const idxRaw = Number(index || 0);
+      const idx = Number.isFinite(idxRaw) ? Math.max(0, Math.min(list.length - 1, idxRaw)) : 0;
+      const ch = list[idx];
+      return ch && ch.data && typeof ch.data === "object" ? ch.data : null;
+    }
+
     function getShopText(role){
       const shop = getShopBind();
       if(!shop || !shop.text || typeof shop.text !== "object") return null;
@@ -517,6 +526,50 @@
       if(Array.isArray(value)) return value.map(v => String(v ?? "")).join("\n");
       if(value != null) return String(value);
       return null;
+    }
+
+    function setRuntimeItemRendererSize(el, renderSize){
+      const px = Math.max(8, Math.round(renderSize || 8));
+      el.setAttribute("data-mc-scale", String(Math.max(0.25, Math.round((px / 32) * 100) / 100)));
+      el.style.width = `${px}px`;
+      el.style.height = `${px}px`;
+    }
+
+    function renderShopPriceValue(lines, data, fallbackText, uiScale, textSizePx){
+      if(!lines || !data || typeof data !== "object") return false;
+      const isItemCurrency = String(data.currencyType || "").toLowerCase() === "item";
+      const currencySlot = Number(data.currencyMcSlot);
+      if(!isItemCurrency || !Number.isFinite(currencySlot) || currencySlot < 0) return false;
+      const amountText = String((data.priceText != null ? data.priceText : data.price) ?? "").trim();
+      if(!amountText) return false;
+
+      const fallback = String(fallbackText || "Price:");
+      const colon = fallback.indexOf(":");
+      const labelText = colon >= 0 ? fallback.slice(0, colon + 1) : "Price:";
+      const iconSize = Math.max(14, Math.round(textSizePx * 1.35));
+      const gap = Math.max(5, Math.round(8 * uiScale));
+
+      lines.textContent = "";
+      lines.style.display = "flex";
+      lines.style.alignItems = "center";
+      lines.style.gap = `${gap}px`;
+      lines.style.whiteSpace = "nowrap";
+
+      const label = document.createElement("span");
+      label.textContent = labelText;
+      lines.appendChild(label);
+
+      const icon = document.createElement("span");
+      icon.className = "itemSlotCurrencyRenderer";
+      icon.setAttribute("data-mc-slot", String(currencySlot));
+      setRuntimeItemRendererSize(icon, iconSize);
+      lines.appendChild(icon);
+
+      const amount = document.createElement("span");
+      amount.textContent = amountText;
+      amount.style.fontWeight = "800";
+      lines.appendChild(amount);
+      return true;
     }
 
     function getDialogLines(){
@@ -858,6 +911,7 @@ prev.addEventListener('click', function(ev){
       lines.style.color = (item.dialogTextColorNone || isNoneColorValue(item.dialogTextColor)) ? "transparent" : String(item.dialogTextColor || "rgba(255,255,255,.9)");
       const speakerPx = Math.max(10, Math.round((textSizeBase + 4) * uiScale));
       if(speakerNode) speakerNode.style.fontSize = String(speakerPx) + 'px';
+      const richShopPriceRendered = shopRole === "price" && renderShopPriceValue(lines, getShopChoiceData("selected_slot", 0), fullText, uiScale, textSizePx);
 
       const indicatorShape = getDialogCursorShape(cursorStyle, cursorCustom);
       const indicator = document.createElement("div");
@@ -884,7 +938,7 @@ prev.addEventListener('click', function(ev){
       node.appendChild(indicator);
       stage.appendChild(node);
 
-      setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps);
+      if(!richShopPriceRendered) setupDialogPaging(node, overlay, lines, speakerNode, indicator, item, fullText, anim, cps);
     }
 
     function renderImage(stage, item, runtimePath){
