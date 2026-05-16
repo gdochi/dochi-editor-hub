@@ -82,12 +82,6 @@ var DcShopRuntimeModule = (function(){
     player.message(msg);
   }
 
-  function trace(player, npc, message){
-    var line = "[dc_shop_debug] " + String(message || "");
-    try{ if(player && typeof player.message === "function") player.message(line); }catch(e0){}
-    try{ if(npc && typeof npc.say === "function") npc.say(line); }catch(e1){}
-  }
-
   function unwrapEventTarget(target){
     try{
       if(target && target.event && target.event.player) return target.event;
@@ -736,15 +730,12 @@ var DcShopRuntimeModule = (function(){
     var opts = ctx.opts || {};
     var shopPath = normalizeShopPath(opts.shopJsonPath || opts.path || "", opts.shopId || "");
     var fromDialogue = String(opts.source || "") === "dialogue";
-    var debugOpen = opts.transitionDebug === true || opts.debug === true || fromDialogue;
-    if(debugOpen) trace(ctx.player, ctx.npc, "open begin shopPath=" + shopPath + " source=" + String(opts.source || "") + " hasEvent=" + String(!!ctx.event) + " eventName=" + String(ctx.event && ctx.event.eventName || ""));
     var shop = readJson(shopPath);
 
     var accessPolicy = String(opts.accessPolicy || "shop_guard");
     if(accessPolicy !== "dialogue_only"){
       var access = shop.access && typeof shop.access === "object" ? shop.access : {};
       if(!evalConditions(ctx.player, ctx.npc, access)){
-        if(debugOpen) trace(ctx.player, ctx.npc, "access denied by shop access conditions.");
         tell(ctx.player, String(access.failMessage || "You cannot use this shop yet."));
         return null;
       }
@@ -760,7 +751,6 @@ var DcShopRuntimeModule = (function(){
     var guiPath = normalizeGuiPath(guiReq);
     if(!fileExists(guiPath)) throw new Error("Shop GUI JSON not found: " + guiPath);
     var guiJson = readJson(guiPath);
-    if(debugOpen) trace(ctx.player, ctx.npc, "shop json ok; guiPath=" + guiPath);
 
     var categoryId = firstCategoryId(shop);
     var pageSize = roleChoiceCount(guiJson, "item_slots", 8);
@@ -782,10 +772,8 @@ var DcShopRuntimeModule = (function(){
       message: "Select an item."
     };
 
-    if(fromDialogue){
-      if(debugOpen) trace(ctx.player, ctx.npc, "dialogue handoff: skip explicit bridge close; openHtmlGui will replace current HTML.");
-    }else{
-      if(debugOpen) trace(ctx.player, ctx.npc, "pre-open closeHtmlGui=" + String(closeHtmlGui(ctx.player)));
+    if(!fromDialogue){
+      closeHtmlGui(ctx.player);
     }
     setActive(ctx.player, active);
 
@@ -795,12 +783,9 @@ var DcShopRuntimeModule = (function(){
       htmlPath: String(opts.htmlPath || DEFAULT_HTML),
       sessionId: sessionId,
       runtimeOwner: RUNTIME_OWNER,
-      debug: debugOpen,
-      transitionDebug: debugOpen,
       skipPreClose: true,
       bindings: buildBindings(ctx, shop, active)
     });
-    if(debugOpen) trace(ctx.player, ctx.npc, "openDcGuiRuntime returned=" + String(handle));
     if(handle == null) throw new Error("openDcGuiRuntime returned null for shop GUI: " + guiPath);
     return handle;
   }
@@ -905,20 +890,7 @@ var DcShopRuntimeModule = (function(){
   };
 })();
 
-function dc_shop_open(e, opts){
-  try{
-    return DcShopRuntimeModule.open(e, null, opts || {});
-  }catch(err){
-    var player = null;
-    var npc = null;
-    try{ if(e && e.player) player = e.player; }catch(e0){}
-    try{ if(e && e.npc) npc = e.npc; }catch(e1){}
-    var msg = "open error: " + String(err && err.message || err);
-    try{ if(player && typeof player.message === "function") player.message("[dc_shop_debug] " + msg); }catch(e2){}
-    try{ if(npc && typeof npc.say === "function") npc.say("[dc_shop_debug] " + msg); }catch(e3){}
-    return null;
-  }
-}
+function dc_shop_open(e, opts){ return DcShopRuntimeModule.open(e, null, opts || {}); }
 function dc_shop_handleHtmlEvent(e){ return DcShopRuntimeModule.handleHtmlEvent(e); }
 
 function dc_shop_runtime_module(){

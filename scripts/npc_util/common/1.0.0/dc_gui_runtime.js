@@ -17,14 +17,6 @@ var DcGuiRuntimeModule = (function () {
     return target;
   }
 
-  function runtimeDebug(ctx, options, msg) {
-    try {
-      if (!options || (options.debug !== true && options.transitionDebug !== true)) return;
-      var line = "[dc_gui_runtime] " + String(msg || "");
-      if (ctx && ctx.player && typeof ctx.player.message === "function") ctx.player.message(line);
-    } catch (err) {}
-  }
-
   function getContext(target, maybeNpc, maybeOpts) {
     if (target && target.player && target.npc) {
       var opts = null;
@@ -740,16 +732,12 @@ return text;
     if(!initData) return null;
 
     var htmlPath = String(options.htmlPath || DEFAULT_HTML).trim() || DEFAULT_HTML;
-    runtimeDebug(ctx, options, "open request guiPath=" + guiPath + " htmlPath=" + htmlPath + " hasEvent=" + String(!!ctx.event) + " eventName=" + String(ctx.event && ctx.event.eventName || ""));
 
     try {
       if (typeof cnpcext === "undefined" || !cnpcext || typeof cnpcext.openHtmlGui !== "function") {
-        runtimeDebug(ctx, options, "cnpcext.openHtmlGui missing.");
         return null;
       }
-      if(options.skipPreClose === true){
-        runtimeDebug(ctx, options, "skipPreClose=true; not sending bridge close before open.");
-      }else{
+      if(options.skipPreClose !== true){
         try{
           if(typeof cnpcext.closeOverlay === "function"){
             cnpcext.closeOverlay(ctx.player, String(OVERLAY_NAME));
@@ -762,28 +750,22 @@ return text;
             if(br && typeof br.closeHtmlGui === "function") br.closeHtmlGui();
           }
         }catch(errBridgeClose){}
-        runtimeDebug(ctx, options, "pre-open close sent.");
       }
       if (ctx && ctx.event) {
         try {
           var h0 = cnpcext.openHtmlGui(ctx.event, htmlPath, 0, 0, JSON.stringify(initData));
-          runtimeDebug(ctx, options, "event open returned=" + String(h0));
           if (h0 != null) return h0;
         } catch (eOpen0) {
-          runtimeDebug(ctx, options, "event open failed: " + String(eOpen0 && eOpen0.message || eOpen0));
         }
       }
 
       try{
         var handle = cnpcext.openHtmlGui(ctx.player, htmlPath, 0, 0, JSON.stringify(initData));
-        runtimeDebug(ctx, options, "player open returned=" + String(handle));
         return handle;
       }catch(eOpen1){
-        runtimeDebug(ctx, options, "player open failed: " + String(eOpen1 && eOpen1.message || eOpen1));
         return null;
       }
     } catch (err) {
-      runtimeDebug(ctx, options, "open failed: " + String(err && err.message || err));
       return null;
     }
   }

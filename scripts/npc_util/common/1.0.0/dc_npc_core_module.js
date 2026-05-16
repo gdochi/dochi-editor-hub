@@ -59,13 +59,7 @@ var NpcEventModule = NpcEventModule || {};
     for (var i = 0; i < list.length; i++) {
       try {
         list[i](e, ns);
-      } catch (err) {
-        try {
-          if (e && e.player && typeof e.player.message === "function") {
-            e.player.message("[dc_npc_core_debug] " + String(eventName) + " handler error: " + String(err && err.message || err));
-          }
-        } catch (errMessage) {}
-      }
+      } catch (err) {}
     }
   }
   function reserveTimer(moduleName, timerName) {
