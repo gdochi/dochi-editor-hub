@@ -715,17 +715,13 @@
       const balanceData = getShopBalanceData();
       const priceText = getShopText("price") || "Price: -";
       const balanceText = getShopText("balance") || "Money: -";
-      const cleanLabel = (value, fallback) => {
-        const label = textLabel(value, fallback);
-        return String(label || fallback || "").replace(/:\s*$/, "");
-      };
       const amountFromText = (value) => {
         const raw = String(value || "");
         const colon = raw.indexOf(":");
         return (colon >= 0 ? raw.slice(colon + 1) : raw).trim();
       };
       const priceAmount = priceData
-        ? String((priceData.priceText != null ? priceData.priceText : priceData.price) ?? "").trim()
+        ? String((priceData.price != null ? priceData.price : priceData.priceText) ?? "").trim()
         : amountFromText(priceText);
       const balanceAmount = balanceData
         ? String(balanceData.amountText ?? "").trim()
@@ -738,22 +734,6 @@
       lines.style.alignItems = "center";
       lines.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
       lines.style.whiteSpace = "nowrap";
-
-      const label = document.createElement("span");
-      label.textContent = `${cleanLabel(priceText, "Price:")} / ${cleanLabel(balanceText, "Money:")}:`;
-      lines.appendChild(label);
-
-      const itemCurrency = priceData && String(priceData.currencyType || "").toLowerCase() === "item";
-      let currencySlot = itemCurrency ? resolveCurrencySlot(priceData) : -1;
-      if(itemCurrency && (!Number.isFinite(currencySlot) || currencySlot < 0) && balanceData) currencySlot = resolveCurrencySlot(balanceData);
-      if(itemCurrency && Number.isFinite(currencySlot) && currencySlot >= 0){
-        const iconSize = Math.max(14, Math.round(textSizePx * 1.35));
-        const icon = document.createElement("span");
-        icon.className = "itemSlotCurrencyRenderer";
-        setRuntimeItemRendererSize(icon, iconSize);
-        queueRuntimeMcSlotProxy(icon, currencySlot, "price_balance");
-        lines.appendChild(icon);
-      }
 
       const value = document.createElement("span");
       value.textContent = `${priceAmount || "-"} / ${balanceAmount || "-"}`;
