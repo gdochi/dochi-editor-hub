@@ -579,6 +579,7 @@ d=parsePayload(d);
 if(!d)return;
 debugStep("files","script list mode="+d.mode+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
 var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
+var warnings=Array.isArray(d.warnings)?d.warnings:[];
 APP_STATE.picker.root=String(d.root||"");
 APP_STATE.picker.rootLabel=String(d.label||APP_STATE.picker.rootLabel||"ecmascript");
 APP_STATE.picker.mode=String(d.mode||APP_STATE.picker.mode||"general");
@@ -587,8 +588,11 @@ APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
 if(String(d.mode||"")==="dcE"){
 APP_STATE.script.dcBrowser.scripts=files;
 APP_STATE.script.dcBrowser.scriptsLoaded=true;
+APP_STATE.script.dcBrowser.warnings=warnings;
 renderDcInstalledScripts();
+if(warnings.length)setStatus("Installable descriptor warning: "+warnings[0]+(warnings.length>1?" +"+(warnings.length-1):""),"status-warn");
 }
+if(d.ok===false&&d.error)setStatus("Script list failed: "+d.error,"status-err");
 renderPickerState();
 });
 window.cnpc.onEvent("npcDcJsonFileList",function(d){
@@ -1213,7 +1217,45 @@ if(needScripts)requestScriptFileList("dcE");
 if(needJson)requestDcJsonFileList(prefix,"");
 }
 }
-function renderDcInstalledScripts(){var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activePrefix=getActiveDcPrefix(sel); if(!box)return;box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">No installable dcE scripts found.</div>';return;}list.forEach(function(item){var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div"),removeBtn,prefix=String(item.prefix||inferDcPrefix(p)||""),available=item.available===true,missing=Array.isArray(item.missing)?item.missing:[],selected=isDcScriptSelected(sel,p);row.className="dc-install-row"+(selected?" active":"")+(prefix===activePrefix?" focus":"")+(available?"":" disabled");main.className="dc-install-main";main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>'+(missing.length?'<div class="dc-install-missing">'+esc(missing.join(", "))+'</div>':"");badge.className="dc-install-badge";badge.textContent=available?(prefix||"ready"):"missing";row.appendChild(main);row.appendChild(badge);if(selected){removeBtn=document.createElement("button");removeBtn.type="button";removeBtn.className="icon-btn danger";removeBtn.textContent=tr("npc_editor.remove","Remove");removeBtn.onclick=function(e){if(e&&e.stopPropagation)e.stopPropagation();removeDcScriptPath(p);};row.appendChild(removeBtn);}row.onclick=function(){if(!available){setStatus("Cannot apply: "+missing.join(", "),"status-err");return;}selectDcScriptPath(p);};box.appendChild(row);});renderDcEditorState();}
+function renderDcInstalledScripts(){
+var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],warnings=APP_STATE.script.dcBrowser.warnings||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activePrefix=getActiveDcPrefix(sel),warn;
+if(!box)return;
+box.innerHTML="";
+if(warnings.length){
+warn=document.createElement("div");
+warn.className="empty status-warn";
+warn.textContent="Skipped installable descriptor: "+warnings[0]+(warnings.length>1?" +"+(warnings.length-1):"");
+box.appendChild(warn);
+}
+if(!list.length){
+warn=document.createElement("div");
+warn.className="empty";
+warn.textContent="No installable dcE scripts found.";
+box.appendChild(warn);
+return;
+}
+list.forEach(function(item){
+var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div"),removeBtn,prefix=String(item.prefix||inferDcPrefix(p)||""),available=item.available===true,missing=Array.isArray(item.missing)?item.missing:[],selected=isDcScriptSelected(sel,p);
+row.className="dc-install-row"+(selected?" active":"")+(prefix===activePrefix?" focus":"")+(available?"":" disabled");
+main.className="dc-install-main";
+main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>'+(missing.length?'<div class="dc-install-missing">'+esc(missing.join(", "))+'</div>':"");
+badge.className="dc-install-badge";
+badge.textContent=available?(prefix||"ready"):"missing";
+row.appendChild(main);
+row.appendChild(badge);
+if(selected){
+removeBtn=document.createElement("button");
+removeBtn.type="button";
+removeBtn.className="icon-btn danger";
+removeBtn.textContent=tr("npc_editor.remove","Remove");
+removeBtn.onclick=function(e){if(e&&e.stopPropagation)e.stopPropagation();removeDcScriptPath(p);};
+row.appendChild(removeBtn);
+}
+row.onclick=function(){if(!available){setStatus("Cannot apply: "+missing.join(", "),"status-err");return;}selectDcScriptPath(p);};
+box.appendChild(row);
+});
+renderDcEditorState();
+}
 function renderDcMatchedJson(){var box=byId("dcMatchedJsonBox"),list=APP_STATE.script.dcBrowser.jsons||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activeEntry=getActiveDcEntry(sel),selected=activeEntry.jsonPath,prefix=getActiveDcPrefix(sel),candidate=getDcCandidateForEntry(activeEntry);if(!box)return;box.innerHTML="";if(candidate&&candidate.requiresJson!==true){box.innerHTML='<div class="empty">This entry does not require JSON.</div>';return;}if(!prefix){box.innerHTML='<div class="empty">Select a script first.</div>';return;}if(!list.length){box.innerHTML='<div class="empty">No matching JSON files found.</div>';return;}list.forEach(function(item){var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div");row.className="dc-install-row dc-json-row"+(sameRelUiPath(selected,p)?" active":"");main.className="dc-install-main";main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>';badge.className="dc-install-badge";badge.textContent="JSON";row.appendChild(main);row.appendChild(badge);row.onclick=function(){selectDcJsonPath(p);};box.appendChild(row);});maybeAutoSelectDcJson();}
 function detectDcPrefixFromSelection(){return getActiveDcPrefix(normalizeDcSelection(APP_STATE.script.dcSelection));}
 function inferDcPrefix(path){var name=lastSeg(path).replace(/\.js$/i,"").toLowerCase();if(!name)return"";if(name==="dc_dialogue_trigger"||name.indexOf("dialogue")>=0)return"dc_dialogue";if(name==="dc_shop_trigger"||name.indexOf("shop")>=0)return"dc_shop";if(name.indexOf("dc_trainer")==0||name.indexOf("trainer")>=0)return"dc_trainer";if(name.indexOf("dc_soulmob")==0||name.indexOf("soulmob")>=0)return"dc_soulMob";if(name.indexOf("dc_taczmob")==0||name.indexOf("taczmob")>=0)return"dc_taczMob";return"";}

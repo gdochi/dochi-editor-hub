@@ -25,6 +25,7 @@ var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
 var HashMap=Java.type("java.util.HashMap");
 var ArrayList=Java.type("java.util.ArrayList");
 var LANG_RESOURCE_CACHE={};
+var DC_ENTRY_SPEC_ERRORS=[];
 
 function init(e){
 ensureDcAdminsRoot();
@@ -976,31 +977,43 @@ for(i=0;i<roots.length;i++)pushDirIfExists(out,seen,new File(roots[i],"dc_data/d
 return out;
 }
 function loadDcEntrySpecsFromFiles(){
-var roots=findDcEntrySpecRoots(),out=[],seen={},i;
-for(i=0;i<roots.length;i++)walkDcEntrySpecFiles(roots[i],roots[i],out,seen);
+var roots=findDcEntrySpecRoots(),out=[],seen={},errors=[],i;
+for(i=0;i<roots.length;i++)walkDcEntrySpecFiles(roots[i],roots[i],out,seen,errors);
 out.sort(function(a,b){return String(a.name||a.path).localeCompare(String(b.name||b.path));});
+DC_ENTRY_SPEC_ERRORS=errors;
 return out;
 }
-function walkDcEntrySpecFiles(root,dir,out,seen){
+function walkDcEntrySpecFiles(root,dir,out,seen,errors){
 var list=dir.listFiles(),i,file,name;
 if(!list)return;
 for(i=0;i<list.length;i++){
 file=list[i];
-if(file.isDirectory()){walkDcEntrySpecFiles(root,file,out,seen);continue;}
+if(file.isDirectory()){walkDcEntrySpecFiles(root,file,out,seen,errors);continue;}
 name=String(file.getName()).toLowerCase();
 if(name.slice(-5)!==".json")continue;
-pushDcEntrySpecsFromFile(out,seen,file);
+pushDcEntrySpecsFromFile(out,seen,file,errors);
 }
 }
-function pushDcEntrySpecsFromFile(out,seen,file){
+function pushDcEntrySpecsFromFile(out,seen,file,errors){
 var raw,obj;
 try{
 raw=readTextFile(file);
 obj=JSON.parse(raw);
 pushDcEntrySpecsFromValue(out,seen,obj,file);
 }catch(err){
+if(errors)errors.push(formatDcEntrySpecError(file,err));
 return;
 }
+}
+function formatDcEntrySpecError(file,err){
+var path="";
+try{path=String(file.getPath()||"").replace(/\\/g,"/");}catch(pathErr){}
+return (path||"installable descriptor")+": "+String(err);
+}
+function copyDcEntrySpecErrors(){
+var out=[],i;
+for(i=0;i<DC_ENTRY_SPEC_ERRORS.length;i++)out.push(String(DC_ENTRY_SPEC_ERRORS[i]||""));
+return out;
 }
 function pushDcEntrySpecsFromValue(out,seen,value,file){
 var i,list,spec,key;
@@ -1058,15 +1071,15 @@ for(i=0;i<specs.length;i++)if(String(specs[i].prefix||"")===wanted)return specs[
 return null;
 }
 function listDcInstallableScripts(){
-var scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(),out=[],i,candidate,primaryRoot="";
+var scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(),warnings=copyDcEntrySpecErrors(),out=[],i,candidate,primaryRoot="";
 if(scriptRoots.length)primaryRoot=String(scriptRoots[0].getAbsolutePath()).replace(/\\/g,"/");
-if(!scriptRoots.length)return {root:"",label:"dc_lib",files:[],error:"No dc_lib folder found."};
+if(!scriptRoots.length)return {root:"",label:"dc_lib",files:[],warnings:warnings,error:"No dc_lib folder found."};
 for(i=0;i<specs.length;i++){
 candidate=buildDcInstallableCandidate(specs[i],scriptRoots,htmlRoots);
 out.push(candidate);
 }
 out.sort(function(a,b){return String(a.name||a.path).localeCompare(String(b.name||b.path));});
-return {root:primaryRoot,label:"dc_lib",files:out};
+return {root:primaryRoot,label:"dc_lib",files:out,warnings:warnings};
 }
 function findDcInstallableCandidate(path){
 var wanted=stripDcLibPrefix(path),scriptRoots=findEcmaScriptRoots("dcE"),htmlRoots=findHtmlRoots(),specs=getDcEntrySpecs(),i,spec;
@@ -1225,7 +1238,7 @@ if(text.toLowerCase().indexOf(query)>=0)out.push(s);
 }else{
 for(i=0;i<files.length;i++){s=files[i];if(String(s).toLowerCase().indexOf(query)>=0)out.push(s);}
 }
-pushBrowser(e.player,"npcScriptFileList",{ok:!found.error,root:root,mode:mode,files:out,error:found.error||""});
+pushBrowser(e.player,"npcScriptFileList",{ok:!found.error,root:root,mode:mode,files:out,warnings:found.warnings||[],error:found.error||""});
 }
 function ensureDcAdminsRoot(){
 var File=Java.type("java.io.File"),roots=[

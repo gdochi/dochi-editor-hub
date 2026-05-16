@@ -488,13 +488,15 @@ var DcShopRuntimeModule = (function(){
     for(var i=0;i<list.length;i++){
       var product = list[i];
       var id = String(product.id || "");
-      var itemSlot = i * 2;
+      var itemSlot = i * 3;
       var currencySlot = itemSlot + 1;
-      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot };
+      var priceCurrencySlot = itemSlot + 2;
+      map[id] = { itemSlot:itemSlot, currencySlot:currencySlot, priceCurrencySlot:priceCurrencySlot };
       overlays.push({ slot:itemSlot, item:productItemId(product), count:1 });
       var currency = currencyFor(shop, product);
       if(currencyKind(currency) === "item"){
         overlays.push({ slot:currencySlot, item:currencyItemId(currency), count:1 });
+        overlays.push({ slot:priceCurrencySlot, item:currencyItemId(currency), count:1 });
       }
     }
     return { map:map, overlays:overlays };
@@ -532,7 +534,10 @@ var DcShopRuntimeModule = (function(){
       }
     }
     var selectedChoice = selected
-      ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", slotInfo.map[String(selected.id || "")]), 0)
+      ? makeChoice(selected.name, "selected_slot", productChoiceData(ctx, shop, selected, "noop", {
+          itemSlot: slotInfo.map[String(selected.id || "")].itemSlot,
+          currencySlot: slotInfo.map[String(selected.id || "")].priceCurrencySlot
+        }), 0)
       : makeChoice("", "selected_slot", { shopAction:"noop" }, 0);
 
     return {
