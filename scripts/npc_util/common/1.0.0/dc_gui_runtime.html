@@ -943,8 +943,11 @@ prev.addEventListener('click', function(ev){
       box.appendChild(content);
 
       const count = Math.max(1, choices.length || Number(item.choiceCount || 1));
-      const startX = Math.max(0, Number(item.choiceStartX ?? 12)) * sx;
-      const startY = Math.max(0, Number(item.choiceStartY ?? 12)) * sy;
+      const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "buy_button" || role === "page_nav";
+      const rawStartX = Math.max(0, Number(item.choiceStartX ?? 12)) * sx;
+      const rawStartY = Math.max(0, Number(item.choiceStartY ?? 12)) * sy;
+      const startX = centerRole ? 0 : rawStartX;
+      const startY = centerRole ? 0 : rawStartY;
       const gapX = Math.max(0, Number(item.choiceGapX ?? 0)) * sx;
       const gapY = Math.max(0, Number(item.choiceGapY ?? 10)) * sy;
       let btnMinW = Math.max(60, Number(item.choiceWidth ?? 180) * sx);
@@ -961,7 +964,7 @@ prev.addEventListener('click', function(ev){
       const priceGapY = priceLabelMode && !itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 6)) * sy : 0;
       const priceLabelH = priceLabelMode && !itemSlotListMode ? Math.ceil(fontSize * 1.2) : 0;
       const cellH = btnH + priceGapY + priceLabelH;
-      const infoGapX = (itemSlotListMode ? Math.max(0, Number(item.choiceGapX ?? 0)) : Math.max(0, Number(item.choiceInfoGapX ?? 18))) * sx;
+      const infoGapX = (itemSlotListMode ? Math.max(0, Number(item.choiceGapX ?? item.choiceInfoGapX ?? 24)) : Math.max(0, Number(item.choiceInfoGapX ?? 18))) * sx;
       const stockPriceGapX = itemSlotListMode ? Math.max(0, Number(item.choiceStockPriceGapX ?? item.choicePriceGapY ?? 24)) * sx : 0;
       const stockWidth = Math.max(42, Number(item.choiceStockWidth ?? 72)) * sx;
       const priceWidth = Math.max(42, Number(item.choicePriceWidth ?? 84)) * sx;
@@ -996,7 +999,6 @@ prev.addEventListener('click', function(ev){
       layoutW = Math.min(availableW, layoutW);
       const rows = Math.max(1, Math.ceil(count / cols));
       const layoutH = rows * cellH + Math.max(0, rows - 1) * gapY;
-      const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "buy_button" || role === "page_nav";
       const layoutLeft = centerRole ? Math.max(0, Math.round((Number(nodeBox.w || 0) - layoutW) / 2)) : Math.round(startX);
       const layoutTop = centerRole ? Math.max(0, Math.round((Number(nodeBox.h || 0) - layoutH) / 2)) : Math.round(startY);
 

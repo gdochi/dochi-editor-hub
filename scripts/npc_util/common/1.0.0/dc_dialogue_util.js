@@ -27,6 +27,11 @@ var DcDialogueUtilModule = (function(){
     CFG: "dc_dialogue_cfg",
     LAST_RESULT: "dc_dialogue_last_result"
   };
+  var SHOP_KEY = {
+    DIRECT_PATH: "dc_shop_json_path",
+    SELECTION: "npc_browser_dc_selection",
+    LOCK: "npc_browser_dochi_lock"
+  };
 
   function temp(player){return player && typeof player.getTempdata === "function" ? player.getTempdata() : null;}
 
@@ -84,6 +89,12 @@ var DcDialogueUtilModule = (function(){
     return "customnpcs/dc_data/dc_gui/" + p;
   }
 
+  function cleanRelPath(raw){
+    var p = String(raw || "").replace(/\\/g, "/").replace(/^\s+|\s+$/g, "");
+    while(p.charAt(0) === "/") p = p.substring(1);
+    return p.replace(/\/+/g, "/");
+  }
+
   function readJson(path){
     if(typeof cfg_chk_resolveFile !== "function" || typeof cfg_chk_readJsonFile !== "function") return null;
     try{
@@ -104,6 +115,54 @@ var DcDialogueUtilModule = (function(){
     }catch(e){
       return false;
     }
+  }
+
+  function readStoreValue(store, key){
+    try{
+      if(!store || !key) return "";
+      var value = store.get(String(key));
+      if(value == null) return "";
+      return String(value);
+    }catch(e){
+      return "";
+    }
+  }
+
+  function readShopSelectionPath(raw){
+    var obj, entries, i, entry, prefix, path;
+    try{
+      if(!raw) return "";
+      obj = JSON.parse(String(raw));
+      entries = obj && Array.isArray(obj.entries) ? obj.entries : [];
+      for(i=0;i<entries.length;i++){
+        entry = entries[i] || {};
+        if(String(entry.prefix || "") !== "dc_shop") continue;
+        path = cleanRelPath(entry.jsonPath || "");
+        if(path) return path;
+      }
+      prefix = String(obj && obj.prefix || "");
+      if(prefix && prefix !== "dc_shop") return "";
+      return cleanRelPath(obj && obj.jsonPath || "");
+    }catch(e){
+      return "";
+    }
+  }
+
+  function getStoredShopPath(npc){
+    var store, path;
+    try{
+      if(!npc || typeof npc.getStoreddata !== "function") return "";
+      store = npc.getStoreddata();
+    }catch(e0){
+      return "";
+    }
+    path = cleanRelPath(readStoreValue(store, SHOP_KEY.DIRECT_PATH));
+    if(path) return path;
+    path = readShopSelectionPath(readStoreValue(store, SHOP_KEY.SELECTION));
+    if(path) return path;
+    path = readShopSelectionPath(readStoreValue(store, SHOP_KEY.LOCK));
+    if(path) return path;
+    return "";
   }
 
   function unwrapNode(raw){
@@ -306,10 +365,19 @@ var DcDialogueUtilModule = (function(){
   }
 
   function openShopFromDialogue(player, npc, eventObj){
-    if(typeof dc_shop_trigger_openFromDialogue !== "function"){
-      throw new Error("dc_shop_trigger_openFromDialogue is not loaded.");
+    if(typeof dc_shop_open !== "function"){
+      throw new Error("dc_shop_open is not loaded.");
     }
-    return dc_shop_trigger_openFromDialogue({ player:player, npc:npc, event:eventObj });
+    var shopJsonPath = getStoredShopPath(npc);
+    if(!shopJsonPath && typeof dc_shop_trigger_getShopPath === "function"){
+      shopJsonPath = dc_shop_trigger_getShopPath(npc);
+    }
+    if(!shopJsonPath) throw new Error("go_shop shopJsonPath is empty.");
+    return dc_shop_open({ player:player, npc:npc, event:eventObj }, {
+      shopJsonPath: shopJsonPath,
+      accessPolicy: "dialogue_only",
+      source: "dialogue"
+    });
   }
 
   function resolveStartRoute(raw, player, npc, dialogueRel, eventObj, debug){
@@ -378,7 +446,7 @@ var DcDialogueUtilModule = (function(){
       out.choice.push({
         label: maybeTranslate(ch.label, labelIsKey),
         role: String(ch.role || ""),
-        data: { actions: normalizeActions(ch.actions), fx: (ch.fx && typeof ch.fx === "object") ? ch.fx : null, conditions: Array.isArray(ch.conditions) ? ch.conditions : [] }
+        data: { actions: normalizeActions(ch.actions), fx: (ch.fx && typeof ch.fx === "object") ? ch.fx : null, conditions: Array.isArray(ch.conditions) ? ch.conditions : [], sourceIndex: j }
       });
     }
     return out;
@@ -605,17 +673,63 @@ var DcDialogueUtilModule = (function(){
     }
     return applied;
   }
-  function handleChoice(player, npc, active, payload, eventObj){
-    var actions = [];
+
+  function parseChoiceData(payload){
+    var dataObj = payload ? payload.data : null;
     try{
-      var dataObj = payload ? payload.data : null;
       if(typeof dataObj === "string") dataObj = JSON.parse(String(dataObj));
-      if(dataObj && Array.isArray(dataObj.actions)) actions = dataObj.actions;
-    }catch(e){ actions = []; }
+    }catch(e){
+      dataObj = null;
+    }
+    return dataObj && typeof dataObj === "object" ? dataObj : {};
+  }
+
+  function makeChoiceData(ch, sourceIndex){
+    ch = ch || {};
+    return {
+      actions: normalizeActions(ch.actions),
+      fx: (ch.fx && typeof ch.fx === "object") ? ch.fx : null,
+      conditions: Array.isArray(ch.conditions) ? ch.conditions : [],
+      sourceIndex: sourceIndex
+    };
+  }
+
+  function resolveCurrentChoice(player, npc, active, payload, dataObj){
+    var raw = readJson(normalizeDialoguePath(active && active.dialogueJsonPath || ""));
+    var node = unwrapNode(raw);
+    var choices = node && Array.isArray(node.choice) ? node.choice : [];
+    var sourceIndex = parseInt(String(dataObj && dataObj.sourceIndex != null ? dataObj.sourceIndex : ""), 10);
+    var payloadIndex = parseInt(String(payload && payload.index != null ? payload.index : ""), 10);
+    var visibleIndex = -1;
+    var i, ch;
+    if(!isNaN(sourceIndex) && sourceIndex >= 0 && sourceIndex < choices.length){
+      ch = choices[sourceIndex] || {};
+      if(evalConditions(player, npc, ch)) return { choice:ch, sourceIndex:sourceIndex };
+      return null;
+    }
+    if(isNaN(payloadIndex)) return null;
+    for(i=0;i<choices.length;i++){
+      ch = choices[i] || {};
+      if(!evalConditions(player, npc, ch)) continue;
+      visibleIndex++;
+      if(visibleIndex === payloadIndex) return { choice:ch, sourceIndex:i };
+    }
+    return null;
+  }
+
+  function handleChoice(player, npc, active, payload, eventObj){
+    var dataObj = parseChoiceData(payload);
+    var resolvedChoice = resolveCurrentChoice(player, npc, active, payload, dataObj);
+    if(!resolvedChoice){
+      var resDenied = { done:false, reason:"choice_condition_failed" };
+      setLastResult(player, resDenied);
+      return resDenied;
+    }
+    dataObj = makeChoiceData(resolvedChoice.choice, resolvedChoice.sourceIndex);
+    var actions = Array.isArray(dataObj.actions) ? dataObj.actions : [];
 
     var returnGoto = String(active.returnGoto || "");
-    var choiceFx = null;
-    try{ var dataObjFx = payload ? payload.data : null; if(typeof dataObjFx === "string") dataObjFx = JSON.parse(String(dataObjFx)); choiceFx = dataObjFx && dataObjFx.fx && typeof dataObjFx.fx === "object" ? dataObjFx.fx : null; }catch(eFx){ choiceFx = null; }
+    var choiceFx = dataObj.fx && typeof dataObj.fx === "object" ? dataObj.fx : null;
 
     runChoiceNpcFx(eventObj, player, npc, choiceFx);
 

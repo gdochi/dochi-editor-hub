@@ -905,6 +905,25 @@ if(prefix==="dc_shop")hasShop=true;
 if(count<=1)return true;
 return count===2&&hasDialogue&&hasShop;
 }
+function isDialogueShopSelectionCombo(entries){
+var i,prefix,hasDialogue=false,hasShop=false,count=0,seen={};
+entries=entries||[];
+for(i=0;i<entries.length;i++){
+prefix=String(entries[i].prefix||"");
+if(!prefix||seen[prefix])continue;
+seen[prefix]=true;
+count++;
+if(prefix==="dc_dialogue")hasDialogue=true;
+if(prefix==="dc_shop")hasShop=true;
+}
+return count===2&&hasDialogue&&hasShop;
+}
+function shouldSkipDcApplyScript(entries,entry,candidate,path){
+if(!isDialogueShopSelectionCombo(entries))return false;
+if(String(entry&&entry.prefix||"")!=="dc_shop")return false;
+if(!candidate)return false;
+return normalizeRelPath(path).toLowerCase()===normalizeRelPath(candidate.path).toLowerCase();
+}
 function inferDcPrefix(path){
 var name=fileNameOnly(path).replace(/\.js$/i,"").toLowerCase();
 if(!name)return "";
@@ -1093,7 +1112,10 @@ if(entry.prefix==="dc_dialogue")return {ok:false,error:"Dialogue Trigger require
 return {ok:false,error:"Selected JSON file is not installed: "+entry.jsonPath};
 }
 }
-for(j=0;j<candidate.applyScripts.length;j++)pushUniquePath(merged,candidate.applyScripts[j]);
+for(j=0;j<candidate.applyScripts.length;j++){
+if(shouldSkipDcApplyScript(entries,entry,candidate,candidate.applyScripts[j]))continue;
+pushUniquePath(merged,candidate.applyScripts[j]);
+}
 }
 first=entries[0]||{scriptPath:"",jsonPath:"",prefix:""};
 sel.entries=entries;

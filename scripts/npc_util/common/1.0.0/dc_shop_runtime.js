@@ -392,7 +392,7 @@ var DcShopRuntimeModule = (function(){
     var height = Math.max(slotSize, Number(item.h || 0));
     var layout = String(item.choiceSlotLayout || "").toLowerCase();
     if(layout === "list"){
-      var infoGapX = Math.max(0, Number(item.choiceGapX || 0));
+      var infoGapX = Math.max(0, Number(item.choiceGapX != null ? item.choiceGapX : (item.choiceInfoGapX != null ? item.choiceInfoGapX : 24)));
       var stockPriceGapX = Math.max(0, Number(item.choiceStockPriceGapX != null ? item.choiceStockPriceGapX : (item.choicePriceGapY != null ? item.choicePriceGapY : 24)));
       var stockWidth = Math.max(42, Number(item.choiceStockWidth != null ? item.choiceStockWidth : 72));
       var priceWidth = Math.max(42, Number(item.choicePriceWidth != null ? item.choicePriceWidth : 84));

@@ -58,6 +58,36 @@ function dc_shop_trigger_readSelectionPath(raw){
   }
 }
 
+function dc_shop_trigger_isDialogueShopSelection(raw){
+  var obj, entries, i, prefix, hasDialogue = false, hasShop = false;
+  try{
+    if(!raw) return false;
+    obj = JSON.parse(String(raw));
+    entries = obj && obj.entries instanceof Array ? obj.entries : [];
+    for(i = 0; i < entries.length; i++){
+      prefix = String((entries[i] || {}).prefix || "");
+      if(prefix === "dc_dialogue") hasDialogue = true;
+      if(prefix === "dc_shop") hasShop = true;
+    }
+    return hasDialogue && hasShop;
+  }catch(err){
+    return false;
+  }
+}
+
+function dc_shop_trigger_shouldSkipDirectInteract(npc){
+  var store;
+  try{
+    if(!npc || typeof npc.getStoreddata !== "function") return false;
+    store = npc.getStoreddata();
+  }catch(err0){
+    return false;
+  }
+  if(dc_shop_trigger_isDialogueShopSelection(dc_shop_trigger_readStore(store, DC_SHOP_TRIGGER_SELECTION_KEY))) return true;
+  if(dc_shop_trigger_isDialogueShopSelection(dc_shop_trigger_readStore(store, DC_SHOP_TRIGGER_LOCK_KEY))) return true;
+  return false;
+}
+
 function dc_shop_trigger_getStoredShopPath(npc){
   var store, path;
   try{
@@ -109,6 +139,7 @@ function dc_shop_trigger_open(e, source, accessPolicy){
  * @param {NpcEvent.InteractEvent} e
  */
 function dc_shop_trigger_interact(e){
+  if(dc_shop_trigger_shouldSkipDirectInteract(e && e.npc)) return;
   dc_shop_trigger_open(e, "npc_interact", "shop_guard");
 }
 
