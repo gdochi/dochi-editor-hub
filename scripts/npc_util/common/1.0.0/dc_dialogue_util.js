@@ -42,6 +42,12 @@ var DcDialogueUtilModule = (function(){
     try{ if(npc && typeof npc.say === "function") npc.say(line); }catch(e0){}
   }
 
+  function transitionLog(player, npc, msg){
+    var line = "[dc_go_shop_debug] " + String(msg);
+    try{ if(player && typeof player.message === "function") player.message(line); }catch(e0){}
+    try{ if(npc && typeof npc.say === "function") npc.say(line); }catch(e1){}
+  }
+
   function closeHtmlGui(player){
     if(!player) return false;
     if(typeof cnpcext === "undefined" || !cnpcext) return false;
@@ -375,11 +381,15 @@ var DcDialogueUtilModule = (function(){
     }
     if(!shopJsonPath) throw new Error("go_shop shopJsonPath is empty.");
     var target = (eventObj && eventObj.player && eventObj.npc) ? eventObj : { player:player, npc:npc, event:eventObj };
-    return dc_shop_open(target, {
+    transitionLog(player, npc, "openShopFromDialogue shopJsonPath=" + String(shopJsonPath) + " hasEvent=" + String(!!eventObj) + " eventName=" + String(eventObj && eventObj.eventName || ""));
+    var result = dc_shop_open(target, {
       shopJsonPath: shopJsonPath,
       accessPolicy: "dialogue_only",
-      source: "dialogue"
+      source: "dialogue",
+      transitionDebug: true
     });
+    transitionLog(player, npc, "dc_shop_open returned=" + String(result));
+    return result;
   }
 
   function resolveStartRoute(raw, player, npc, dialogueRel, eventObj, debug){
@@ -393,6 +403,7 @@ var DcDialogueUtilModule = (function(){
       var action = getRouteAction(route);
       if(String(action.type || "").toLowerCase() === "go_shop"){
         debugLog(npc, debug, "start route " + (i + 1) + " opens shop.");
+        transitionLog(player, npc, "start route " + (i + 1) + " condition passed; opening shop.");
         return { type:"shop", opened:openShopFromDialogue(player, npc, eventObj) };
       }
       var active = { baseSubPath:baseSubPath(dialogueRel) };
@@ -748,10 +759,11 @@ var DcDialogueUtilModule = (function(){
     for(var i=0;i<actions.length;i++){
       var a = actions[i] || {};
       if(String(a.type || "").toLowerCase() === "go_shop"){
-        closeHtmlGui(player);
+        transitionLog(player, npc, "choice go_shop matched; clearing dialogue active and handing off to shop.");
         clearActive(player);
         var shopRes = openShopFromDialogue(player, npc, eventObj);
         var resShop = { done:true, reason:"go_shop", opened: shopRes != null };
+        transitionLog(player, npc, "choice go_shop result opened=" + String(resShop.opened));
         setLastResult(player, resShop);
         return resShop;
       }
