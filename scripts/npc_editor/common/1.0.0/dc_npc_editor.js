@@ -17,6 +17,8 @@ CACHE_LIST_KEY:"npc_browser_cache_list",
 CACHE_RANGE_KEY:"npc_browser_scan_range",
 LOCALE_PREF_KEY:"npc_browser_locale_pref",
 PREVIEW_ENTITY_RENDER:true,
+PREVIEW_PREF_KEY:"npc_browser_preview_enabled",
+PREVIEW_DEFAULT:false,
 DEBUG:false
 };
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
@@ -42,6 +44,7 @@ var data={};
  if(e.eventName==="admin_reset"){onAdminReset(e,data);return;}
  if(e.eventName==="keybind_save"){onKeybindSave(e,data);return;}
  if(e.eventName==="admin_refresh"){if(requireCanOpen(e,"adminState","admin_refresh"))sendAdminState(e.player);return;}
+ if(e.eventName==="npc_preview_toggle"){if(requireCanOpen(e,"previewSettingResult","preview_toggle"))onPreviewToggle(e,data);return;}
  if(e.eventName==="npc_refresh"){if(requireCanBrowse(e,"npcListUpdate","refresh"))pushNpcList(e.player,normalizeScanRange(data.range));return;}
  if(e.eventName==="npc_tp"){if(requireCanEdit(e,"npcActionResult","tp"))onNpcTp(e,data);return;}
  if(e.eventName==="npc_delete"){if(requireCanEdit(e,"npcActionResult","delete"))onNpcDelete(e,data);return;}
@@ -67,7 +70,7 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
  debugMsg(player,"i18n locale="+i18n.locale+" keys="+countObjectKeys(i18n.messages)+" error="+String(i18n.error||"none"));
  if(!state.canOpen){sendPlayerMessage(player,"NPC Editor access denied.");return;}
  if(!state.initialized){
-  initData={ok:true,npcs:[],factions:[],scanRange:range,overlayEntities:[],admin:state,locale:i18n.locale,localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales(),i18nError:i18n.error,debug:CFG.DEBUG};
+  initData={ok:true,npcs:[],factions:[],scanRange:range,overlayEntities:[],previewEnabled:getStoredPreviewEnabled(player),admin:state,locale:i18n.locale,localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales(),i18nError:i18n.error,debug:CFG.DEBUG};
   payload=stringifyBrowserPayload(initData)
   debugMsg(player,"openHtmlGui bootstrap payload="+payload.length+" html="+CFG.HTML);
   cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);
@@ -419,6 +422,15 @@ return normalizeScanRange(v);
 function setStoredScanRange(player,range){
 player.getStoreddata().put(CFG.CACHE_RANGE_KEY,String(normalizeScanRange(range)));
 }
+function getStoredPreviewEnabled(player){
+var data=player.getStoreddata(),v=String(data.get(CFG.PREVIEW_PREF_KEY)||"");
+if(v==="1"||v==="true")return true;
+if(v==="0"||v==="false")return false;
+return CFG.PREVIEW_DEFAULT===true;
+}
+function setStoredPreviewEnabled(player,enabled){
+player.getStoreddata().put(CFG.PREVIEW_PREF_KEY,enabled?"1":"0");
+}
 function getStoredOpenKey(player){
 var store=player.getStoreddata();
 return String(store.get("npc_browser_open_key")||"");
@@ -547,7 +559,7 @@ var list=toJsArray(getCachedNpcList(player));
 return buildNpcBrowserInitFromList(player,list,range);
 }
 function buildNpcBrowserInitFromList(player,list,range){
-var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,scriptEnabled,previewSlot,previewNbt,dochiLock,overlayEntities=[];
+var npcs=[],factionsMap={},factions=[],i,n,name,title,faction,x,y,z,dist,style,scriptEnabled,previewSlot,previewNbt,dochiLock,overlayEntities=[],previewEnabled=getStoredPreviewEnabled(player);
 for(i=0;i<list.length;i++){
 n=list[i];
 try{n=getNpcByUuid(player,String(n.getUUID()))||n;}catch(resolveErr){}
@@ -565,7 +577,7 @@ if(dochiLock.locked)style="dcE";
 scriptEnabled=getNpcScriptEnabled(n);
 previewSlot=-1;
 previewNbt="";
-if(CFG.PREVIEW_ENTITY_RENDER){
+if(CFG.PREVIEW_ENTITY_RENDER&&previewEnabled){
 try{
 previewNbt=buildNpcPreviewNbt(n);
 if(previewNbt){
@@ -595,7 +607,7 @@ hasPreview:(previewSlot>=0)
 });
 }
 factions.sort();
-return {npcs:npcs,factions:factions,scanRange:range,overlayEntities:overlayEntities,admin:buildAdminBrowserState(player),locale:getPlayerLocale(player),localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales()};
+return {npcs:npcs,factions:factions,scanRange:range,overlayEntities:overlayEntities,previewEnabled:previewEnabled,admin:buildAdminBrowserState(player),locale:getPlayerLocale(player),localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales()};
 }
 function buildNpcPreviewNbt(npc){
 var raw=getEntityNbtSafe(npc),tabs=[{tab:1,inlineScript:"",files:[]}];
@@ -658,6 +670,11 @@ pushNpcList(e.player,getStoredScanRange(e.player));
 }catch(err){
 pushBrowser(e.player,"npcActionResult",{ok:false,action:"delete",error:String(err)});
 }
+}
+function onPreviewToggle(e,data){
+var enabled=data&&data.previewEnabled===true;
+setStoredPreviewEnabled(e.player,enabled);
+pushBrowser(e.player,"previewSettingResult",{ok:true,previewEnabled:enabled,action:"preview_toggle"});
 }
 function onNpcScriptInfo(e,data){
 var npc=getNpcInCurrentRange(e.player,String(data.uuid||"")),result;

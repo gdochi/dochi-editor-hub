@@ -107,6 +107,12 @@ I18N_EXACT_KEYS["Switch this NPC to General mode?\n\nThis clears the NPC Scripts
 I18N_EXACT_KEYS["Switch this NPC to DCE mode?\n\nThis clears the NPC Scripts and ScriptList, while keeping ScriptEnabled on. dc_lib scripts are applied later from DC Editor Hub. Continue?"]="npc_editor.dce_mode_confirm";
 I18N_EXACT_KEYS["Language"]="npc_editor.language";
 I18N_EXACT_KEYS["Language updated."]="npc_editor.language_updated";
+I18N_EXACT_KEYS["Preview On/Off"]="npc_editor.preview_toggle";
+I18N_EXACT_KEYS["Preview On"]="npc_editor.preview_turn_on";
+I18N_EXACT_KEYS["Preview Off"]="npc_editor.preview_turn_off";
+I18N_EXACT_KEYS["Preview disabled"]="npc_editor.preview_disabled";
+I18N_EXACT_KEYS["Preview applies on next open"]="npc_editor.preview_next_open";
+I18N_ATTR_KEYS["Toggle NPC preview rendering. Saved per player."]="npc_editor.preview_toggle_title";
 function normalizeLocale(locale){locale=String(locale||"en_us").toLowerCase().replace("-","_");return locale||"en_us";}
 function debugStep(step,msg){if(DEBUG)window.cnpc.sendEvent("debug",{step:String(step||"event"),msg:String(msg||"")});}
 function i18nKeyCount(){return Object.keys(I18N||{}).length;}
@@ -206,7 +212,7 @@ function startI18nObserver(){if(I18N_OBSERVER||!window.MutationObserver)return;I
 function maybeReloadI18n(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");});}
 var KEY_OPTIONS=[{value:"",label:"Disabled",className:"disabled-key w2_25"},{value:"290",label:"F1",className:"w1"},{value:"291",label:"F2",className:"w1"},{value:"292",label:"F3",className:"w1"},{value:"293",label:"F4",className:"w1"},{value:"294",label:"F5",className:"w1"},{value:"295",label:"F6",className:"w1"},{value:"296",label:"F7",className:"w1"},{value:"297",label:"F8",className:"w1"},{value:"298",label:"F9",className:"w1"},{value:"299",label:"F10",className:"w1"},{value:"300",label:"F11",className:"w1"},{value:"301",label:"F12",className:"w1"},{value:"81",label:"Q",className:"w1"},{value:"87",label:"W",className:"w1"},{value:"69",label:"E",className:"w1"},{value:"82",label:"R",className:"w1"},{value:"84",label:"T",className:"w1"},{value:"89",label:"Y",className:"w1"},{value:"85",label:"U",className:"w1"},{value:"73",label:"I",className:"w1"},{value:"79",label:"O",className:"w1"},{value:"80",label:"P",className:"w1"},{value:"91",label:"[",className:"w1"},{value:"93",label:"]",className:"w1"},{value:"65",label:"A",className:"w1"},{value:"83",label:"S",className:"w1"},{value:"68",label:"D",className:"w1"},{value:"70",label:"F",className:"w1"},{value:"71",label:"G",className:"w1"},{value:"72",label:"H",className:"w1"},{value:"74",label:"J",className:"w1"},{value:"75",label:"K",className:"w1"},{value:"76",label:"L",className:"w1"},{value:"59",label:";",className:"w1"},{value:"39",label:"'",className:"w1"},{value:"90",label:"Z",className:"w1"},{value:"88",label:"X",className:"w1"},{value:"67",label:"C",className:"w1"},{value:"86",label:"V",className:"w1"},{value:"66",label:"B",className:"w1"},{value:"78",label:"N",className:"w1"},{value:"77",label:"M",className:"w1"},{value:"44",label:",",className:"w1"},{value:"46",label:".",className:"w1"},];
 var KEY_LAYOUT=[{className:"keyboard-row",keys:[{value:"",label:"Disabled",className:"disabled-key w2_25"},"290","291","292","293","294","295","296","297","298","299","300","301"]},{className:"keyboard-row offset-1",keys:["81","87","69","82","84","89","85","73","79","80","91","93"]},{className:"keyboard-row offset-2",keys:["65","83","68","70","71","72","74","75","76","59","39"]},{className:"keyboard-row offset-3",keys:["90","88","67","86","66","78","77","44","46"]}];
-var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:"",scanRange:Number(RAW.scanRange||48),admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]},dcClearPending:false,generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:"",activePrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
+var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:"",scanRange:Number(RAW.scanRange||48),previewEnabled:RAW.previewEnabled===true,previewRuntimeEnabled:RAW.previewEnabled===true,admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]},dcClearPending:false,generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:"",activePrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
 var LOCALE_OPTIONS=Array.isArray(RAW.localeOptions)?RAW.localeOptions:[];
 function byId(id){return document.getElementById(id);}
 function setupLocaleSelect(){var select=byId("localeSelect"),options=LOCALE_OPTIONS.slice(),seen={},current=normalizeLocale(I18N_LOCALE),hasCurrent=false;if(!select)return;if(!options.length)options=[{locale:"en_us",label:"English"},{locale:"ko_kr",label:"Korea"},{locale:"ja_jp",label:"Japan"},{locale:"zh_cn",label:"China"},{locale:"ru_ru",label:"Russia"}];select.innerHTML="";options.forEach(function(opt){var locale=normalizeLocale(opt.locale||"");if(!locale||seen[locale])return;seen[locale]=true;if(locale===current)hasCurrent=true;appendOption(select,locale,opt.label||locale);});if(!hasCurrent)appendOption(select,current,current);select.value=current;select.onchange=function(){changeLocale(this.value);};}
@@ -285,6 +291,7 @@ debugStep("init","begin npcs="+APP_STATE.npcs.length+" admin="+APP_STATE.admin.i
 ensureDcEditorPanel();
 ensureDcListBackButton();
 ensureTopbarScriptActions();
+ensureTopbarPreviewAction();
 bind();
 setupLocaleSelect();
 listenServer();
@@ -352,6 +359,7 @@ byId("tpBtn").onclick=doTp;
 byId("editBtn").onclick=editSelectedNpc;
 byId("deleteBtn").onclick=doDelete;
 byId("scriptToggleBtn").onclick=toggleSelectedNpcScriptEnabled;
+if(byId("previewToggleBtn"))byId("previewToggleBtn").onclick=togglePreviewSetting;
 byId("applyScriptBtn").onclick=applyScriptChanges;
 byId("reloadScriptBtn").onclick=function(){requestScript();};
 byId("addFileBtn").onclick=function(){addSelectedFileFromInput(false);};
@@ -464,6 +472,18 @@ dce.textContent="DCE";
 box.appendChild(dce);
 }
 }
+function ensureTopbarPreviewAction(){
+var list=document.querySelector(".topbar-action-list"),btn,anchor;
+if(!list||byId("previewToggleBtn"))return;
+btn=document.createElement("button");
+btn.type="button";
+btn.id="previewToggleBtn";
+btn.textContent="Preview On/Off";
+btn.title="Toggle NPC preview rendering. Saved per player.";
+anchor=byId("scriptToggleBtn");
+if(anchor&&anchor.parentNode===list)list.insertBefore(btn,anchor);
+else list.appendChild(btn);
+}
 function ensureDcListBackButton(){
 var btn=byId("dcListBackBtn");
 if(btn&&btn.parentNode)btn.parentNode.removeChild(btn);
@@ -477,6 +497,10 @@ if(!d)return;
 debugStep("npc","update received npcs="+(Array.isArray(d.npcs)?d.npcs.length:"not-array"));
 if(d.locale)maybeReloadI18n(d.locale);
 if(Array.isArray(d.localeOptions)){LOCALE_OPTIONS=d.localeOptions;setupLocaleSelect();}
+if(d.previewEnabled===true||d.previewEnabled===false){
+APP_STATE.previewEnabled=d.previewEnabled===true;
+if(!APP_STATE.previewEnabled)APP_STATE.previewRuntimeEnabled=false;
+}
 APP_STATE.npcs=Array.isArray(d.npcs)?d.npcs:[];
 APP_STATE.factions=Array.isArray(d.factions)?d.factions:[];
 APP_STATE.admin=normalizeAdminState(d.admin);
@@ -490,6 +514,7 @@ syncScriptShellToNpc(getSelectedNpc());
 rebuildFactionSelect();
 applyFilter();
 renderAdminState();
+updatePreviewToggleButton();
 setStatus("NPC cache refreshed.","status-ok");
 });
 window.cnpc.onEvent("adminState",function(d){
@@ -541,6 +566,17 @@ clearScriptState("");
 requestRefresh();
 }
 });
+window.cnpc.onEvent("previewSettingResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+if(d.previewEnabled===true||d.previewEnabled===false){
+APP_STATE.previewEnabled=d.previewEnabled===true;
+if(!APP_STATE.previewEnabled)APP_STATE.previewRuntimeEnabled=false;
+}
+updatePreviewToggleButton();
+renderSelectedNpc();
+setStatus(d.ok?(APP_STATE.previewEnabled?tr("npc_editor.preview_enabled_saved","Preview enabled. Reopen the editor to apply rendering."):tr("npc_editor.preview_disabled_saved","Preview disabled.")):"Preview setting failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
+});
 window.cnpc.onEvent("npcScriptFileList",function(d){
 d=parsePayload(d);
 if(!d)return;
@@ -587,7 +623,7 @@ function positionKeybindPanel(){var panel=byId("keybindPanel"),btn=byId("keybind
 function toggleAdminFlyout(ev){var panel=byId("adminPanel"),willOpen;if(ev)ev.stopPropagation();willOpen=!panel.classList.contains("show");if(willOpen){if(panel.parentNode!==document.body)document.body.appendChild(panel);renderAdminState();document.body.classList.add("admin-flyout-open");setEntityPreviewSuppressed(true);panel.classList.add("show");positionAdminFlyout();return;}closeAdminFlyout();closeKeybindPanel();}
 function closeAdminFlyout(){var panel=byId("adminPanel");if(panel)panel.classList.remove("show");document.body.classList.remove("admin-flyout-open");setEntityPreviewSuppressed(false);}
 function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adminFlyoutBtn"),keyPanel=byId("keybindPanel"),target=ev.target;if(target&&target.id==="dcFlyoutCloseBtn"){clearDcSelectionOnly();return;}if(keyPanel&&keyPanel.contains(target))return;if(admin&&adminBtn&&!admin.contains(target)&&!adminBtn.contains(target)){closeAdminFlyout();closeKeybindPanel();return;}if(keyPanel&&!keyPanel.contains(target))closeKeybindPanel();}
-function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);}
+function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);updatePreviewToggleButton();}
 function renderAdminList(){var box=byId("adminListBox"),admin=APP_STATE.admin,list=Array.isArray(admin.admins)?admin.admins:[];box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_admins_registered","No admins registered."))+'</div>';return;}list.forEach(function(entry){var row=document.createElement("div"),meta=document.createElement("div");row.className="loaded-item";meta.className="file-name";meta.innerHTML='<div>'+esc(entry.name||"(unknown)")+'</div><div class="small">'+esc(entry.uuid||"")+"</div>";row.appendChild(meta);if(admin.canManageAdmins&&entry.uuid!==String(admin.owner&&admin.owner.uuid||"")){var btn=document.createElement("button");btn.type="button";btn.className="icon-btn danger";btn.textContent=tr("npc_editor.remove","Remove");btn.onclick=function(){removeAdmin(entry.uuid);};row.appendChild(btn);}box.appendChild(row);});}
 function renderAdminPlayerOptions(){var select=byId("adminPlayerSelect"),admin=APP_STATE.admin,players=(admin.players||[]).filter(function(p){return !admin.admins.some(function(a){return a.uuid===p.uuid;});});select.innerHTML="";appendOption(select,"","Select player");players.forEach(function(p){appendOption(select,p.uuid,p.name+" ("+p.uuid+")");});}
 function submitAdminAdd(){var select=byId("adminPlayerSelect"),uuid=String(select.value||""),player=findAdminPlayer(uuid);if(!uuid||!player){setStatus("Select a player first.","status-warn");return;}sendEvt("admin_add",{name:String(player.name||""),uuid:uuid});}
@@ -703,6 +739,20 @@ btn.textContent=text;
 btn.title=text;
 btn.disabled=!APP_STATE.admin.canEdit;
 }
+function updatePreviewToggleButton(){
+var btn=byId("previewToggleBtn"),enabled=APP_STATE.previewEnabled===true,text;
+if(!btn)return;
+text=enabled?tr("npc_editor.preview_turn_off","Preview Off"):tr("npc_editor.preview_turn_on","Preview On");
+btn.textContent=text;
+btn.title=tr("npc_editor.preview_toggle_title","Toggle NPC preview rendering. Saved per player.");
+btn.classList.toggle("active",enabled);
+btn.disabled=!APP_STATE.admin.canOpen;
+}
+function togglePreviewSetting(){
+var next=APP_STATE.previewEnabled!==true;
+sendEvt("npc_preview_toggle",{previewEnabled:next});
+setStatus(tr("npc_editor.preview_save_sent","Preview setting save requested."),"status-warn");
+}
 function toggleSelectedNpcScriptEnabled(){
 var npc=getSelectedNpc(),next;
 if(!npc){
@@ -796,6 +846,7 @@ box.innerHTML='<div class="field-label">'+esc(tr("npc_editor.script_mode","Scrip
 }
 function updateEntityPreview(npc){
 var slot=byId("entitySlot"),ghost=byId("entityGhost");
+if(!slot||!ghost)return;
 if(document.body.classList.contains("admin-flyout-open")){
 slot.setAttribute("data-mc-entity","0");
 slot.style.visibility="hidden";
@@ -803,8 +854,21 @@ ghost.style.display="none";
 return;
 }
 slot.style.visibility="";
+if(APP_STATE.previewEnabled!==true){
+slot.setAttribute("data-mc-entity","0");
+ghost.textContent=tr("npc_editor.preview_disabled","Preview disabled");
+ghost.style.display="flex";
+return;
+}
+if(APP_STATE.previewRuntimeEnabled!==true){
+slot.setAttribute("data-mc-entity","0");
+ghost.textContent=tr("npc_editor.preview_next_open","Preview applies on next open");
+ghost.style.display="flex";
+return;
+}
 if(!npc||!npc.hasPreview||npc.previewSlot==null||npc.previewSlot<0){
 slot.setAttribute("data-mc-entity","0");
+ghost.textContent=tr("npc_editor.preview_updates","Preview updates on refresh/open");
 ghost.style.display="flex";
 return;
 }
@@ -995,6 +1059,7 @@ var scriptBtn=byId("scriptTabBtn");
 var npc=getSelectedNpc();
 var mode=modeFromNpc(npc);
 updateScriptToggleButton();
+updatePreviewToggleButton();
 if(scriptBtn){
 scriptBtn.classList.toggle("active",mode==="general");
 scriptBtn.disabled=!APP_STATE.admin.canEdit||!npc||mode==="general";

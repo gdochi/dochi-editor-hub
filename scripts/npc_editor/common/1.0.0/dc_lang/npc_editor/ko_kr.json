@@ -143,5 +143,14 @@
   "npc_editor.cancel": "취소",
   "npc_editor.script_mode": "스크립트 모드",
   "npc_editor.edit": "편집",
+  "npc_editor.preview_toggle": "프리뷰 켜기/끄기",
+  "npc_editor.preview_toggle_title": "NPC 프리뷰 렌더링을 전환합니다. 플레이어별로 저장됩니다.",
+  "npc_editor.preview_turn_on": "프리뷰 켜기",
+  "npc_editor.preview_turn_off": "프리뷰 끄기",
+  "npc_editor.preview_disabled": "프리뷰 꺼짐",
+  "npc_editor.preview_next_open": "다음에 열 때 프리뷰가 적용됩니다",
+  "npc_editor.preview_save_sent": "프리뷰 설정 저장 요청을 보냈습니다.",
+  "npc_editor.preview_enabled_saved": "프리뷰를 켰습니다. 렌더링은 에디터를 다시 열 때 적용됩니다.",
+  "npc_editor.preview_disabled_saved": "프리뷰를 껐습니다.",
   "npc_editor.distance_blocks": "{value}블럭"
 }

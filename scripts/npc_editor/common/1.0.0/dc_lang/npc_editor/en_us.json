@@ -145,5 +145,14 @@
   "npc_editor.cancel": "Cancel",
   "npc_editor.script_mode": "Script Mode",
   "npc_editor.edit": "Edit",
+  "npc_editor.preview_toggle": "Preview On/Off",
+  "npc_editor.preview_toggle_title": "Toggle NPC preview rendering. Saved per player.",
+  "npc_editor.preview_turn_on": "Preview On",
+  "npc_editor.preview_turn_off": "Preview Off",
+  "npc_editor.preview_disabled": "Preview disabled",
+  "npc_editor.preview_next_open": "Preview applies on next open",
+  "npc_editor.preview_save_sent": "Preview setting save requested.",
+  "npc_editor.preview_enabled_saved": "Preview enabled. Reopen the editor to apply rendering.",
+  "npc_editor.preview_disabled_saved": "Preview disabled.",
   "npc_editor.distance_blocks": "{value} blocks"
 }

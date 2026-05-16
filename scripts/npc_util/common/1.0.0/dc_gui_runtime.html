@@ -528,15 +528,16 @@
 
     function getShopPriceData(){
       const selected = getShopChoiceData("selected_slot", 0);
-      if(hasItemCurrencySlot(selected)) return selected;
       const selectedProductId = selected ? String(selected.productId || "") : "";
+      if(!selectedProductId) return null;
       const slots = getShopChoices("item_slots") || [];
       for(let i=0;i<slots.length;i++){
         const data = slots[i] && slots[i].data && typeof slots[i].data === "object" ? slots[i].data : null;
         if(!data || !hasItemCurrencySlot(data)) continue;
-        if(selectedProductId && String(data.productId || "") !== selectedProductId) continue;
+        if(String(data.productId || "") !== selectedProductId) continue;
         return data;
       }
+      if(hasItemCurrencySlot(selected)) return selected;
       return selected;
     }
 
