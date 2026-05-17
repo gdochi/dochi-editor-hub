@@ -1585,6 +1585,8 @@ prev.addEventListener('click', function(ev){
         const align = String(item.choiceBtnTextAlign || (role ? "center" : "left")).toLowerCase();
         btn.style.textAlign = (align === "center" || align === "right") ? align : "left";
         btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
+        const visualIndexRaw = parseInt(String(btn && btn.dataset ? (btn.dataset.choiceVisualIndex || "-1") : "-1"), 10);
+        const visualIndex = Number.isFinite(visualIndexRaw) ? visualIndexRaw : -1;
         const fitFontSize = autoFitText && visualIndex >= 0 && textFontSizes[visualIndex] ? textFontSizes[visualIndex] : fontSize;
         btn.style.fontSize = String(fitFontSize) + "px";
         btn.style.lineHeight = autoFitText && !itemSlotMode && !quantitySelectorMode ? "1.18" : "1.2";
@@ -1600,8 +1602,6 @@ prev.addEventListener('click', function(ev){
         }else if(role){
           btn.style.borderRadius = `${Math.max(0, Math.round(3 * uiScale))}px`;
         }
-        const visualIndexRaw = parseInt(String(btn && btn.dataset ? (btn.dataset.choiceVisualIndex || "-1") : "-1"), 10);
-        const visualIndex = Number.isFinite(visualIndexRaw) ? visualIndexRaw : -1;
         applyChoiceButtonTexture(btn, item, visualIndex);
       }
 
