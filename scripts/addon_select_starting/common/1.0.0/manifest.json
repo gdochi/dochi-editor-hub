@@ -1,0 +1,37 @@
+{
+  "id": "addon_select_starting/common/1.0.0",
+  "package": "addon_select_starting",
+  "version": "1.0.0",
+  "editor": "dialogue_addon",
+  "mc_version": "common",
+  "description": "Dialogue JS action add-on for starter Pokemon selection",
+  "entry": "select_starting.js",
+  "install_dir": "dc_lib/addon_select_starting",
+  "files": [
+    {
+      "source": "select_starting.js",
+      "install_as": "select_starting.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "package",
+          "id": "npc_dialogue/common/1.0.0",
+          "required": true,
+          "note": "Requires the NPC Dialogue package and its JS action loader. Install dialogue separately; this add-on does not install dialogue files automatically."
+        },
+        {
+          "type": "mod",
+          "id": "cnpcextended",
+          "required": true,
+          "note": "Required for openHtmlGui and browser event callbacks."
+        }
+      ]
+    },
+    {
+      "source": "html/select_starting.html",
+      "install_as": "addon_select_starting/select_starting.html",
+      "type": "html",
+      "dependencies": []
+    }
+  ]
+}

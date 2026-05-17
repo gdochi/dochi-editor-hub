@@ -1,0 +1,43 @@
+{
+  "id": "addon_battle_intro/common/1.0.0",
+  "package": "addon_battle_intro",
+  "version": "1.0.0",
+  "editor": "dialogue_addon",
+  "mc_version": "common",
+  "description": "Dialogue JS action add-on for Cobblemon battle intro party view",
+  "entry": "battle_intro_view_party.js",
+  "install_dir": "dc_lib/addon_battle_intro",
+  "files": [
+    {
+      "source": "battle_intro_view_party.js",
+      "install_as": "battle_intro_view_party.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "package",
+          "id": "npc_dialogue/common/1.0.0",
+          "required": true,
+          "note": "Requires the NPC Dialogue package and its JS action loader. Install dialogue separately; this add-on does not install dialogue files automatically."
+        },
+        {
+          "type": "mod",
+          "id": "cnpcextended",
+          "required": true,
+          "note": "Required for openHtmlGui, entityNbt, and browser event callbacks."
+        },
+        {
+          "type": "mod",
+          "id": "cobblemon",
+          "required": true,
+          "note": "Required for Pokemon party/species lookup."
+        }
+      ]
+    },
+    {
+      "source": "html/battle_intro_view_party.html",
+      "install_as": "addon_battle_intro/battle_intro_view_party.html",
+      "type": "html",
+      "dependencies": []
+    }
+  ]
+}

@@ -1,9 +1,59 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-13T12:06:40.570Z",
+  "generated_at": "2026-05-17T04:13:45.066Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
+    {
+      "id": "addon_battle_intro",
+      "package": "addon_battle_intro",
+      "script": "battle_intro_view_party.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "addon_battle_intro/common/1.0.0/manifest.json",
+          "source_path": "addon_battle_intro/common/1.0.0/battle_intro_view_party.js"
+        }
+      ],
+      "script_dependencies": [
+        {
+          "script": "dc_npc_core_module.js",
+          "path": "npc_util/common/1.0.0/dc_npc_core_module.js",
+          "required": true,
+          "load_order": 1
+        },
+        {
+          "script": "dc_util_common.js",
+          "path": "npc_util/common/1.0.0/dc_util_common.js",
+          "required": true,
+          "load_order": 3
+        }
+      ],
+      "html_dependencies": []
+    },
+    {
+      "id": "addon_select_starting",
+      "package": "addon_select_starting",
+      "script": "select_starting.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "addon_select_starting/common/1.0.0/manifest.json",
+          "source_path": "addon_select_starting/common/1.0.0/select_starting.js"
+        }
+      ],
+      "script_dependencies": [
+        {
+          "script": "dc_npc_core_module.js",
+          "path": "npc_util/common/1.0.0/dc_npc_core_module.js",
+          "required": true,
+          "load_order": 1
+        }
+      ],
+      "html_dependencies": []
+    },
     {
       "id": "item_editor",
       "package": "item_editor",

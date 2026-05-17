@@ -33,6 +33,8 @@ var DcDialogueUtilModule = (function(){
     SELECTION: "npc_browser_dc_selection",
     LOCK: "npc_browser_dochi_lock"
   };
+  var JS_LIB_ROOT = "customnpcs/scripts/ecmascript/dc_lib";
+  var JS_MODULE_CACHE = {};
 
   function temp(player){return player && typeof player.getTempdata === "function" ? player.getTempdata() : null;}
 
@@ -250,6 +252,87 @@ var DcDialogueUtilModule = (function(){
     return DEFAULT_GUI_JSON;
   }
 
+  function normalizeJsRelPath(raw){
+    var p = cleanRelPath(raw || "");
+    p = p.replace(/^minecraft\/customnpcs\/scripts\/ecmascript\/dc_lib\/?/i, "");
+    p = p.replace(/^customnpcs\/scripts\/ecmascript\/dc_lib\/?/i, "");
+    p = p.replace(/^scripts\/ecmascript\/dc_lib\/?/i, "");
+    p = p.replace(/^dc_lib\/?/i, "");
+    return cleanRelPath(p);
+  }
+
+  function splitJsRelPath(raw){
+    var p = normalizeJsRelPath(raw || "");
+    var idx = p.lastIndexOf("/");
+    if(idx < 0) return { subPath:"", fileName:p };
+    return { subPath:p.slice(0, idx + 1), fileName:p.slice(idx + 1) };
+  }
+
+  function normalizeJsAction(action){
+    var a = action && typeof action === "object" ? action : {};
+    var subPath = normalizeJsRelPath(a.jsSubPath || "");
+    var fileName = cleanRelPath(a.jsFileName || "");
+    var jsPath = normalizeJsRelPath(a.jsPath || a.filePath || a.path || "");
+    if(!jsPath && fileName) jsPath = normalizeJsRelPath((subPath ? subPath + "/" : "") + fileName);
+    if(jsPath){
+      var split = splitJsRelPath(jsPath);
+      if(!subPath) subPath = split.subPath;
+      if(!fileName) fileName = split.fileName;
+    }
+    return {
+      type:"js",
+      scriptCall:String(a.scriptCall || "jsCall") || "jsCall",
+      jsSubPath:subPath,
+      jsFileName:fileName,
+      jsPath:jsPath
+    };
+  }
+
+  function getJsActionLoadPath(action){
+    var a = normalizeJsAction(action);
+    var rel = normalizeJsRelPath(a.jsPath || ((a.jsSubPath ? a.jsSubPath + "/" : "") + (a.jsFileName || "")));
+    if(!rel) return "";
+    return JS_LIB_ROOT + "/" + rel;
+  }
+
+  function jsHasCallableEntry(text){
+    return /\bfunction\s+jsCall\s*\(/.test(String(text || ""));
+  }
+
+  function loadJsActionModule(action){
+    var loadPath = getJsActionLoadPath(action);
+    if(!loadPath) return false;
+    if(JS_MODULE_CACHE[loadPath] === true) return true;
+    if(typeof cfg_chk_resolveFile !== "function" || typeof cfg_chk_readTextFile !== "function") return false;
+    try{
+      var file = cfg_chk_resolveFile(loadPath, null);
+      if(!file || !file.exists || !file.exists()) return false;
+      var raw = cfg_chk_readTextFile(file);
+      if(!jsHasCallableEntry(raw)) return false;
+      if(typeof load !== "function") return false;
+      load(String(file.getAbsolutePath()));
+      JS_MODULE_CACHE[loadPath] = true;
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function runJsAction(player, npc, eventObj, action){
+    var a = normalizeJsAction(action);
+    if(!loadJsActionModule(a)) return { pass:false, msg:"JS action load failed" };
+    if(typeof jsCall !== "function") return { pass:false, msg:"jsCall is not loaded" };
+    var opts = {};
+    for(var k in a){ if(Object.prototype.hasOwnProperty.call(a, k)) opts[k] = a[k]; }
+    var target = (eventObj && eventObj.player && eventObj.npc) ? eventObj : { player:player, npc:npc, event:eventObj };
+    try{
+      var result = jsCall(target, opts);
+      return { pass:true, msg:"JS action called", result:result };
+    }catch(e){
+      return { pass:false, msg:"JS action failed: " + String(e) };
+    }
+  }
+
   function normalizeActions(list){
     var out = [];
     var arr = Array.isArray(list) ? list : [];
@@ -269,6 +352,10 @@ var DcDialogueUtilModule = (function(){
       }
       if(type === "go_shop"){
         out.push({ type: "go_shop" });
+        continue;
+      }
+      if(type === "js"){
+        out.push(normalizeJsAction(a));
         continue;
       }
       if(type === "store"){
@@ -347,6 +434,7 @@ var DcDialogueUtilModule = (function(){
       var a = actions[i] || {};
       var type = String(a.type || "").toLowerCase();
       if(type === "go_shop") return { type:"go_shop" };
+      if(type === "js") return normalizeJsAction(a);
       if(type === "goto"){
         return {
           type:"goto",
@@ -357,6 +445,7 @@ var DcDialogueUtilModule = (function(){
       }
     }
     if(String(route && (route.actionType || route.type) || "").toLowerCase() === "go_shop") return { type:"go_shop" };
+    if(String(route && (route.actionType || route.type) || "").toLowerCase() === "js") return normalizeJsAction(route);
     return {
       type:"goto",
       value:String(route && route.goto || ""),
@@ -394,6 +483,10 @@ var DcDialogueUtilModule = (function(){
       if(String(action.type || "").toLowerCase() === "go_shop"){
         debugLog(npc, debug, "start route " + (i + 1) + " opens shop.");
         return { type:"shop", opened:openShopFromDialogue(player, npc, eventObj) };
+      }
+      if(String(action.type || "").toLowerCase() === "js"){
+        debugLog(npc, debug, "start route " + (i + 1) + " runs js.");
+        return { type:"js", opened:runJsAction(player, npc, eventObj, action) };
       }
       var active = { baseSubPath:baseSubPath(dialogueRel) };
       var target = action.linkMode === "external" ? String(action.filePath || action.value || "") : String(action.value || "");
@@ -552,6 +645,9 @@ var DcDialogueUtilModule = (function(){
     }
     var routeResult = resolveStartRoute(raw, player, npc, dialogueRel, eventObj, debug);
     if(routeResult && routeResult.type === "shop"){
+      return routeResult.opened;
+    }
+    if(routeResult && routeResult.type === "js"){
       return routeResult.opened;
     }
     if(routeResult && routeResult.type === "dialogue"){
@@ -753,6 +849,10 @@ var DcDialogueUtilModule = (function(){
         var resShop = { done:true, reason:"go_shop", opened: shopRes != null };
         setLastResult(player, resShop);
         return resShop;
+      }
+      if(String(a.type || "").toLowerCase() === "js"){
+        runJsAction(player, npc, eventObj, a);
+        continue;
       }
       runRewardAction(player, npc, eventObj, a);
 

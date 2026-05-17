@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+ :root{--fade-ms:700ms}
+html,body{width:100%;height:100%}
+body{margin:0;overflow:hidden;background:#e9f3ff;font-family:Segoe UI}
+#fadeCover{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9999;transition:opacity var(--fade-ms) ease}
+body.is-closing #fadeCover{opacity:1}
+#frame{position:absolute;inset:20px;border-radius:16px;overflow:hidden;border:2px solid rgba(0,0,0,.08);z-index:0}
+
+#left{position:absolute;width:100%;height:100%;clip-path:polygon(0 0,60% 0,40% 100%,0 100%);background:radial-gradient(circle at 30% 50%,#8fd0ff,#3a7be0)}
+#right{position:absolute;width:100%;height:100%;clip-path:polygon(60% 0,100% 0,100% 100%,40% 100%);background:radial-gradient(circle at 70% 50%,#6bb6ff,#2b5fd6)}
+
+.lines{position:absolute;width:300%;height:100%;pointer-events:none;overflow:hidden}
+.line{position:absolute;width:100%;background:white;filter:blur(.4px)}
+
+@keyframes moveRight{from{transform:translateX(-900px)}to{transform:translateX(900px)}}
+@keyframes moveLeft{from{transform:translateX(900px)}to{transform:translateX(-900px)}}
+@keyframes flash{0%,100%{opacity:.2}50%{opacity:1}}
+
+#vs{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.2);font-size:150px;font-weight:900;color:#ffd43b;text-shadow:0 6px 20px rgba(0,0,0,.35);animation:vsPop .5s ease-out forwards;transition:opacity var(--fade-ms) ease,transform var(--fade-ms) ease,filter var(--fade-ms) ease}
+@keyframes vsPop{0%{transform:translate(-50%,-50%) scale(.2)}60%{transform:translate(-50%,-50%) scale(1.25)}100%{transform:translate(-50%,-50%) scale(1)}}
+
+#impact{position:absolute;top:50%;left:50%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0));transform:translate(-50%,-50%) scale(0);animation:impact .45s ease-out forwards}
+@keyframes impact{0%{transform:translate(-50%,-50%) scale(.1);opacity:1}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+
+#battle{position:absolute;top:72%;left:50%;transform:translateX(-50%);font-size:34px;letter-spacing:8px;color:white;opacity:0;animation:battleFade .6s ease .4s forwards}
+@keyframes battleFade{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* PLAYER PORTRAIT */
+
+#portraitBox{
+position:absolute;
+top:120px;
+left:60%;
+transform:translateX(-50%) translateX(420px);
+display:flex;
+flex-direction:column;
+align-items:center;
+z-index:15
+}
+
+/* NPC PORTRAIT */
+
+#npcPortraitBox{
+position:absolute;
+top:860px;
+left:40%;
+transform:translateX(-50%) translateX(-420px);
+display:flex;
+flex-direction:column;
+align-items:center;
+z-index:15
+}
+
+#portraitFrame,#npcPortraitFrame{
+position:relative;width:260px;height:280px;border-radius:18px;
+background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.08));
+backdrop-filter:blur(8px);
+box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 20px rgba(255,255,255,.25);
+border:2px solid rgba(255,255,255,.35);
+overflow:hidden;display:flex;justify-content:center;align-items:flex-end;
+animation:portraitColor .7s ease forwards;animation-delay:1s;
+filter:grayscale(1) brightness(0) saturate(.2);opacity:0
+}
+
+@keyframes portraitColor{
+0%{filter:grayscale(1) brightness(.3) saturate(0);opacity:.3}
+60%{filter:grayscale(.4) brightness(.8) saturate(.6);opacity:.7}
+100%{filter:none;opacity:1}
+}
+
+.shine{position:absolute;top:-40%;left:-40%;width:200%;height:200%;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.4),transparent 70%);transform:rotate(25deg);animation:shineMove 4s linear infinite}
+@keyframes shineMove{0%{transform:translateX(-100%) rotate(25deg)}100%{transform:translateX(100%) rotate(25deg)}}
+
+.entity-area{width:240px;height:260px;display:flex;justify-content:center;align-items:flex-end}
+.entity-area.hidden{opacity:0;width:0;height:0;overflow:hidden}
+.entity-area,.poke,#nameBox,#npcNameBox{transition:opacity var(--fade-ms) ease,transform var(--fade-ms) ease,filter var(--fade-ms) ease}
+
+.entity-slot{width:240px;height:260px}
+
+#nameBox,#npcNameBox{
+margin-top:10px;width:220px;height:44px;border-radius:10px;
+background:rgba(255,255,255,.25);
+border:2px solid rgba(255,255,255,.45);
+backdrop-filter:blur(6px);
+display:flex;align-items:center;justify-content:center;
+opacity:0;transition:opacity var(--fade-ms) ease
+}
+
+#playerName,#npcName{
+font-size:22px;font-weight:900;color:white;
+letter-spacing:2px;text-shadow:0 2px 5px rgba(0,0,0,.6)
+}
+
+#party,#npcParty{position:absolute;height:100vh;width:100vw;z-index:10}
+#frame,#portraitBox,#npcPortraitBox,#party,#npcParty{transition:opacity var(--fade-ms) ease,transform var(--fade-ms) ease}
+.entity-slot,.icon{transition:opacity var(--fade-ms) ease,transform var(--fade-ms) ease,filter var(--fade-ms) ease}
+
+body.is-closing #frame,
+body.is-closing #portraitBox,
+body.is-closing #npcPortraitBox,
+body.is-closing #party,
+body.is-closing #npcParty{
+opacity:0!important;
+}
+
+.poke{
+position:absolute;display:flex;justify-content:center;align-items:center;
+border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.25);
+width:200px;height:200px;opacity:0;
+transform:translateY(-200px);animation:fall .45s forwards
+}
+
+body.is-closing .entity-area,
+body.is-closing .poke,
+body.is-closing #nameBox,
+body.is-closing #npcNameBox,
+body.is-closing #vs,
+body.is-closing .entity-slot,
+body.is-closing .icon{
+opacity:0!important;
+transform:translateY(16px) scale(0);
+filter:blur(4px) saturate(.75);
+}
+
+body.is-closing #vs{
+transform:translate(-50%,-50%) scale(0);
+}
+
+body.is-closing .entity-area.hidden{
+opacity:0!important;
+width:0;
+height:0;
+}
+
+.icon{
+position:relative;z-index:1;
+background:rgba(255,255,255,0.25);
+border-radius:10px;backdrop-filter:blur(4px)
+}
+
+@keyframes fall{
+0%{opacity:0;transform:translateY(-200px)}
+100%{opacity:1;transform:translateY(0)}
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="fadeCover"></div>
+<div id="frame">
+<div id="left"><div class="lines" id="linesL"></div></div>
+<div id="right"><div class="lines" id="linesR"></div></div>
+<div id="impact"></div>
+<div id="vs">VS</div>
+
+</div>
+
+<!-- PLAYER -->
+<div id="portraitBox">
+<div id="portraitFrame">
+<div class="shine"></div>
+<div class="entity-area hidden" id="playerEntity">
+<div class="entity-slot" data-mc-entity="99" data-mc-scale="3.2"></div>
+</div>
+</div>
+<div id="nameBox"><div id="playerName"></div></div>
+</div>
+
+<!-- NPC -->
+<div id="npcPortraitBox">
+<div id="npcPortraitFrame">
+<div class="shine"></div>
+<div class="entity-area hidden" id="npcEntity">
+<div class="entity-slot" data-mc-entity="100" data-mc-scale="3.2"></div>
+</div>
+</div>
+<div id="npcNameBox"><div id="npcName">TRAINER</div></div>
+</div>
+
+<div id="party"></div>
+<div id="npcParty"></div>
+
+<script>
+
+function spawnLines(c,d){
+for(let i=0;i<28;i++){
+let l=document.createElement("div")
+l.className="line"
+l.style.top=Math.random()*100+"%"
+l.style.height=(1+Math.random()*3)+"px"
+l.style.opacity=.2+Math.random()*.8
+let s=.6+Math.random()*1.8
+let delay=Math.random()*2
+if(d=="right")l.style.animation="moveRight "+s+"s linear infinite,flash "+(1+Math.random()*1.5)+"s ease-in-out infinite"
+else l.style.animation="moveLeft "+s+"s linear infinite,flash "+(1+Math.random()*1.5)+"s ease-in-out infinite"
+l.style.animationDelay=delay+"s"
+c.appendChild(l)
+}}
+spawnLines(document.getElementById("linesL"),"right")
+spawnLines(document.getElementById("linesR"),"left")
+
+setTimeout(function(){
+document.getElementById("playerEntity").classList.remove("hidden")
+document.getElementById("npcEntity").classList.remove("hidden")
+document.getElementById("nameBox").style.opacity=1
+document.getElementById("npcNameBox").style.opacity=1
+},1400)
+
+var INIT=(window.cnpc&&window.cnpc.initData)?window.cnpc.initData:{}
+if(window.cnpc&&window.cnpc.initData){
+var data=window.cnpc.initData
+document.getElementById("playerName").innerText=(data.playerName||"PLAYER").toUpperCase()
+document.getElementById("npcName").innerText=(data.npcName||"TRAINER").toUpperCase()
+}
+
+var CONFIG={iconSize:250,cardHeight:200,spawnDelay:350}
+var TOTAL_MS=Math.max(1000,Number(INIT.timelineTicks||100)*50)
+var FADE_START_RATIO=Math.max(0,Math.min(1,Number(INIT.fadeStartRatio!=null?INIT.fadeStartRatio:0.8)))
+var FADE_DURATION_RATIO=Math.max(0.01,Math.min(1,Number(INIT.fadeDurationRatio!=null?INIT.fadeDurationRatio:0.2)))
+var CLOSE_START_MS=Math.max(0,Math.floor(TOTAL_MS*FADE_START_RATIO))
+var FADE_OUT_MS=Math.max(250,Math.floor(TOTAL_MS*FADE_DURATION_RATIO))
+var CLOSE_END_MS=Math.max(CLOSE_START_MS,Math.floor(CLOSE_START_MS+FADE_OUT_MS))
+var CLOSE_SEND_MS=CLOSE_END_MS+Math.max(80,Math.floor(FADE_OUT_MS*0.12))
+document.documentElement.style.setProperty("--fade-ms",FADE_OUT_MS+"ms")
+
+var TYPE_COLOR={normal:"#A8A77A",fire:"#EE8130",water:"#6390F0",electric:"#F7D02C",grass:"#7AC74C",ice:"#96D9D6",fighting:"#C22E28",poison:"#A33EA1",ground:"#E2BF65",flying:"#A98FF3",psychic:"#F95587",bug:"#A6B91A",rock:"#B6A136",ghost:"#735797",dragon:"#6F35FC",dark:"#705746",steel:"#B7B7CE",fairy:"#D685AD"}
+
+function mixColor(c1,c2){
+if(!c2)return c1
+var r=Math.floor((parseInt(c1.substr(1,2),16)+parseInt(c2.substr(1,2),16))/2)
+var g=Math.floor((parseInt(c1.substr(3,2),16)+parseInt(c2.substr(3,2),16))/2)
+var b=Math.floor((parseInt(c1.substr(5,2),16)+parseInt(c2.substr(5,2),16))/2)
+return "rgb("+r+","+g+","+b+")"
+}
+
+function spawnRight(slot,scale,y,name,type1,type2){
+var wrap=document.createElement("div")
+wrap.className="poke"
+wrap.style.top=y+"px"
+wrap.style.right="0px"
+
+var c1=TYPE_COLOR[type1]||"#fff"
+var c2=TYPE_COLOR[type2]
+wrap.style.background=mixColor(c1,c2)
+
+var icon=document.createElement("div")
+icon.className="icon"
+icon.setAttribute("data-mc-slot",slot)
+icon.setAttribute("data-mc-scale",scale||2)
+icon.style.width=CONFIG.iconSize+"px"
+icon.style.height=CONFIG.iconSize+"px"
+
+wrap.appendChild(icon)
+document.getElementById("party").appendChild(wrap)
+}
+function spawnLeft(slot,scale,y,name,type1,type2){
+var wrap=document.createElement("div")
+wrap.className="poke"
+wrap.style.top=y+"px"
+wrap.style.left="0px"
+
+var c1=TYPE_COLOR[type1]||"#fff"
+var c2=TYPE_COLOR[type2]
+wrap.style.background=mixColor(c1,c2)
+
+var icon=document.createElement("div")
+icon.className="icon"
+icon.setAttribute("data-mc-slot",slot)
+icon.setAttribute("data-mc-scale",scale||2)
+icon.style.width=CONFIG.iconSize+"px"
+icon.style.height=CONFIG.iconSize+"px"
+
+wrap.appendChild(icon)
+document.getElementById("npcParty").appendChild(wrap)
+}
+
+function render(d){
+
+if(!d)return
+if(typeof d==="string"){try{d=JSON.parse(d)}catch(e){return}}
+
+var totalHeight=window.innerHeight
+
+var playerList=[]
+var npcList=[]
+
+/* 슬롯 분리 */
+
+if(d.overlayItems){
+d.overlayItems.forEach(function(it){
+if(it.slot<20) playerList.push(it)
+else npcList.push(it)
+})
+}
+
+/* 플레이어 포켓몬 (오른쪽) */
+
+if(playerList.length){
+
+var gap=(totalHeight-(CONFIG.cardHeight*playerList.length))/(playerList.length+1)
+
+playerList.forEach(function(it,i){
+
+var y=gap+(i*(CONFIG.cardHeight+gap))
+
+setTimeout(function(){
+spawnRight(it.slot,it.scale,y,it.name,it.type1,it.type2)
+},i*CONFIG.spawnDelay)
+
+})
+
+}
+
+/* NPC 포켓몬 (왼쪽) */
+
+if(npcList.length){
+
+var gap=(totalHeight-(CONFIG.cardHeight*npcList.length))/(npcList.length+1)
+
+npcList.forEach(function(it,i){
+
+var y=gap+(i*(CONFIG.cardHeight+gap))
+
+setTimeout(function(){
+spawnLeft(it.slot,it.scale,y,it.name,it.type1,it.type2)
+},i*CONFIG.spawnDelay)
+
+})
+
+}
+
+}
+if(window.cnpc&&window.cnpc.initData)
+setTimeout(function(){render(window.cnpc.initData)},900)
+
+function beginClose(){
+document.body.classList.add("is-closing")
+document.getElementById("fadeCover").style.opacity=1
+}
+function finalClose(){
+if(window.cnpc){
+    window.cnpc.sendEvent("battle_intro_done",{
+        overlayName:"pokemon_battle_intro",
+        reason:"animation_end",
+        timelineTicks:Number(INIT.timelineTicks||100),
+        totalMs:TOTAL_MS,
+        fadeStartRatio:FADE_START_RATIO,
+        fadeDurationRatio:FADE_DURATION_RATIO,
+        fadeOutMs:FADE_OUT_MS
+    })
+}
+}
+setTimeout(beginClose,CLOSE_START_MS)
+setTimeout(finalClose,CLOSE_SEND_MS)
+
+</script>
+</body>
+</html>
