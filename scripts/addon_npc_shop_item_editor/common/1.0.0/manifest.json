@@ -1,0 +1,42 @@
+{
+  "id": "addon_npc_shop_item_editor/common/1.0.0",
+  "package": "addon_npc_shop_item_editor",
+  "version": "1.0.0",
+  "editor": "npc_editor_addon",
+  "mc_version": "common",
+  "description": "NPC Editor add-on for in-game NPC Shop item, price, currency, stock, and restock data editing.",
+  "entry": "shop_item_editor.js",
+  "install_dir": "dc_lib/addon_npc_shop_item_editor",
+  "player_scripts": [
+    {
+      "path": "shop_item_editor.js"
+    }
+  ],
+  "files": [
+    {
+      "source": "shop_item_editor.js",
+      "install_as": "shop_item_editor.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "package",
+          "id": "npc_editor/common/1.0.0",
+          "required": true,
+          "note": "Requires NPC Editor. Install the editor separately; this add-on registers into it when both player scripts are loaded."
+        },
+        {
+          "type": "package",
+          "id": "npc_shop/common/1.0.0",
+          "required": true,
+          "note": "Edits NPC Shop JSON data and expects dc_shop runtime compatibility."
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
+        }
+      ]
+    }
+  ]
+}

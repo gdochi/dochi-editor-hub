@@ -19,6 +19,11 @@ LOCALE_PREF_KEY:"npc_browser_locale_pref",
 PREVIEW_ENTITY_RENDER:true,
 PREVIEW_PREF_KEY:"npc_browser_preview_enabled",
 PREVIEW_DEFAULT:false,
+ADDON_ENABLED_PREFIX:"npc_editor_addon_enabled:",
+ADDON_EDIT_UUID_KEY:"npc_editor_addon_edit_npc_uuid",
+ADDON_EDIT_JSON_KEY:"npc_editor_addon_edit_json_path",
+ADDON_EDIT_PREFIX_KEY:"npc_editor_addon_edit_prefix",
+ADDON_EDIT_ID_KEY:"npc_editor_addon_edit_id",
 DEBUG:false
 };
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
@@ -28,8 +33,11 @@ var LANG_RESOURCE_CACHE={};
 var DC_ENTRY_SPEC_ERRORS=[];
 var DC_ENTRY_SPEC_CACHE=null;
 var DC_JSON_FILE_CACHE={};
+if(typeof DC_NPC_EDITOR_ADDONS==="undefined"||!DC_NPC_EDITOR_ADDONS)var DC_NPC_EDITOR_ADDONS=[];
+if(typeof DC_NPC_EDITOR_PENDING_ADDONS==="undefined"||!DC_NPC_EDITOR_PENDING_ADDONS)var DC_NPC_EDITOR_PENDING_ADDONS=[];
 
 function init(e){
+flushNpcEditorPendingAddons();
 ensureDcAdminsRoot();
 if(!loadAdminStateCache().initialized)broadcastAdminSetupHint(e);
 }
@@ -56,7 +64,14 @@ var data={};
  if(e.eventName==="npc_script_enabled_toggle"){if(requireCanEdit(e,"npcScriptToggleResult","script_toggle"))onNpcScriptEnabledToggle(e,data);return;}
  if(e.eventName==="npc_script_file_list"){if(requireCanEdit(e,"npcScriptFileList","script_file_list"))onNpcScriptFileList(e,data);return;}
  if(e.eventName==="npc_dc_json_file_list"){if(requireCanEdit(e,"npcDcJsonFileList","dc_json_file_list"))onNpcDcJsonFileList(e,data);return;}
+ if(e.eventName==="npc_addon_toggle"){if(requireCanEdit(e,"npcAddonState","addon_toggle"))onNpcAddonToggle(e,data);return;}
+ if(e.eventName==="npc_addon_refresh"){if(requireCanBrowse(e,"npcAddonState","addon_refresh"))pushAddonState(e.player);return;}
+ if(e.eventName==="npc_addon_open"){if(requireCanEdit(e,"npcAddonActionResult","addon_open"))onNpcAddonOpen(e,data);return;}
 }
+
+function customGuiButton(e){dispatchNpcEditorAddonEvent("customGuiButton",e);}
+function customGuiSlot(e){dispatchNpcEditorAddonEvent("customGuiSlot",e);}
+function customGuiClosed(e){dispatchNpcEditorAddonEvent("customGuiClosed",e);}
 
 function tryOpenEditor(player){
 try{
@@ -73,7 +88,7 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
  debugMsg(player,"i18n locale="+i18n.locale+" keys="+countObjectKeys(i18n.messages)+" error="+String(i18n.error||"none"));
  if(!state.canOpen){sendPlayerMessage(player,"NPC Editor access denied.");return;}
  if(!state.initialized){
-  initData={ok:true,npcs:[],factions:[],scanRange:range,overlayEntities:[],previewEnabled:getStoredPreviewEnabled(player),admin:state,locale:i18n.locale,localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales(),i18nError:i18n.error,debug:CFG.DEBUG};
+  initData={ok:true,npcs:[],factions:[],scanRange:range,overlayEntities:[],previewEnabled:getStoredPreviewEnabled(player),addons:buildNpcEditorAddonState(player),admin:state,locale:i18n.locale,localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales(),i18nError:i18n.error,debug:CFG.DEBUG};
   payload=stringifyBrowserPayload(initData)
   debugMsg(player,"openHtmlGui bootstrap payload="+payload.length+" html="+CFG.HTML);
   cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);
@@ -434,6 +449,121 @@ return CFG.PREVIEW_DEFAULT===true;
 function setStoredPreviewEnabled(player,enabled){
 player.getStoreddata().put(CFG.PREVIEW_PREF_KEY,enabled?"1":"0");
 }
+function normalizeNpcEditorAddonSpec(spec){
+spec=spec||{};
+var id=String(spec.id||"").trim();
+if(!id)return null;
+return {
+id:id,
+name:String(spec.name||id),
+description:String(spec.description||""),
+targetPrefix:String(spec.targetPrefix||spec.prefix||""),
+open:typeof spec.open==="function"?spec.open:null,
+customGuiButton:typeof spec.customGuiButton==="function"?spec.customGuiButton:null,
+customGuiSlot:typeof spec.customGuiSlot==="function"?spec.customGuiSlot:null,
+customGuiClosed:typeof spec.customGuiClosed==="function"?spec.customGuiClosed:null
+};
+}
+function dc_npc_editor_registerAddon(spec){
+var normalized=normalizeNpcEditorAddonSpec(spec),i;
+if(!normalized)return false;
+for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
+if(String(DC_NPC_EDITOR_ADDONS[i].id||"")===normalized.id){
+DC_NPC_EDITOR_ADDONS[i]=normalized;
+return true;
+}
+}
+DC_NPC_EDITOR_ADDONS.push(normalized);
+return true;
+}
+function flushNpcEditorPendingAddons(){
+var pending=DC_NPC_EDITOR_PENDING_ADDONS||[],i;
+for(i=0;i<pending.length;i++)dc_npc_editor_registerAddon(pending[i]);
+DC_NPC_EDITOR_PENDING_ADDONS=[];
+}
+function getNpcEditorAddon(id){
+var i,wanted=String(id||"");
+flushNpcEditorPendingAddons();
+for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++)if(String(DC_NPC_EDITOR_ADDONS[i].id||"")===wanted)return DC_NPC_EDITOR_ADDONS[i];
+return null;
+}
+function getNpcEditorAddonEnabled(player,id){
+var store=player.getStoreddata(),v=String(store.get(CFG.ADDON_ENABLED_PREFIX+String(id||""))||"");
+return v==="1"||v==="true";
+}
+function setNpcEditorAddonEnabled(player,id,enabled){
+player.getStoreddata().put(CFG.ADDON_ENABLED_PREFIX+String(id||""),enabled?"1":"0");
+}
+function buildNpcEditorAddonState(player){
+var list=[],i,a;
+flushNpcEditorPendingAddons();
+for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
+a=DC_NPC_EDITOR_ADDONS[i];
+if(!a||!a.id)continue;
+list.push({id:a.id,name:a.name,description:a.description,targetPrefix:a.targetPrefix,enabled:getNpcEditorAddonEnabled(player,a.id)});
+}
+return list;
+}
+function pushAddonState(player){
+pushBrowser(player,"npcAddonState",{ok:true,addons:buildNpcEditorAddonState(player)});
+}
+function onNpcAddonToggle(e,data){
+var id=String(data.id||""),addon=getNpcEditorAddon(id);
+if(!addon){pushBrowser(e.player,"npcAddonState",{ok:false,error:"Addon is not loaded: "+id,addons:buildNpcEditorAddonState(e.player)});return;}
+setNpcEditorAddonEnabled(e.player,id,data.enabled===true);
+pushAddonState(e.player);
+}
+function setNpcAddonEditContext(player,addonId,npc,jsonPath,prefix){
+var temp=player.getTempdata();
+temp.put(CFG.ADDON_EDIT_ID_KEY,String(addonId||""));
+temp.put(CFG.ADDON_EDIT_UUID_KEY,String(npc&&npc.getUUID?npc.getUUID():""));
+temp.put(CFG.ADDON_EDIT_JSON_KEY,normalizeRelPath(jsonPath));
+temp.put(CFG.ADDON_EDIT_PREFIX_KEY,String(prefix||""));
+}
+function clearNpcAddonEditContext(player){
+var temp=player.getTempdata();
+try{temp.remove(CFG.ADDON_EDIT_ID_KEY);}catch(err0){temp.put(CFG.ADDON_EDIT_ID_KEY,"");}
+try{temp.remove(CFG.ADDON_EDIT_UUID_KEY);}catch(err1){temp.put(CFG.ADDON_EDIT_UUID_KEY,"");}
+try{temp.remove(CFG.ADDON_EDIT_JSON_KEY);}catch(err2){temp.put(CFG.ADDON_EDIT_JSON_KEY,"");}
+try{temp.remove(CFG.ADDON_EDIT_PREFIX_KEY);}catch(err3){temp.put(CFG.ADDON_EDIT_PREFIX_KEY,"");}
+}
+function getNpcAddonEditContext(player){
+var temp=player.getTempdata();
+return {
+addonId:String(temp.get(CFG.ADDON_EDIT_ID_KEY)||""),
+uuid:String(temp.get(CFG.ADDON_EDIT_UUID_KEY)||""),
+jsonPath:String(temp.get(CFG.ADDON_EDIT_JSON_KEY)||""),
+prefix:String(temp.get(CFG.ADDON_EDIT_PREFIX_KEY)||"")
+};
+}
+function onNpcAddonOpen(e,data){
+var id=String(data.id||""),addon=getNpcEditorAddon(id),uuid=String(data.uuid||""),jsonPath=normalizeRelPath(data.jsonPath||""),prefix=String(data.prefix||""),npc,res;
+if(!addon){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon is not loaded: "+id});return;}
+if(!getNpcEditorAddonEnabled(e.player,id)){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon is disabled: "+id});return;}
+if(addon.targetPrefix&&prefix&&addon.targetPrefix!==prefix){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon target mismatch: "+addon.targetPrefix+" / "+prefix});return;}
+if(!jsonPath){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon edit requires a JSON path."});return;}
+npc=getNpcInCurrentRange(e.player,uuid);
+if(!npc){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"NPC is outside the current scan range. Refresh or move closer."});return;}
+if(!addon.open){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon has no open handler: "+id});return;}
+setNpcAddonEditContext(e.player,id,npc,jsonPath,prefix);
+try{
+res=addon.open({player:e.player,npc:npc,uuid:uuid,jsonPath:jsonPath,prefix:prefix,addonId:id});
+pushBrowser(e.player,"npcAddonActionResult",{ok:res!==false,action:"open",id:id});
+}catch(err){
+pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",id:id,error:String(err)});
+}
+}
+function dispatchNpcEditorAddonEvent(name,e){
+var i,a,fn;
+flushNpcEditorPendingAddons();
+for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
+a=DC_NPC_EDITOR_ADDONS[i];
+fn=a&&a[name];
+if(typeof fn==="function"){
+try{fn(e);}catch(err){try{if(e&&e.player)e.player.message("NPC editor addon error: "+String(err));}catch(ignore){}}
+}
+}
+}
 function getStoredOpenKey(player){
 var store=player.getStoreddata();
 return String(store.get("npc_browser_open_key")||"");
@@ -610,7 +740,7 @@ hasPreview:(previewSlot>=0)
 });
 }
 factions.sort();
-return {npcs:npcs,factions:factions,scanRange:range,overlayEntities:overlayEntities,previewEnabled:previewEnabled,admin:buildAdminBrowserState(player),locale:getPlayerLocale(player),localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales()};
+return {npcs:npcs,factions:factions,scanRange:range,overlayEntities:overlayEntities,previewEnabled:previewEnabled,addons:buildNpcEditorAddonState(player),admin:buildAdminBrowserState(player),locale:getPlayerLocale(player),localePreference:getStoredLocalePreference(player),localeOptions:listNpcEditorLocales()};
 }
 function buildNpcPreviewNbt(npc){
 var raw=getEntityNbtSafe(npc),tabs=[{tab:1,inlineScript:"",files:[]}];

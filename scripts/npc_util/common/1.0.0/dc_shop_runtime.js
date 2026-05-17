@@ -324,8 +324,137 @@ var DcShopRuntimeModule = (function(){
   }
 
   function currencyItemId(currency){
-    var id = String(currency && currency.id || "");
+    var spec = currencyItemSpec(currency);
+    var id = String(spec && spec.id || "") || idFromItemNbt(itemFullNbt(spec));
     if(!id) throw new Error("Shop item currency id is required");
+    return id;
+  }
+
+  function parseJsonSpec(raw){
+    if(!raw) return null;
+    if(typeof raw === "object") return raw;
+    try{return JSON.parse(String(raw));}catch(e){return null;}
+  }
+
+  function itemSpecObject(raw){
+    var spec = raw && typeof raw === "object" ? raw : {};
+    if(String(spec.type || "").toLowerCase() === "json"){
+      var data = parseJsonSpec(spec.json || spec.data);
+      if(data){
+        if(!spec.id && data.id) spec.id = data.id;
+        if(spec.count == null && data.Count != null) spec.count = data.Count;
+        if(!spec.tag && data.tag) spec.tag = data.tag;
+      }
+    }
+    return spec;
+  }
+
+  function currencyItemSpec(currency){
+    var spec = currency && typeof currency.item === "object" ? currency.item : currency;
+    return itemSpecObject(spec);
+  }
+
+  function snbtQuote(value){
+    return JSON.stringify(String(value == null ? "" : value));
+  }
+
+  function snbtKey(key){
+    return /^[A-Za-z0-9_.+\-]+$/.test(key) ? key : snbtQuote(key);
+  }
+
+  function toSnbt(value){
+    if(value == null) return "null";
+    if(Object.prototype.toString.call(value) === "[object Array]"){
+      var arr = [];
+      for(var i=0;i<value.length;i++) arr.push(toSnbt(value[i]));
+      return "[" + arr.join(",") + "]";
+    }
+    if(typeof value === "object"){
+      var parts = [];
+      for(var k in value){
+        if(Object.prototype.hasOwnProperty.call(value, k)) parts.push(snbtKey(k) + ":" + toSnbt(value[k]));
+      }
+      return "{" + parts.join(",") + "}";
+    }
+    if(typeof value === "number") return isFinite(value) ? String(value) : "0";
+    if(typeof value === "boolean") return value ? "true" : "false";
+    return snbtQuote(value);
+  }
+
+  function itemTag(spec){
+    spec = itemSpecObject(spec);
+    if(spec && spec.tag && typeof spec.tag === "object") return spec.tag;
+    var data = parseJsonSpec(spec && (spec.json || spec.data));
+    if(data && data.tag && typeof data.tag === "object") return data.tag;
+    return null;
+  }
+
+  function itemFullNbt(spec){
+    spec = itemSpecObject(spec);
+    return String(spec && (spec.nbt || spec.snbt) || "").trim();
+  }
+
+  function idFromItemNbt(raw){
+    raw = String(raw || "");
+    var m = raw.match(/(?:^|[,{])\s*id\s*:\s*"([^"]+)"/);
+    if(m && m[1]) return String(m[1]);
+    m = raw.match(/"id"\s*:\s*"([^"]+)"/);
+    if(m && m[1]) return String(m[1]);
+    return "";
+  }
+
+  function extractNamedCompound(raw, name){
+    raw = String(raw || "");
+    var marker = String(name || "") + ":{";
+    var start = raw.indexOf(marker);
+    var depth = 0;
+    var i;
+    if(start < 0) return "";
+    start = start + marker.length - 1;
+    for(i=start;i<raw.length;i++){
+      if(raw.charAt(i) === "{") depth++;
+      if(raw.charAt(i) === "}") depth--;
+      if(depth === 0) return raw.substring(start, i + 1);
+    }
+    return "";
+  }
+
+  function itemTagTargetSnbt(spec){
+    var tag = itemTag(spec);
+    var raw;
+    if(tag) return toSnbt(tag);
+    raw = itemFullNbt(spec);
+    if(!raw) return "";
+    return extractNamedCompound(raw, "tag");
+  }
+
+  function itemHasNbt(spec){
+    spec = itemSpecObject(spec);
+    return !!(spec && (spec.nbt || spec.snbt || itemTag(spec)));
+  }
+
+  function itemSnbt(spec, count){
+    spec = itemSpecObject(spec);
+    var raw = itemFullNbt(spec);
+    if(raw) return raw;
+    var id = String(spec && spec.id || "") || idFromItemNbt(raw);
+    if(!id){
+      var data = parseJsonSpec(spec && (spec.json || spec.data));
+      id = String(data && data.id || "");
+    }
+    if(!id) throw new Error("Shop item id is required");
+    var n = Math.max(1, parseInt(String(count || spec.count || spec.Count || 1), 10) || 1);
+    var tag = itemTag(spec);
+    var obj = { id:id, Count:n };
+    if(tag) obj.tag = tag;
+    return toSnbt(obj);
+  }
+
+  function currencyCommandTarget(currency){
+    var spec = currencyItemSpec(currency);
+    var id = currencyItemId(currency);
+    var tag = itemTagTargetSnbt(spec);
+    if(tag) return id + tag;
     return id;
   }
 
@@ -344,6 +473,19 @@ var DcShopRuntimeModule = (function(){
     return parts.length > 1 ? parts[1] : id;
   }
 
+  function createItemStack(world, spec, count){
+    spec = itemSpecObject(spec);
+    var id = String(spec && spec.id || "") || idFromItemNbt(itemFullNbt(spec));
+    if(!id) throw new Error("Shop item id is required");
+    var n = Math.max(1, parseInt(String(count || spec.count || spec.Count || 1), 10) || 1);
+    if(itemHasNbt(spec)){
+      var nbtItem = world.createItemFromNbt(ShopAPI.stringToNbt(itemSnbt(spec, n)));
+      try{ if(nbtItem && typeof nbtItem.setStackSize === "function") nbtItem.setStackSize(n); }catch(err){}
+      return nbtItem;
+    }
+    return world.createItem(id, n);
+  }
+
   function getMoney(ctx, currency){
     var kind = currencyKind(currency);
     if(kind === "storedData"){
@@ -351,9 +493,9 @@ var DcShopRuntimeModule = (function(){
       return parseInt(store.get(currencyStoredKey(currency)) || "0", 10) || 0;
     }
     if(kind === "cobbleDollar") throw new Error("CobbleDollar shop currency needs an explicit balance API before it can be used");
-    var id = currencyItemId(currency);
-    var stack = ctx.world.createItem(id, 1);
-    return ctx.player.getInventory().count(stack, true, true);
+    var spec = currencyItemSpec(currency);
+    var stack = createItemStack(ctx.world, spec, 1);
+    return ctx.player.getInventory().count(stack, !itemHasNbt(spec), !itemHasNbt(spec));
   }
 
   function pay(ctx, currency, amount){
@@ -370,33 +512,37 @@ var DcShopRuntimeModule = (function(){
     if(kind === "cobbleDollar"){
       throw new Error("CobbleDollar shop currency needs an explicit balance API before it can be used");
     }
-    ShopAPI.executeCommand(ctx.world, "clear " + playerName(ctx.player) + " " + currencyItemId(currency) + " " + n);
+    ShopAPI.executeCommand(ctx.world, "clear " + playerName(ctx.player) + " " + currencyCommandTarget(currency) + " " + n);
     return true;
   }
 
   function productItemId(product){
     var item = product && product.item && typeof product.item === "object" ? product.item : {};
-    if(String(item.type || "id").toLowerCase() === "json"){
-      var raw = item.json;
-      var obj = raw && typeof raw === "object" ? raw : null;
-      if(!obj && raw){
-        obj = JSON.parse(String(raw));
-      }
-      if(obj){
-        var jsonId = String(obj.id || obj.item || obj.itemId || obj.Name || "");
-        if(!jsonId) throw new Error("Shop product JSON item id is required: " + product.id);
-        return jsonId;
-      }
-    }
-    var id = String(item.id || "");
+    item = itemSpecObject(item);
+    var id = String(item.id || "") || idFromItemNbt(itemFullNbt(item));
     if(!id) throw new Error("Shop product item id is required: " + product.id);
     return id;
   }
 
+  function productItemNbt(product){
+    var item = product && product.item && typeof product.item === "object" ? product.item : {};
+    return itemFullNbt(item);
+  }
+
+  function productItemCount(product){
+    var item = product && product.item && typeof product.item === "object" ? product.item : {};
+    item = itemSpecObject(item);
+    var raw = item.count != null ? item.count : (item.Count != null ? item.Count : (product && product.count != null ? product.count : 1));
+    var count = parseInt(String(raw == null ? 1 : raw), 10);
+    if(isNaN(count) || count < 1) count = 1;
+    return Math.max(1, Math.min(64, count));
+  }
+
   function giveProduct(ctx, product, qty){
-    var id = productItemId(product);
-    var count = Math.max(1, parseInt(String(qty || 1), 10) || 1);
-    ctx.player.giveItem(ctx.world.createItem(id, count));
+    var item = product && product.item && typeof product.item === "object" ? product.item : {};
+    var bundleCount = productItemCount(product);
+    var buyCount = Math.max(1, parseInt(String(qty || 1), 10) || 1);
+    ctx.player.giveItem(createItemStack(ctx.world, item, Math.max(1, bundleCount * buyCount)));
     return true;
   }
 
@@ -501,7 +647,8 @@ var DcShopRuntimeModule = (function(){
       shopAction: String(action || "select"),
       productId: String(product.id || ""),
       itemId: productItemId(product),
-      itemCount: 1,
+      itemNbt: productItemNbt(product),
+      itemCount: productItemCount(product),
       itemName: String(product.name || product.id || ""),
       quantity: qty,
       unitPrice: product.price,
@@ -514,6 +661,7 @@ var DcShopRuntimeModule = (function(){
     };
     if(itemCurrency){
       data.currencyItemId = currencyItemId(currency);
+      data.currencyItemNbt = itemFullNbt(currencyItemSpec(currency));
       data.currencyItemCount = 1;
     }
     if(slotInfo && typeof slotInfo === "object"){
@@ -537,13 +685,15 @@ var DcShopRuntimeModule = (function(){
     var nextCurrencySlot = 2;
     var itemSlotBase = 16;
 
-    function pushOverlay(slot, itemId){
+    function pushOverlay(slot, itemId, nbt){
       var slotNum = parseInt(String(slot), 10);
       if(isNaN(slotNum) || slotNum < 0 || !itemId) return;
       var key = String(slotNum);
       if(usedOverlaySlots[key]) return;
       usedOverlaySlots[key] = true;
-      overlays.push({ slot:slotNum, item:String(itemId), count:1 });
+      var entry = { slot:slotNum, item:String(itemId), count:1 };
+      if(nbt) entry.nbt = String(nbt);
+      overlays.push(entry);
     }
 
     function priceCurrencySlotFor(currency){
@@ -553,7 +703,7 @@ var DcShopRuntimeModule = (function(){
       var slot = nextCurrencySlot;
       nextCurrencySlot += 1;
       currencySlots[key] = slot;
-      pushOverlay(slot, itemId);
+      pushOverlay(slot, itemId, itemFullNbt(currencyItemSpec(currency)));
       return slot;
     }
 
@@ -565,7 +715,7 @@ var DcShopRuntimeModule = (function(){
       var currency = currencyFor(shop, product);
       if(currencyKind(currency) === "item") priceCurrencySlot = priceCurrencySlotFor(currency);
       map[id] = { itemSlot:itemSlot, currencySlot:priceCurrencySlot, priceCurrencySlot:priceCurrencySlot };
-      pushOverlay(itemSlot, productItemId(product));
+      pushOverlay(itemSlot, productItemId(product), productItemNbt(product));
     }
     return { map:map, overlays:overlays, usedOverlaySlots:usedOverlaySlots, currencySlots:currencySlots, nextCurrencySlot:nextCurrencySlot };
   }
@@ -584,7 +734,10 @@ var DcShopRuntimeModule = (function(){
     slotInfo.nextCurrencySlot = slot + 1;
     slotInfo.currencySlots[key] = slot;
     slotInfo.usedOverlaySlots[String(slot)] = true;
-    slotInfo.overlays.push({ slot:slot, item:itemId, count:1 });
+    var entry = { slot:slot, item:itemId, count:1 };
+    var nbt = itemFullNbt(currencyItemSpec(currency));
+    if(nbt) entry.nbt = nbt;
+    slotInfo.overlays.push(entry);
     return slot;
   }
 

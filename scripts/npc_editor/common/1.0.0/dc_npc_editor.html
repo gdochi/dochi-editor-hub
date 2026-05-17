@@ -63,6 +63,15 @@ input,select,textarea{width:100%;background:rgba(9,12,18,.78);border:1px solid #
 @media (max-width:1180px){.dc-hero{flex-direction:column}.dc-hero-side{align-items:flex-start}.dc-flyout{position:relative;width:100%;max-width:none;max-height:none}.dc-action-row{justify-content:flex-start}}
 @media (max-width:1280px){body{overflow:auto}#app{display:block;height:auto}#left,#right{width:100%;min-width:0;border-right:none;border-bottom:1px solid rgba(90,100,126,.45)}.script-layout{display:block;min-height:0}.script-left{width:100%;min-width:0;margin-bottom:12px}.detail-shell{max-width:none}.detail-top{grid-template-columns:1fr}.picker-split{grid-template-columns:1fr}}
 
+.addon-toggle{display:inline-flex;align-items:center;gap:6px;position:relative}
+.addon-toggle button{min-width:94px}
+.addon-flyout.field{display:none;position:fixed;top:0;left:0;z-index:9998 !important;width:min(440px,calc(100vw - 36px));max-height:min(72vh,740px);overflow:auto;padding:14px;border:1px solid #3f4656;border-radius:14px;background:linear-gradient(180deg,rgba(22,26,36,.98),rgba(18,21,29,.98));box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.addon-flyout.show{display:flex;flex-direction:column}
+.addon-row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px;border:1px solid #46506a;border-radius:10px;background:rgba(16,20,28,.76)}
+.addon-title{font-weight:bold;color:#fff}
+.addon-meta{font-size:11px;color:var(--muted);word-break:break-word}
+.addon-switch{min-width:72px;height:32px}
+
 /* z-index fixes */
 #left{
   position:relative;
@@ -214,9 +223,11 @@ var KEY_OPTIONS=[{value:"",label:"Disabled",className:"disabled-key w2_25"},{val
 var KEY_LAYOUT=[{className:"keyboard-row",keys:[{value:"",label:"Disabled",className:"disabled-key w2_25"},"290","291","292","293","294","295","296","297","298","299","300","301"]},{className:"keyboard-row offset-1",keys:["81","87","69","82","84","89","85","73","79","80","91","93"]},{className:"keyboard-row offset-2",keys:["65","83","68","70","71","72","74","75","76","59","39"]},{className:"keyboard-row offset-3",keys:["90","88","67","86","66","78","77","44","46"]}];
 var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:"",scanRange:Number(RAW.scanRange||48),previewEnabled:RAW.previewEnabled===true,previewRuntimeEnabled:RAW.previewEnabled===true,admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]},dcClearPending:false,generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:"",activePrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
 var LOCALE_OPTIONS=Array.isArray(RAW.localeOptions)?RAW.localeOptions:[];
+APP_STATE.addons=normalizeAddonList(RAW.addons);
 function byId(id){return document.getElementById(id);}
 function setupLocaleSelect(){var select=byId("localeSelect"),options=LOCALE_OPTIONS.slice(),seen={},current=normalizeLocale(I18N_LOCALE),hasCurrent=false;if(!select)return;if(!options.length)options=[{locale:"en_us",label:"English"},{locale:"ko_kr",label:"Korea"},{locale:"ja_jp",label:"Japan"},{locale:"zh_cn",label:"China"},{locale:"ru_ru",label:"Russia"}];select.innerHTML="";options.forEach(function(opt){var locale=normalizeLocale(opt.locale||"");if(!locale||seen[locale])return;seen[locale]=true;if(locale===current)hasCurrent=true;appendOption(select,locale,opt.label||locale);});if(!hasCurrent)appendOption(select,current,current);select.value=current;select.onchange=function(){changeLocale(this.value);};}
 function changeLocale(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;var select=byId("localeSelect");if(select)select.value=locale;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);setStatus(tr("npc_editor.language_updated","Language updated."),"status-ok");},true);}
+function normalizeAddonList(list){var arr=Array.isArray(list)?list:[],out=[],i,a;for(i=0;i<arr.length;i++){a=arr[i]||{};if(!a.id)continue;out.push({id:String(a.id||""),name:String(a.name||a.id||""),description:String(a.description||""),targetPrefix:String(a.targetPrefix||""),enabled:a.enabled===true});}return out;}
 function normalizeAdminState(admin){admin=admin||{};return {initialized:!!admin.initialized,owner:admin.owner||{uuid:"",name:""},admins:Array.isArray(admin.admins)?admin.admins:[],players:Array.isArray(admin.players)?admin.players:[],keybind:String(admin.keybind||""),isOwner:!!admin.isOwner,isAdmin:!!admin.isAdmin,canOpen:admin.canOpen===true,canManageAdmins:admin.canManageAdmins===true,canEdit:admin.canEdit===true};}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
 function mcText(s){
@@ -291,11 +302,13 @@ debugStep("init","begin npcs="+APP_STATE.npcs.length+" admin="+APP_STATE.admin.i
 ensureDcEditorPanel();
 ensureDcListBackButton();
 ensureTopbarScriptActions();
+ensureTopbarAddonSection();
 ensureTopbarPreviewAction();
 bind();
 setupLocaleSelect();
 listenServer();
 renderAdminState();
+renderAddonState();
 rebuildFactionSelect();
 syncScanRange(APP_STATE.scanRange);
 if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
@@ -313,6 +326,7 @@ debugStep("init","done");
 function bind(){
 byId("nameInput").addEventListener("input",applyFilter);
 byId("adminFlyoutBtn").onclick=toggleAdminFlyout;
+if(byId("addonFlyoutBtn"))byId("addonFlyoutBtn").onclick=toggleAddonFlyout;
 byId("bootstrapAdminBtn").onclick=function(){sendEvt("admin_bootstrap",{});};
 byId("adminAddBtn").onclick=submitAdminAdd;
 byId("adminResetBtn").onclick=resetAdmins;
@@ -322,6 +336,7 @@ byId("keybindCloseBtn").onclick=closeKeybindPanel;
 document.addEventListener("click",handleDocumentClick);
 window.addEventListener("resize",function(){
 if(byId("adminPanel").classList.contains("show"))positionAdminFlyout();
+if(byId("addonPanel")&&byId("addonPanel").classList.contains("show"))positionAddonFlyout();
 if(byId("keybindPanel").classList.contains("show"))positionKeybindPanel();
 if(byId("dcEditorPanel")&&byId("dcEditorPanel").classList.contains("show"))positionDcEditorPanel();
 });
@@ -376,6 +391,7 @@ byId("inlineEditor").addEventListener("input",onEditorChange);
 byId("scriptEnabledCheckbox").addEventListener("change",onEditorChange);
 if(byId("dcScriptBrowseBtn"))byId("dcScriptBrowseBtn").onclick=openDcScriptPicker;
 if(byId("dcJsonBrowseBtn"))byId("dcJsonBrowseBtn").onclick=openDcJsonPicker;
+if(byId("dcAddonEditBtn"))byId("dcAddonEditBtn").onclick=openDcAddonEditor;
 if(byId("dcSaveBtn"))byId("dcSaveBtn").onclick=saveDcSelection;
 if(byId("dcPanelCloseBtn"))byId("dcPanelCloseBtn").onclick=cancelDcEditor;
 byId("scanRangeInput").addEventListener("input",function(){syncScanRange(this.value);});
@@ -435,7 +451,7 @@ host.innerHTML=[
 '<div id="dcSelectionBox" class="loaded-list dc-selection-stack"><div class="empty">No selection yet.</div></div>',
 '</div>',
 '<div class="dc-card">',
-'<div class="dc-list-header"><div class="field-label">Matching JSON</div><button type="button" id="dcJsonBrowseBtn">Browse</button></div>',
+'<div class="dc-list-header"><div class="field-label">Matching JSON</div><div class="btn-row"><button type="button" id="dcAddonEditBtn" style="display:none">Edit</button><button type="button" id="dcJsonBrowseBtn">Browse</button></div></div>',
 '<div class="dc-list" id="dcMatchedJsonBox"><div class="empty">Select a script to load matching JSON paths.</div></div>',
 '<input id="dcJsonPathInput" type="text" readonly placeholder="Choose spec JSON" style="margin-top:10px">',
 '</div>',
@@ -468,6 +484,27 @@ dce.title="Set the selected NPC to DCE script mode.";
 dce.textContent="DCE";
 box.appendChild(dce);
 }
+}
+function ensureTopbarAddonSection(){
+var topbar=document.querySelector("#right .panel>.topbar"),scriptCard=document.querySelector(".topbar-script-card"),old=byId("addonFlyoutBtn"),card;
+if(!topbar||old)return;
+card=document.createElement("div");
+card.className="topbar-card topbar-addon-card";
+card.innerHTML=[
+'<div class="topbar-cardHead"><div class="topbar-cardLabel">Addon</div></div>',
+'<div class="topbar-cardBody">',
+'<div class="addon-toggle">',
+'<button type="button" id="addonFlyoutBtn">Addons</button>',
+'<div id="addonPanel" class="field addon-flyout">',
+'<div class="field-label">Addons</div>',
+'<div class="small">Loaded player script addons.</div>',
+'<div id="addonListBox" class="loaded-list" style="margin-top:10px"><div class="empty">No addons loaded.</div></div>',
+'</div>',
+'</div>',
+'</div>'
+].join("");
+if(scriptCard&&scriptCard.nextSibling)topbar.insertBefore(card,scriptCard.nextSibling);
+else topbar.appendChild(card);
 }
 function ensureTopbarPreviewAction(){
 var list=document.querySelector(".topbar-action-list"),btn,anchor;
@@ -533,6 +570,18 @@ d=parsePayload(d);
 if(!d)return;
 setStatus(d.ok?"Admin list updated.":"Admin update failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
 sendEvt("admin_refresh",{});
+});
+window.cnpc.onEvent("npcAddonState",function(d){
+d=parsePayload(d);
+if(!d)return;
+if(Array.isArray(d.addons))APP_STATE.addons=normalizeAddonList(d.addons);
+renderAddonState();
+if(d.ok===false&&d.error)setStatus("Addon update failed: "+d.error,"status-err");
+});
+window.cnpc.onEvent("npcAddonActionResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+setStatus(d.ok?"Addon action complete: "+(d.id||d.action||"open"):"Addon action failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
 });
 window.cnpc.onEvent("npcScriptData",function(d){
 d=parsePayload(d);
@@ -620,12 +669,18 @@ function toggleKeybindPanel(ev){var panel=byId("keybindPanel");if(ev)ev.stopProp
 function closeKeybindPanel(){byId("keybindPanel").classList.remove("show");}
 function setEntityPreviewSuppressed(suppressed){var slot=byId("entitySlot");if(!slot)return;if(suppressed){slot.setAttribute("data-mc-entity","0");slot.style.visibility="hidden";return;}slot.style.visibility="";updateEntityPreview(getSelectedNpc());}
 function positionAdminFlyout(){var panel=byId("adminPanel"),btn=byId("adminFlyoutBtn"),rect,left,top,maxLeft,minLeft,panelWidth,panelHeight;if(!panel||!btn)return;if(panel.parentNode!==document.body)document.body.appendChild(panel);rect=btn.getBoundingClientRect();minLeft=12;panelWidth=Math.min(Math.max(panel.offsetWidth||420,250),Math.max(250,window.innerWidth-minLeft*2));maxLeft=Math.max(minLeft,window.innerWidth-panelWidth-minLeft);left=rect.left-panelWidth-8;if(left<minLeft)left=rect.left;left=Math.max(minLeft,Math.min(left,maxLeft));top=rect.bottom+8;panelHeight=panel.offsetHeight||0;if(panelHeight>0)top=Math.max(12,Math.min(top,window.innerHeight-panelHeight-12));panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
+function positionAddonFlyout(){var panel=byId("addonPanel"),btn=byId("addonFlyoutBtn"),rect,left,top,maxLeft,minLeft,panelWidth,panelHeight;if(!panel||!btn)return;if(panel.parentNode!==document.body)document.body.appendChild(panel);rect=btn.getBoundingClientRect();minLeft=12;panelWidth=Math.min(Math.max(panel.offsetWidth||440,250),Math.max(250,window.innerWidth-minLeft*2));maxLeft=Math.max(minLeft,window.innerWidth-panelWidth-minLeft);left=rect.left;left=Math.max(minLeft,Math.min(left,maxLeft));top=rect.bottom+8;panelHeight=panel.offsetHeight||0;if(panelHeight>0)top=Math.max(12,Math.min(top,window.innerHeight-panelHeight-12));panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
 function positionKeybindPanel(){var panel=byId("keybindPanel"),btn=byId("keybindTrigger"),rect,left,top,maxWidth;if(!panel||!btn)return;rect=btn.getBoundingClientRect();maxWidth=Math.min(1040,window.innerWidth-36);panel.style.width=maxWidth+"px";left=Math.max(12,Math.min(rect.left,window.innerWidth-maxWidth-12));top=rect.bottom+8;panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";}
 function toggleAdminFlyout(ev){var panel=byId("adminPanel"),willOpen;if(ev)ev.stopPropagation();willOpen=!panel.classList.contains("show");if(willOpen){if(panel.parentNode!==document.body)document.body.appendChild(panel);renderAdminState();document.body.classList.add("admin-flyout-open");setEntityPreviewSuppressed(true);panel.classList.add("show");positionAdminFlyout();return;}closeAdminFlyout();closeKeybindPanel();}
 function closeAdminFlyout(){var panel=byId("adminPanel");if(panel)panel.classList.remove("show");document.body.classList.remove("admin-flyout-open");setEntityPreviewSuppressed(false);}
-function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adminFlyoutBtn"),keyPanel=byId("keybindPanel"),target=ev.target;if(target&&target.id==="dcFlyoutCloseBtn"){clearDcSelectionOnly();return;}if(keyPanel&&keyPanel.contains(target))return;if(admin&&adminBtn&&!admin.contains(target)&&!adminBtn.contains(target)){closeAdminFlyout();closeKeybindPanel();return;}if(keyPanel&&!keyPanel.contains(target))closeKeybindPanel();}
+function toggleAddonFlyout(ev){var panel=byId("addonPanel"),willOpen;if(ev)ev.stopPropagation();if(!panel)return;willOpen=!panel.classList.contains("show");if(willOpen){if(panel.parentNode!==document.body)document.body.appendChild(panel);renderAddonState();panel.classList.add("show");positionAddonFlyout();sendEvt("npc_addon_refresh",{});return;}closeAddonFlyout();}
+function closeAddonFlyout(){var panel=byId("addonPanel");if(panel)panel.classList.remove("show");}
+function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adminFlyoutBtn"),addon=byId("addonPanel"),addonBtn=byId("addonFlyoutBtn"),keyPanel=byId("keybindPanel"),target=ev.target;if(target&&target.id==="dcFlyoutCloseBtn"){clearDcSelectionOnly();return;}if(keyPanel&&keyPanel.contains(target))return;if(addon&&addonBtn&&!addon.contains(target)&&!addonBtn.contains(target))closeAddonFlyout();if(admin&&adminBtn&&!admin.contains(target)&&!adminBtn.contains(target)){closeAdminFlyout();closeKeybindPanel();return;}if(keyPanel&&!keyPanel.contains(target))closeKeybindPanel();}
 function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);updatePreviewToggleButton();}
 function renderAdminList(){var box=byId("adminListBox"),admin=APP_STATE.admin,list=Array.isArray(admin.admins)?admin.admins:[];box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_admins_registered","No admins registered."))+'</div>';return;}list.forEach(function(entry){var row=document.createElement("div"),meta=document.createElement("div");row.className="loaded-item";meta.className="file-name";meta.innerHTML='<div>'+esc(entry.name||"(unknown)")+'</div><div class="small">'+esc(entry.uuid||"")+"</div>";row.appendChild(meta);if(admin.canManageAdmins&&entry.uuid!==String(admin.owner&&admin.owner.uuid||"")){var btn=document.createElement("button");btn.type="button";btn.className="icon-btn danger";btn.textContent=tr("npc_editor.remove","Remove");btn.onclick=function(){removeAdmin(entry.uuid);};row.appendChild(btn);}box.appendChild(row);});}
+function renderAddonState(){var box=byId("addonListBox"),btn=byId("addonFlyoutBtn"),list=APP_STATE.addons||[],enabled=0;if(!box)return;box.innerHTML="";list.forEach(function(addon){var row=document.createElement("div"),meta=document.createElement("div"),toggle=document.createElement("button");if(addon.enabled)enabled++;row.className="addon-row";meta.className="file-name";meta.innerHTML='<div class="addon-title">'+esc(addon.name||addon.id)+'</div><div class="addon-meta">'+esc(addon.id)+(addon.targetPrefix?" / "+esc(addon.targetPrefix):"")+'</div>'+(addon.description?'<div class="addon-meta">'+esc(addon.description)+'</div>':"");toggle.type="button";toggle.className="addon-switch";toggle.textContent=addon.enabled?"On":"Off";toggle.disabled=!APP_STATE.admin.canEdit;toggle.onclick=function(){sendEvt("npc_addon_toggle",{id:addon.id,enabled:!addon.enabled});};row.appendChild(meta);row.appendChild(toggle);box.appendChild(row);});if(!list.length)box.innerHTML='<div class="empty">No addons loaded.</div>';if(btn)btn.textContent=list.length?"Addons "+enabled+"/"+list.length:"Addons";updateDcAddonEditButton();}
+function findAddonById(id){var list=APP_STATE.addons||[],i;for(i=0;i<list.length;i++)if(String(list[i].id||"")===String(id||""))return list[i];return null;}
+function getEnabledAddonForPrefix(prefix){var list=APP_STATE.addons||[],i;prefix=String(prefix||"");for(i=0;i<list.length;i++)if(list[i].enabled===true&&String(list[i].targetPrefix||"")===prefix)return list[i];return null;}
 function renderAdminPlayerOptions(){var select=byId("adminPlayerSelect"),admin=APP_STATE.admin,players=(admin.players||[]).filter(function(p){return !admin.admins.some(function(a){return a.uuid===p.uuid;});});select.innerHTML="";appendOption(select,"","Select player");players.forEach(function(p){appendOption(select,p.uuid,p.name+" ("+p.uuid+")");});}
 function submitAdminAdd(){var select=byId("adminPlayerSelect"),uuid=String(select.value||""),player=findAdminPlayer(uuid);if(!uuid||!player){setStatus("Select a player first.","status-warn");return;}sendEvt("admin_add",{name:String(player.name||""),uuid:uuid});}
 function resetAdmins(){if(window.confirm("Delete admin.json and reset all admin access?"))sendEvt("admin_reset",{});}
@@ -634,7 +689,7 @@ function saveKeybind(){sendEvt("keybind_save",{key:String(byId("keybindTrigger")
 function findAdminPlayer(uuid){var i,list=APP_STATE.admin.players||[];for(i=0;i<list.length;i++)if(String(list[i].uuid||"")===String(uuid||""))return list[i];return null;}
 function formatAdminEntry(entry){entry=entry||{};if(entry.name&&entry.uuid)return entry.name+" ("+entry.uuid+")";return entry.name||entry.uuid||"-";}
 function getAdminRoleLabel(admin){if(!admin.initialized)return "Setup pending";if(admin.isOwner)return "Owner";if(admin.isAdmin)return "Admin";if(admin.canOpen)return "Viewer";return "No access";}
-function setEditorAccess(enabled){["tpBtn","editBtn","deleteBtn","scriptToggleBtn","applyScriptBtn","reloadScriptBtn","addFileBtn","browseFileBtn","pickerAddBtn","scriptEnabledCheckbox","inlineEditor","scriptTabBtn","topbarDceBtn","dcScriptBrowseBtn","dcJsonBrowseBtn","dcSaveBtn","dcPanelCloseBtn","dcListBackBtn","dcFlyoutCloseBtn"].forEach(function(id){var el=byId(id);if(el)el.disabled=!enabled;});updateTopbarModeButtons();}
+function setEditorAccess(enabled){["tpBtn","editBtn","deleteBtn","scriptToggleBtn","applyScriptBtn","reloadScriptBtn","addFileBtn","browseFileBtn","pickerAddBtn","scriptEnabledCheckbox","inlineEditor","scriptTabBtn","topbarDceBtn","addonFlyoutBtn","dcScriptBrowseBtn","dcAddonEditBtn","dcJsonBrowseBtn","dcSaveBtn","dcPanelCloseBtn","dcListBackBtn","dcFlyoutCloseBtn"].forEach(function(id){var el=byId(id);if(el)el.disabled=!enabled;});updateTopbarModeButtons();renderAddonState();}
 
 function syncScanRange(v){
 var n=Math.max(8,Math.min(128,Number(v)||48));
@@ -1216,6 +1271,7 @@ needJson=!!prefix&&candidate&&candidate.requiresJson&&(APP_STATE.script.dcBrowse
 if(needScripts)requestScriptFileList("dcE");
 if(needJson)requestDcJsonFileList(prefix,"");
 }
+updateDcAddonEditButton();
 }
 function renderDcInstalledScripts(){
 var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],warnings=APP_STATE.script.dcBrowser.warnings||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activePrefix=getActiveDcPrefix(sel),warn;
@@ -1257,6 +1313,8 @@ box.appendChild(row);
 renderDcEditorState();
 }
 function renderDcMatchedJson(){var box=byId("dcMatchedJsonBox"),list=APP_STATE.script.dcBrowser.jsons||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activeEntry=getActiveDcEntry(sel),selected=activeEntry.jsonPath,prefix=getActiveDcPrefix(sel),candidate=getDcCandidateForEntry(activeEntry);if(!box)return;box.innerHTML="";if(candidate&&candidate.requiresJson!==true){box.innerHTML='<div class="empty">This entry does not require JSON.</div>';return;}if(!prefix){box.innerHTML='<div class="empty">Select a script first.</div>';return;}if(!list.length){box.innerHTML='<div class="empty">No matching JSON files found.</div>';return;}list.forEach(function(item){var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div");row.className="dc-install-row dc-json-row"+(sameRelUiPath(selected,p)?" active":"");main.className="dc-install-main";main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>';badge.className="dc-install-badge";badge.textContent="JSON";row.appendChild(main);row.appendChild(badge);row.onclick=function(){selectDcJsonPath(p);};box.appendChild(row);});maybeAutoSelectDcJson();}
+function updateDcAddonEditButton(){var btn=byId("dcAddonEditBtn"),sel=normalizeDcSelection(APP_STATE.script.dcSelection),entry=getActiveDcEntry(sel),prefix=getActiveDcPrefix(sel),addon=getEnabledAddonForPrefix(prefix),show=!!(btn&&addon&&prefix==="dc_shop"&&entry&&entry.jsonPath);if(!btn)return;btn.style.display=show?"inline-flex":"none";btn.disabled=!show||!APP_STATE.admin.canEdit;btn.textContent=addon?tr("npc_editor.edit","Edit"):"Edit";}
+function openDcAddonEditor(){var npc=getSelectedNpc(),sel=normalizeDcSelection(APP_STATE.script.dcSelection),entry=getActiveDcEntry(sel),prefix=getActiveDcPrefix(sel),addon=getEnabledAddonForPrefix(prefix);if(!npc){setStatus("No NPC selected.","status-err");return;}if(!addon){setStatus("No enabled addon for this selection.","status-warn");return;}if(!entry||!entry.jsonPath){setStatus("Select JSON path first.","status-warn");return;}sendEvt("npc_addon_open",{id:addon.id,uuid:npc.uuid,jsonPath:entry.jsonPath,prefix:prefix});}
 function detectDcPrefixFromSelection(){return getActiveDcPrefix(normalizeDcSelection(APP_STATE.script.dcSelection));}
 function inferDcPrefix(path){var name=lastSeg(path).replace(/\.js$/i,"").toLowerCase();if(!name)return"";if(name==="dc_dialogue_trigger"||name.indexOf("dialogue")>=0)return"dc_dialogue";if(name==="dc_shop_trigger"||name.indexOf("shop")>=0)return"dc_shop";if(name.indexOf("dc_trainer")==0||name.indexOf("trainer")>=0)return"dc_trainer";if(name.indexOf("dc_soulmob")==0||name.indexOf("soulmob")>=0)return"dc_soulMob";if(name.indexOf("dc_taczmob")==0||name.indexOf("taczmob")>=0)return"dc_taczMob";return"";}
 function getDcJsonRootLabel(prefix){if(prefix==="dc_dialogue")return"dc_data/dc_dialogues";if(prefix==="dc_shop")return"dc_data/dc_shops";if(prefix==="dc_trainer")return"dc_data/dc_trainers/spec";if(prefix==="dc_soulMob")return"dc_mob/soulmob";if(prefix==="dc_taczMob")return"dc_mob/taczmob";return String(prefix||"dc_json");}

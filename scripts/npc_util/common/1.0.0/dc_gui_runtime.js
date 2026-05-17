@@ -581,9 +581,13 @@ return text;
 
   function pushCurrencyOverlayItem(overlayItems, data, slot) {
     if (!data || typeof data !== "object") return;
+    var nbt = String(data.currencyItemNbt || data.currencyNbt || "").trim();
     var item = String(data.currencyItemId || data.currencyItem || "").trim();
-    if (!item) return;
-    overlayItems.push({ slot: slot, item: item, count: 1 });
+    if (!nbt && !item) return;
+    var entry = { slot: slot, count: 1 };
+    if (nbt) entry.nbt = nbt;
+    else entry.item = item;
+    overlayItems.push(entry);
   }
 
   function choiceHasItemData(data) {
