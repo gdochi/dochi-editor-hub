@@ -20,6 +20,7 @@ var ShopItemEditorModule = (function(){
     BTN_CLOSE:21,
     BTN_PREV:22,
     BTN_NEXT:23,
+    BTN_BACK:24,
     BTN_ITEM_ID:30,
     BTN_ITEM_NBT:31,
     BTN_CUR_ID:32,
@@ -342,6 +343,7 @@ var ShopItemEditorModule = (function(){
 
     g.addButton(ID.BTN_SAVE, "Save", 318, 188, 48, 20)
     g.addButton(ID.BTN_CLOSE, "Close", 370, 188, 50, 20)
+    g.addButton(ID.BTN_BACK, "NPC Editor", 318, 8, 102, 20)
     g.showPlayerInventory(8, 226)
     player.showCustomGui(g)
   }
@@ -365,6 +367,16 @@ var ShopItemEditorModule = (function(){
     saveShop(session)
     player.message("Shop JSON saved: " + session.jsonPath)
     showEditor(player)
+  }
+
+  function backToNpcEditor(player){
+    delete sessions[key(player)]
+    player.closeGui()
+    if(typeof tryOpenEditor === "function"){
+      tryOpenEditor(player)
+      return
+    }
+    player.message("NPC Editor is not loaded.")
   }
 
   function handleButton(e){
@@ -397,6 +409,7 @@ var ShopItemEditorModule = (function(){
     if(e.buttonId === ID.BTN_CUR_ID){ session.currencyMode = "id"; showEditor(e.player); return }
     if(e.buttonId === ID.BTN_CUR_NBT){ session.currencyMode = "nbt"; showEditor(e.player); return }
     if(e.buttonId === ID.BTN_SAVE){ saveFromGui(e); return }
+    if(e.buttonId === ID.BTN_BACK){ backToNpcEditor(e.player); return }
     if(e.buttonId === ID.BTN_CLOSE){ delete sessions[key(e.player)]; e.player.closeGui(); return }
   }
 
