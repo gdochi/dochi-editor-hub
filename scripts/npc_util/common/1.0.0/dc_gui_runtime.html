@@ -53,6 +53,7 @@
       white-space:nowrap;
       text-overflow:ellipsis;
       box-sizing:border-box;    }
+    .choiceBtn.choiceTextFit{white-space:normal;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;line-height:1.18}
     .choiceBtn:active{transform:translateY(1px)}
     .quantityInput{
       cursor:text;
@@ -1420,6 +1421,88 @@ prev.addEventListener('click', function(ev){
       const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
       const measureCtx = measureCanvas.getContext("2d");
       if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(content).fontFamily || getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+      const autoFitText = shouldAutoFitChoiceTextRole(role);
+
+      function shouldAutoFitChoiceTextRole(roleName){
+        const blocked = { item_slots:true, selected_slot:true, quantity_selector:true, buy_button:true, page_nav:true };
+        return !blocked[String(roleName || "").trim()];
+      }
+
+      function getChoiceTextFitMinPx(px){
+        const base = Math.max(8, Math.round(Number(px || 13)));
+        return Math.max(8, Math.min(base, Math.round(base <= 12 ? base - 2 : base - 4)));
+      }
+
+      function setChoiceMeasureFont(px){
+        if(!measureCtx) return;
+        measureCtx.font = `700 ${Math.max(8, Math.round(px))}px ${getComputedStyle(content).fontFamily || getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+      }
+
+      function measureChoiceTextWidth(value, px){
+        const text = String(value || "");
+        if(measureCtx){
+          setChoiceMeasureFont(px);
+          return measureCtx.measureText(text).width;
+        }
+        return text.length * Math.max(8, Number(px || 13)) * 0.62;
+      }
+
+      function countChoiceWrappedLines(value, maxWidth, px){
+        const width = Math.max(1, Number(maxWidth || 1));
+        const paragraphs = String(value || "").replace(/\r/g, "").split("\n");
+        let total = 0;
+        paragraphs.forEach(function(paragraph){
+          const raw = String(paragraph || "");
+          if(!raw){
+            total += 1;
+            return;
+          }
+          const tokens = raw.split(/(\s+)/).filter(function(token){ return token.length; });
+          let line = "";
+          tokens.forEach(function(token){
+            const next = line ? line + token : token.replace(/^\s+/, "");
+            if(!next) return;
+            if(measureChoiceTextWidth(next, px) <= width){
+              line = next;
+              return;
+            }
+            if(line){
+              total += 1;
+              line = token.replace(/^\s+/, "");
+            }
+            while(line && measureChoiceTextWidth(line, px) > width){
+              let cut = 1;
+              for(let i = 1; i <= line.length; i++){
+                const part = line.slice(0, i);
+                if(measureChoiceTextWidth(part, px) > width) break;
+                cut = i;
+              }
+              total += 1;
+              line = line.slice(Math.max(1, cut));
+            }
+          });
+          if(line) total += 1;
+        });
+        return Math.max(1, total);
+      }
+
+      function measureChoiceTextFit(label, buttonW, buttonH, px){
+        const basePx = Math.max(8, Math.round(Number(px || 13)));
+        const minPx = getChoiceTextFitMinPx(basePx);
+        const horizontalPad = Math.max(24, Math.round(28 * uiScale));
+        const verticalPad = Math.max(8, Math.round(basePx * 0.72));
+        const textW = Math.max(1, Number(buttonW || 1) - horizontalPad);
+        const singleLineText = String(label || "").replace(/\s+/g, " ").trim();
+        for(let size = basePx; size >= minPx; size--){
+          if(measureChoiceTextWidth(singleLineText, size) <= textW){
+            return { fontSize:size, height:Math.max(Number(buttonH || 0), Math.ceil(size * 1.2 + verticalPad)), lines:1 };
+          }
+        }
+        const lines = countChoiceWrappedLines(label, textW, minPx);
+        const textH = Math.ceil(lines * minPx * 1.18 + verticalPad);
+        return { fontSize:minPx, height:Math.max(Number(buttonH || 0), textH), lines:lines };
+      }
+
       const choiceWidths = choices.map((ch, index) => {
         if(quantitySelectorMode){
           const fieldW = Math.max(24, Number(item.choiceStockWidth ?? Math.round(btnMinW * 1.7)) * sx);
@@ -1447,7 +1530,29 @@ prev.addEventListener('click', function(ev){
       }
       layoutW = Math.min(availableW, layoutW);
       const rows = Math.max(1, Math.ceil(count / cols));
-      const layoutH = rows * cellH + Math.max(0, rows - 1) * gapY;
+      const textFits = autoFitText ? choices.map(function(ch, index){
+        return measureChoiceTextFit(String(ch && ch.label || ""), choiceWidths[index] || btnMinW, btnH, fontSize);
+      }) : [];
+      const itemHeights = choices.map(function(_, index){
+        if(autoFitText && textFits[index]) return Math.max(btnH, Number(textFits[index].height || btnH));
+        return cellH;
+      });
+      const textFontSizes = choices.map(function(_, index){
+        if(autoFitText && textFits[index]) return Math.max(8, Number(textFits[index].fontSize || fontSize));
+        return fontSize;
+      });
+      const rowHeights = [];
+      const rowTops = [];
+      let layoutH = 0;
+      for(let row=0; row<rows; row++){
+        const start = row * cols;
+        const rowItems = itemHeights.slice(start, start + cols);
+        const rowH = Math.max(cellH, ...rowItems);
+        rowTops[row] = layoutH;
+        rowHeights[row] = rowH;
+        layoutH += rowH;
+        if(row < rows - 1) layoutH += gapY;
+      }
       const layoutLeft = centerRole ? Math.max(0, Math.round((Number(nodeBox.w || 0) - layoutW) / 2)) : Math.round(startX);
       const layoutTop = centerRole ? Math.max(0, Math.round((Number(nodeBox.h || 0) - layoutH) / 2)) : Math.round(startY);
 
@@ -1459,6 +1564,11 @@ prev.addEventListener('click', function(ev){
       layout.style.height = `${Math.round(layoutH)}px`;
       layout.style.overflow = "visible";
       content.appendChild(layout);
+      if(autoFitText){
+        box.classList.add("choiceScrollBox");
+        content.style.overflowX = "hidden";
+        content.style.overflowY = layoutH > Number(nodeBox.h || 0) ? "auto" : "hidden";
+      }
 
       function applyButtonStyle(btn){
         const btnAlpha = clamp((Number(item.choiceBtnOpacity ?? 85) / 100), 0, 1);
@@ -1471,8 +1581,15 @@ prev.addEventListener('click', function(ev){
         const align = String(item.choiceBtnTextAlign || (role ? "center" : "left")).toLowerCase();
         btn.style.textAlign = (align === "center" || align === "right") ? align : "left";
         btn.style.justifyContent = align === "center" ? "center" : (align === "right" ? "flex-end" : "flex-start");
-        btn.style.fontSize = String(fontSize) + "px";
-        btn.style.lineHeight = "1.2";
+        const fitFontSize = autoFitText && visualIndex >= 0 && textFontSizes[visualIndex] ? textFontSizes[visualIndex] : fontSize;
+        btn.style.fontSize = String(fitFontSize) + "px";
+        btn.style.lineHeight = autoFitText && !itemSlotMode && !quantitySelectorMode ? "1.18" : "1.2";
+        if(autoFitText && !itemSlotMode && !quantitySelectorMode){
+          btn.style.whiteSpace = "normal";
+          btn.style.textOverflow = "clip";
+          btn.style.overflowWrap = "anywhere";
+          btn.style.wordBreak = "normal";
+        }
         if(itemSlotMode){
           btn.style.borderRadius = `${Math.max(0, Math.round(2 * uiScale))}px`;
           btn.style.padding = "0";
@@ -1598,7 +1715,7 @@ prev.addEventListener('click', function(ev){
         }else{
           for(let k=rowStart;k<i;k++) left += (choiceWidths[k] || btnMinW) + gapX;
         }
-        const top = row * (cellH + gapY);
+        const top = rowTops && rowTops[row] != null ? rowTops[row] : row * (cellH + gapY);
 
         if(itemSlotMode){
           const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
@@ -1732,12 +1849,12 @@ prev.addEventListener('click', function(ev){
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "choiceBtn";
+        btn.className = autoFitText ? "choiceBtn choiceTextFit" : "choiceBtn";
         btn.style.position = "absolute";
         btn.style.left = `${Math.round(left)}px`;
         btn.style.top = `${Math.round(top)}px`;
         btn.style.width = `${Math.round(btnW)}px`;
-        btn.style.height = `${Math.round(btnH)}px`;
+        btn.style.height = `${Math.round(itemHeights[i] || btnH)}px`;
         btn.dataset.choiceVisualIndex = String(i);
         applyButtonStyle(btn);
         btn.textContent = String(ch && ch.label || "");
