@@ -35,6 +35,7 @@ var DC_ENTRY_SPEC_CACHE=null;
 var DC_JSON_FILE_CACHE={};
 if(typeof DC_NPC_EDITOR_ADDONS==="undefined"||!DC_NPC_EDITOR_ADDONS)var DC_NPC_EDITOR_ADDONS=[];
 if(typeof DC_NPC_EDITOR_PENDING_ADDONS==="undefined"||!DC_NPC_EDITOR_PENDING_ADDONS)var DC_NPC_EDITOR_PENDING_ADDONS=[];
+ensureNpcEditorAddonArrays();
 
 function init(e){
 flushNpcEditorPendingAddons();
@@ -464,9 +465,14 @@ customGuiSlot:typeof spec.customGuiSlot==="function"?spec.customGuiSlot:null,
 customGuiClosed:typeof spec.customGuiClosed==="function"?spec.customGuiClosed:null
 };
 }
+function ensureNpcEditorAddonArrays(){
+if(typeof DC_NPC_EDITOR_ADDONS==="undefined"||!DC_NPC_EDITOR_ADDONS||typeof DC_NPC_EDITOR_ADDONS.length!=="number"||typeof DC_NPC_EDITOR_ADDONS.push!=="function")DC_NPC_EDITOR_ADDONS=[];
+if(typeof DC_NPC_EDITOR_PENDING_ADDONS==="undefined"||!DC_NPC_EDITOR_PENDING_ADDONS||typeof DC_NPC_EDITOR_PENDING_ADDONS.length!=="number"||typeof DC_NPC_EDITOR_PENDING_ADDONS.push!=="function")DC_NPC_EDITOR_PENDING_ADDONS=[];
+}
 function dc_npc_editor_registerAddon(spec){
 var normalized=normalizeNpcEditorAddonSpec(spec),i;
 if(!normalized)return false;
+ensureNpcEditorAddonArrays();
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
 if(String(DC_NPC_EDITOR_ADDONS[i].id||"")===normalized.id){
 DC_NPC_EDITOR_ADDONS[i]=normalized;
@@ -477,6 +483,7 @@ DC_NPC_EDITOR_ADDONS.push(normalized);
 return true;
 }
 function flushNpcEditorPendingAddons(){
+ensureNpcEditorAddonArrays();
 var pending=DC_NPC_EDITOR_PENDING_ADDONS||[],i;
 for(i=0;i<pending.length;i++)dc_npc_editor_registerAddon(pending[i]);
 DC_NPC_EDITOR_PENDING_ADDONS=[];
@@ -484,6 +491,7 @@ DC_NPC_EDITOR_PENDING_ADDONS=[];
 function getNpcEditorAddon(id){
 var i,wanted=String(id||"");
 flushNpcEditorPendingAddons();
+ensureNpcEditorAddonArrays();
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++)if(String(DC_NPC_EDITOR_ADDONS[i].id||"")===wanted)return DC_NPC_EDITOR_ADDONS[i];
 return null;
 }
@@ -497,6 +505,7 @@ player.getStoreddata().put(CFG.ADDON_ENABLED_PREFIX+String(id||""),enabled?"1":"
 function buildNpcEditorAddonState(player){
 var list=[],i,a;
 flushNpcEditorPendingAddons();
+ensureNpcEditorAddonArrays();
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
 a=DC_NPC_EDITOR_ADDONS[i];
 if(!a||!a.id)continue;

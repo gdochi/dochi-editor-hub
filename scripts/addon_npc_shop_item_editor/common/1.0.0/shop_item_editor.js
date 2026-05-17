@@ -418,7 +418,7 @@ var ShopItemEditorModule = (function(){
       dc_npc_editor_registerAddon(spec)
       return
     }
-    if(typeof DC_NPC_EDITOR_PENDING_ADDONS === "undefined" || !DC_NPC_EDITOR_PENDING_ADDONS) DC_NPC_EDITOR_PENDING_ADDONS = []
+    if(typeof DC_NPC_EDITOR_PENDING_ADDONS === "undefined" || !DC_NPC_EDITOR_PENDING_ADDONS || typeof DC_NPC_EDITOR_PENDING_ADDONS.length !== "number" || typeof DC_NPC_EDITOR_PENDING_ADDONS.push !== "function") DC_NPC_EDITOR_PENDING_ADDONS = []
     DC_NPC_EDITOR_PENDING_ADDONS.push(spec)
   }
 
