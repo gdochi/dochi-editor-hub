@@ -601,6 +601,7 @@ var DcShopRuntimeModule = (function(){
     var qty = clampActiveQuantity(ctx, shop, active, selected);
     var currency = currencyFor(shop, selected || null);
     var totalPrice = selected ? selected.price * qty : 0;
+    var balanceAmount = getMoney(ctx, currency);
     var balanceCurrencySlot = ensureCurrencyOverlaySlot(slotInfo, currency);
     var textMessage = String(active.message || "");
     if(!textMessage) textMessage = selected ? productText(selected) : "Select an item.";
@@ -638,7 +639,7 @@ var DcShopRuntimeModule = (function(){
           selected_slot: selected ? selected.name : "No item",
           price: selected ? ("Price: " + totalPrice + (currencyKind(currency) === "item" ? "" : " " + currencyName(currency))) : "Price: -",
           stock: stockText(ctx, shop, selected),
-          balance: balanceText(ctx, currency)
+          balance: "Money: " + balanceAmount + " (" + currencyName(currency) + ")"
         },
         overlayItems: slotInfo.overlays,
         balanceData: {
@@ -646,7 +647,10 @@ var DcShopRuntimeModule = (function(){
           currencyName: currencyName(currency),
           currencyItemId: currencyKind(currency) === "item" ? currencyItemId(currency) : "",
           currencyMcSlot: balanceCurrencySlot,
-          amountText: String(getMoney(ctx, currency))
+          amountText: String(balanceAmount),
+          price: totalPrice,
+          canAfford: !selected || totalPrice <= balanceAmount,
+          shortfall: selected ? Math.max(0, totalPrice - balanceAmount) : 0
         },
         choices: {
           category_buttons: categoryChoices,
@@ -924,6 +928,7 @@ var DcShopRuntimeModule = (function(){
       active.quantity = normalizeQuantity(active.quantity) + 1;
       clampActiveQuantity(ctx, shop, active, findProduct(shop, active.selectedProductId));
     }else if(action === "quantity_value"){
+      if(dataObj.quantity != null) active.quantity = normalizeQuantity(dataObj.quantity);
       clampActiveQuantity(ctx, shop, active, findProduct(shop, active.selectedProductId));
     }else if(action === "buy"){
       handleBuy(ctx, shop, active);

@@ -12,6 +12,7 @@
     }
     html,body{width:100%;height:100%}
     body{margin:0;overflow:hidden;background:transparent;font-family:var(--gui-font-family)}
+    button,input,select,textarea{font-family:inherit}
     #viewport{position:fixed;inset:0;display:block;overflow:hidden}
     #stageWrap{width:calc(var(--stage-w) * 1px);height:calc(var(--stage-h) * 1px);position:absolute;left:0;top:0;transform:none;transform-origin:top left}
     #stageBg{position:absolute;inset:0;background:#000;overflow:hidden}
@@ -53,6 +54,13 @@
       text-overflow:ellipsis;
       box-sizing:border-box;    }
     .choiceBtn:active{transform:translateY(1px)}
+    .quantityInput{
+      cursor:text;
+      user-select:text;
+      text-align:center;
+      font-weight:800;
+      outline:none;
+    }
     .choiceItemWrap{
       position:absolute;
       display:flex;
@@ -265,12 +273,65 @@
       return runtimeFontFaceCache[clean];
     }
 
-    function resolveDialogFontFamily(item){
-      const path = String(item && item.dialogTextFontPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
-      if(path) return ensureRuntimeFontFace(path);
-      const family = String(item && item.dialogTextFont || "").trim();
-      if(family && family !== "inherit" && family !== "default") return quoteFontFamily(family);
+    function isDefaultFontValue(value){
+      const raw = String(value || "").trim().toLowerCase();
+      return !raw || raw === "inherit" || raw === "default" || raw === "none";
+    }
+
+    function normalizeFontPathValue(value){
+      return String(value || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+    }
+
+    function pickFontValue(){
+      for(let i = 0; i < arguments.length; i++){
+        const value = String(arguments[i] || "").trim();
+        if(value) return value;
+      }
       return "";
+    }
+
+    function resolveFontFamilyFromPathOrFamily(path, family, format){
+      const cleanPath = normalizeFontPathValue(path);
+      if(cleanPath) return ensureRuntimeFontFace(cleanPath, format || getFontFormatByPath(cleanPath));
+      const cleanFamily = String(family || "").trim();
+      if(!isDefaultFontValue(cleanFamily)) return quoteFontFamily(cleanFamily);
+      return "";
+    }
+
+    function resolveFontFamilyConfig(raw){
+      if(!raw) return "";
+      if(typeof raw === "object"){
+        const source = String(raw.source || raw.mode || "").trim().toLowerCase();
+        const path = normalizeFontPathValue(raw.path || raw.assetPath || raw.fontPath);
+        if(path && (source === "asset-loader" || source === "asset_loader" || source === "asset" || !source)){
+          return ensureRuntimeFontFace(path, String(raw.format || getFontFormatByPath(path)).trim());
+        }
+        const family = String(raw.family || raw.fontFamily || raw.name || "").trim();
+        if(!isDefaultFontValue(family)) return quoteFontFamily(family);
+        return "";
+      }
+      return resolveFontFamilyFromPathOrFamily("", raw, "");
+    }
+
+    function resolveElementFontFamily(item){
+      if(!item || typeof item !== "object") return "";
+      const objectFont = resolveFontFamilyConfig(item.font || item.fontConfig || item.textFontConfig);
+      if(objectFont) return objectFont;
+      const path = pickFontValue(item.fontPath, item.textFontPath, item.componentFontPath);
+      const family = pickFontValue(item.fontFamily, item.textFont, item.componentFont);
+      return resolveFontFamilyFromPathOrFamily(path, family, getFontFormatByPath(path));
+    }
+
+    function resolveDialogFontFamily(item){
+      const path = pickFontValue(item && item.dialogTextFontPath);
+      const family = pickFontValue(item && item.dialogTextFont);
+      return resolveFontFamilyFromPathOrFamily(path, family, getFontFormatByPath(path)) || resolveElementFontFamily(item);
+    }
+
+    function resolveChoiceFontFamily(item){
+      const path = pickFontValue(item && item.choiceBtnFontPath, item && item.choiceTextFontPath);
+      const family = pickFontValue(item && item.choiceBtnFont, item && item.choiceTextFont);
+      return resolveFontFamilyFromPathOrFamily(path, family, getFontFormatByPath(path)) || resolveElementFontFamily(item);
     }
 
     function clamp(n, a, b){
@@ -685,7 +746,7 @@
       const selected = getShopChoiceData("selected_slot", 0);
       const selectedProductId = selected ? String(selected.productId || "") : "";
       if(!selectedProductId) return null;
-      if(hasItemCurrencySlot(selected)) return selected;
+      if(selected && (selected.price != null || selected.priceText != null || hasItemCurrencySlot(selected))) return selected;
       const slots = getShopChoices("item_slots") || [];
       for(let i=0;i<slots.length;i++){
         const data = slots[i] && slots[i].data && typeof slots[i].data === "object" ? slots[i].data : null;
@@ -741,12 +802,20 @@
       return colon >= 0 ? raw.slice(0, colon + 1) : String(fallback || "");
     }
 
+    function textAlignToFlex(align){
+      const value = String(align || "left").toLowerCase();
+      if(value === "center") return "center";
+      if(value === "right") return "flex-end";
+      return "flex-start";
+    }
+
     function appendPlainAmountLine(parent, labelText, amountText, uiScale){
       const amount = String(amountText ?? "").trim();
       if(!parent || !amount) return false;
       parent.textContent = "";
       parent.style.display = "flex";
       parent.style.alignItems = "center";
+      parent.style.justifyContent = textAlignToFlex(parent.style.textAlign);
       parent.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
       parent.style.whiteSpace = "nowrap";
 
@@ -759,6 +828,66 @@
       value.style.fontWeight = "800";
       parent.appendChild(value);
       return true;
+    }
+
+    function appendShopAmountRow(parent, labelText, amountText, data, uiScale, textSizePx){
+      const amount = String(amountText ?? "").trim();
+      if(!parent || !amount) return false;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = textAlignToFlex(parent.style.textAlign);
+      row.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
+      row.style.width = "100%";
+      row.style.whiteSpace = "nowrap";
+
+      const label = document.createElement("span");
+      label.textContent = labelText;
+      row.appendChild(label);
+
+      const value = document.createElement("span");
+      value.style.display = "inline-flex";
+      value.style.alignItems = "center";
+      value.style.justifyContent = "center";
+      value.style.gap = `${Math.max(4, Math.round(5 * uiScale))}px`;
+      value.style.fontWeight = "800";
+
+      const currencySlot = Number(data && data.currencyMcSlot);
+      if(Number.isFinite(currencySlot) && currencySlot >= 0){
+        const iconSize = Math.max(12, Math.round((textSizePx || 14) * 1.15));
+        const icon = document.createElement("span");
+        icon.className = "itemSlotCurrencyRenderer";
+        icon.setAttribute("data-mc-slot", String(currencySlot));
+        setRuntimeItemRendererSize(icon, iconSize);
+        value.appendChild(icon);
+      }
+
+      const text = document.createElement("span");
+      text.textContent = amount;
+      value.appendChild(text);
+      row.appendChild(value);
+      parent.appendChild(row);
+      return true;
+    }
+
+    function shopAmountNumber(value){
+      const raw = String(value ?? "").replace(/[^0-9.-]/g, "");
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function shopBalanceAmountText(data, fallbackText){
+      let amount = data ? String(data.amountText ?? "").trim() : "";
+      if(!amount){
+        const raw = String(fallbackText || "");
+        const colon = raw.indexOf(":");
+        amount = (colon >= 0 ? raw.slice(colon + 1) : raw).trim();
+      }
+      if(data && String(data.currencyType || "").toLowerCase() !== "item"){
+        const name = String(data.currencyName || "").trim();
+        if(name && amount.toLowerCase().indexOf(name.toLowerCase()) < 0) amount = `${amount} ${name}`;
+      }
+      return amount;
     }
 
     function renderShopPriceValue(lines, data, fallbackText, uiScale, textSizePx){
@@ -779,10 +908,6 @@
       const balanceData = getShopBalanceData();
       const priceText = getShopText("price") || "Price: -";
       const balanceText = getShopText("balance") || "Money: -";
-      const cleanLabel = (value, fallback) => {
-        const label = textLabel(value, fallback);
-        return String(label || fallback || "").replace(/:\s*$/, "");
-      };
       const amountFromText = (value) => {
         const raw = String(value || "");
         const colon = raw.indexOf(":");
@@ -792,25 +917,24 @@
         ? String((priceData.priceText != null ? priceData.priceText : priceData.price) ?? "").trim()
         : amountFromText(priceText);
       const balanceAmount = balanceData
-        ? String(balanceData.amountText ?? "").trim()
+        ? shopBalanceAmountText(balanceData, balanceText)
         : amountFromText(balanceText);
+      const rawPriceAmount = priceData && priceData.price != null ? Number(priceData.price) : shopAmountNumber(priceAmount);
+      const rawBalanceAmount = balanceData && balanceData.amountText != null ? Number(balanceData.amountText) : shopAmountNumber(balanceAmount);
+      const insufficient = priceData && balanceData && (balanceData.canAfford === false || (Number.isFinite(rawPriceAmount) && Number.isFinite(rawBalanceAmount) && rawPriceAmount > rawBalanceAmount));
 
       lines.textContent = "";
       lines.style.display = "flex";
-      lines.style.flexDirection = "row";
+      lines.style.flexDirection = "column";
       lines.style.justifyContent = "center";
-      lines.style.alignItems = "center";
-      lines.style.gap = `${Math.max(5, Math.round(8 * uiScale))}px`;
+      lines.style.alignItems = textAlignToFlex(lines.style.textAlign);
+      lines.style.gap = `${Math.max(3, Math.round(4 * uiScale))}px`;
+      lines.style.width = "100%";
       lines.style.whiteSpace = "nowrap";
+      if(insufficient) lines.style.color = "rgba(255,92,104,.98)";
 
-      const label = document.createElement("span");
-      label.textContent = `${cleanLabel(priceText, "Price:")} / ${cleanLabel(balanceText, "Money:")}:`;
-      lines.appendChild(label);
-
-      const value = document.createElement("span");
-      value.textContent = `${priceAmount || "-"} / ${balanceAmount || "-"}`;
-      value.style.fontWeight = "800";
-      lines.appendChild(value);
+      appendShopAmountRow(lines, textLabel(priceText, "Price:"), priceAmount || "-", priceData, uiScale, textSizePx);
+      appendShopAmountRow(lines, textLabel(balanceText, "Money:"), balanceAmount || "-", balanceData, uiScale, textSizePx);
       return true;
     }
 
@@ -863,6 +987,9 @@
 
       const fillNone = (item.fillNone === true) || isNoneColorValue(item.fill);
       node.style.background = fillNone ? "transparent" : applyAlphaToColor(String(item.fill || "rgba(20,24,32,0.75)"), boxAlpha);
+
+      const elementFontFamily = resolveElementFontFamily(item);
+      if(elementFontFamily) node.style.fontFamily = elementFontFamily + ", var(--gui-font-family)";
 
       // Provide resolved box to children (e.g. entity scale).
       node.__dc_box = box;
@@ -1252,6 +1379,12 @@ prev.addEventListener('click', function(ev){
       content.style.overflow = "visible";
       box.appendChild(content);
 
+      const choiceFontFamily = resolveChoiceFontFamily(item);
+      if(choiceFontFamily){
+        box.style.fontFamily = choiceFontFamily + ", var(--gui-font-family)";
+        content.style.fontFamily = choiceFontFamily + ", var(--gui-font-family)";
+      }
+
       const count = Math.max(1, choices.length || Number(item.choiceCount || 1));
       const centerRole = role === "category_buttons" || role === "item_slots" || role === "selected_slot" || role === "quantity_selector" || role === "buy_button" || role === "page_nav";
       const rawStartX = Math.max(0, Number(item.choiceStartX ?? 12)) * sx;
@@ -1284,7 +1417,7 @@ prev.addEventListener('click', function(ev){
 
       const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
       const measureCtx = measureCanvas.getContext("2d");
-      if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+      if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(content).fontFamily || getComputedStyle(document.body).fontFamily || "sans-serif"}`;
       const choiceWidths = choices.map((ch) => {
         if(itemSlotMode || role) return btnMinW;
         const label = String(ch && ch.label || "");
@@ -1345,36 +1478,79 @@ prev.addEventListener('click', function(ev){
         applyChoiceButtonTexture(btn, item, visualIndex);
       }
 
+      function sendChoicePayload(target, ch, ev, overrideData, useDebounce){
+        try{ if(ev && typeof ev.preventDefault === "function") ev.preventDefault(); }catch(e){}
+        try{ if(ev && typeof ev.stopPropagation === "function") ev.stopPropagation(); }catch(e){}
+        if(useDebounce !== false){
+          try{
+            const now = Date.now();
+            if(target.__dc_lastFire && (now - target.__dc_lastFire) < 250) return;
+            target.__dc_lastFire = now;
+          }catch(e){}
+        }
+        try{
+          if(window.cnpc && typeof window.cnpc.sendEvent === "function"){
+            const baseData = ch && ch.data && typeof ch.data === "object" ? ch.data : null;
+            const data = overrideData && typeof overrideData === "object" ? Object.assign({}, baseData || {}, overrideData) : baseData;
+            const payload = {
+              __overlayName: String((INIT && INIT.__overlayName) || 'dc_gui_runtime'),
+              __runtimeOwner: String((INIT && INIT.__runtimeOwner) || ''),
+              __event: 'choice',
+              sessionId: String((INIT && INIT.sessionId) || ''),
+              index: Number(target.dataset.choiceIndex || "0"),
+              label: String((ch && ch.label) || ""),
+              role: String((ch && ch.role) || ""),
+              data: data
+            };
+            window.cnpc.sendEvent("choice", payload);
+          }
+        }catch(e){}
+      }
+
       function wireChoice(btn, ch){
         btn.dataset.choiceIndex = String(ch && ch.index != null ? ch.index : 0);
         const fireChoice = (ev) => {
-          try{ if(ev && typeof ev.preventDefault === "function") ev.preventDefault(); }catch(e){}
-          try{ if(ev && typeof ev.stopPropagation === "function") ev.stopPropagation(); }catch(e){}
-          try{
-            const now = Date.now();
-            if(btn.__dc_lastFire && (now - btn.__dc_lastFire) < 250) return;
-            btn.__dc_lastFire = now;
-          }catch(e){}
-          try{
-            if(window.cnpc && typeof window.cnpc.sendEvent === "function"){
-              const payload = {
-                __overlayName: String((INIT && INIT.__overlayName) || 'dc_gui_runtime'),
-                __runtimeOwner: String((INIT && INIT.__runtimeOwner) || ''),
-                __event: 'choice',
-                sessionId: String((INIT && INIT.sessionId) || ''),
-                index: Number(btn.dataset.choiceIndex || "0"),
-                label: String((ch && ch.label) || ""),
-                role: String((ch && ch.role) || ""),
-                data: ch ? ch.data : null
-              };
-              window.cnpc.sendEvent("choice", payload);
-            }
-          }catch(e){}
+          sendChoicePayload(btn, ch, ev, null, true);
         };
         try{ btn.addEventListener("pointerdown", fireChoice, { passive:false }); }catch(e){}
         try{ btn.addEventListener("touchstart", fireChoice, { passive:false }); }catch(e){}
         btn.addEventListener("mousedown", fireChoice);
         btn.addEventListener("click", fireChoice);
+      }
+
+      function wireQuantityInput(input, ch){
+        input.dataset.choiceIndex = String(ch && ch.index != null ? ch.index : 0);
+        input.__dc_lastCommittedQuantity = String(input.value || "");
+        const stop = (ev) => {
+          try{ if(ev && typeof ev.stopPropagation === "function") ev.stopPropagation(); }catch(e){}
+        };
+        const clean = () => {
+          let value = String(input.value || "").replace(/[^0-9]/g, "");
+          if(value.length > 3) value = value.slice(0, 3);
+          input.value = value;
+          return value;
+        };
+        const commit = (ev) => {
+          const raw = clean();
+          const qty = Math.max(1, Math.min(999, parseInt(raw || "1", 10) || 1));
+          input.value = String(qty);
+          if(String(qty) === String(input.__dc_lastCommittedQuantity || "") && ev && ev.type !== "keydown") return;
+          input.__dc_lastCommittedQuantity = String(qty);
+          sendChoicePayload(input, ch, ev, { quantity: qty }, false);
+        };
+        input.addEventListener("input", clean);
+        input.addEventListener("blur", commit);
+        input.addEventListener("keydown", function(ev){
+          stop(ev);
+          if(ev && ev.key === "Enter"){
+            commit(ev);
+            try{ input.blur(); }catch(e){}
+          }
+        });
+        try{ input.addEventListener("pointerdown", stop, { passive:false }); }catch(e){}
+        try{ input.addEventListener("touchstart", stop, { passive:false }); }catch(e){}
+        input.addEventListener("mousedown", stop);
+        input.addEventListener("click", stop);
       }
 
       function setItemRendererScale(el, renderSize){
@@ -1520,6 +1696,31 @@ prev.addEventListener('click', function(ev){
             wrap.appendChild(price);
           }
           layout.appendChild(wrap);
+          continue;
+        }
+
+        if(role === "quantity_selector" && String(ch && ch.data && ch.data.shopAction || "") === "quantity_value"){
+          const input = document.createElement("input");
+          input.type = "text";
+          input.inputMode = "numeric";
+          input.pattern = "[0-9]*";
+          input.className = "choiceBtn quantityInput";
+          input.style.position = "absolute";
+          input.style.left = `${Math.round(left)}px`;
+          input.style.top = `${Math.round(top)}px`;
+          input.style.width = `${Math.round(btnW)}px`;
+          input.style.height = `${Math.round(btnH)}px`;
+          input.style.display = "block";
+          input.style.boxSizing = "border-box";
+          input.style.padding = "0";
+          input.dataset.choiceVisualIndex = String(i);
+          const rawQty = ch && ch.data && ch.data.quantity != null ? ch.data.quantity : (ch && ch.label);
+          input.value = String(Math.max(1, Math.min(999, parseInt(String(rawQty || "1"), 10) || 1)));
+          applyButtonStyle(input);
+          input.style.textAlign = "center";
+          input.style.cursor = "text";
+          wireQuantityInput(input, ch);
+          layout.appendChild(input);
           continue;
         }
 
