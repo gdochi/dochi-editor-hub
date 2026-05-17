@@ -1557,9 +1557,13 @@ prev.addEventListener('click', function(ev){
       const layoutTop = centerRole ? Math.max(0, Math.round((Number(nodeBox.h || 0) - layoutH) / 2)) : Math.round(startY);
 
       const layout = document.createElement("div");
-      layout.style.position = "absolute";
-      layout.style.left = `${layoutLeft}px`;
-      layout.style.top = `${layoutTop}px`;
+      layout.style.position = autoFitText ? "relative" : "absolute";
+      layout.style.left = autoFitText ? "0" : `${layoutLeft}px`;
+      layout.style.top = autoFitText ? "0" : `${layoutTop}px`;
+      if(autoFitText){
+        layout.style.marginLeft = `${layoutLeft}px`;
+        layout.style.marginTop = `${layoutTop}px`;
+      }
       layout.style.width = `${Math.round(layoutW)}px`;
       layout.style.height = `${Math.round(layoutH)}px`;
       layout.style.overflow = "visible";
