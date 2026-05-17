@@ -1423,6 +1423,10 @@ prev.addEventListener('click', function(ev){
         const top = row * (cellH + gapY);
 
         if(itemSlotMode){
+          const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
+          const slot = Number(data.mcSlot);
+          if(String(data.shopAction || "") === "noop" && !(Number.isFinite(slot) && slot >= 0)) continue;
+
           const wrap = document.createElement("div");
           wrap.className = "choiceItemWrap";
           wrap.style.left = `${Math.round(left)}px`;
@@ -1447,8 +1451,6 @@ prev.addEventListener('click', function(ev){
           btn.dataset.choiceVisualIndex = String(i);
           applyButtonStyle(btn);
           const slotTextured = applySlotButtonTexture(btn, item);
-          const data = ch && ch.data && typeof ch.data === "object" ? ch.data : {};
-          const slot = Number(data.mcSlot);
           if(Number.isFinite(slot) && slot >= 0){
             let renderPct = Number(item.choiceItemRenderScale ?? 100);
             if(!Number.isFinite(renderPct)) renderPct = 100;
