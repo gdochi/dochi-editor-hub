@@ -1369,6 +1369,7 @@ prev.addEventListener('click', function(ev){
       const role = String(item && item.shopRole || "").trim();
       const itemSlotMode = role === "item_slots" || role === "selected_slot";
       const itemSlotListMode = role === "item_slots" && String(item.choiceSlotLayout || "").toLowerCase() === "list";
+      const quantitySelectorMode = role === "quantity_selector";
       const priceLabelMode = role === "item_slots";
 
       const content = document.createElement("div");
@@ -1393,7 +1394,7 @@ prev.addEventListener('click', function(ev){
       const startY = centerRole ? 0 : rawStartY;
       const gapX = Math.max(0, Number(item.choiceGapX ?? 0)) * sx;
       const gapY = Math.max(0, Number(item.choiceGapY ?? 10)) * sy;
-      let btnMinW = Math.max(60, Number(item.choiceWidth ?? 180) * sx);
+      let btnMinW = Math.max(quantitySelectorMode ? 24 : 60, Number(item.choiceWidth ?? 180) * sx);
       let btnH = Math.max(24, Number(item.choiceHeight ?? 42) * sy);
       if(itemSlotMode){
         const slotBase = Math.max(Number(item.choiceWidth || 72), Number(item.choiceHeight || 72), 24);
@@ -1402,6 +1403,7 @@ prev.addEventListener('click', function(ev){
         btnH = slotSize;
       }
       let cols = Math.max(1, Math.min(count, Number(item.choiceColumns ?? 2)));
+      if(quantitySelectorMode) cols = Math.max(1, Math.min(count, 3));
       const baseSize = Number(item.choiceBtnTextSize ?? 13);
       const fontSize = Math.max(8, Math.round((Number.isFinite(baseSize) ? baseSize : 13) * uiScale));
       const priceGapY = priceLabelMode && !itemSlotListMode ? Math.max(0, Number(item.choicePriceGapY ?? 6)) * sy : 0;
@@ -1418,7 +1420,11 @@ prev.addEventListener('click', function(ev){
       const measureCanvas = renderChoiceBox.__measureCanvas || (renderChoiceBox.__measureCanvas = document.createElement("canvas"));
       const measureCtx = measureCanvas.getContext("2d");
       if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(content).fontFamily || getComputedStyle(document.body).fontFamily || "sans-serif"}`;
-      const choiceWidths = choices.map((ch) => {
+      const choiceWidths = choices.map((ch, index) => {
+        if(quantitySelectorMode){
+          const fieldW = Math.max(24, Number(item.choiceStockWidth ?? Math.round(btnMinW * 1.7)) * sx);
+          return index % 3 === 1 ? fieldW : btnMinW;
+        }
         if(itemSlotMode || role) return btnMinW;
         const label = String(ch && ch.label || "");
         const textW = measureCtx ? measureCtx.measureText(label).width : label.length * fontSize * 0.62;
