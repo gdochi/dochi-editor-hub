@@ -1422,6 +1422,9 @@ prev.addEventListener('click', function(ev){
       const measureCtx = measureCanvas.getContext("2d");
       if(measureCtx) measureCtx.font = `700 ${fontSize}px ${getComputedStyle(content).fontFamily || getComputedStyle(document.body).fontFamily || "sans-serif"}`;
       const autoFitText = shouldAutoFitChoiceTextRole(role);
+      const autoFitColumnW = autoFitText && !itemSlotMode && !role
+        ? Math.max(40 * uiScale, Math.floor((availableW - Math.max(0, cols - 1) * gapX) / cols))
+        : availableW;
 
       function shouldAutoFitChoiceTextRole(roleName){
         const blocked = { item_slots:true, selected_slot:true, quantity_selector:true, buy_button:true, page_nav:true };
@@ -1512,7 +1515,8 @@ prev.addEventListener('click', function(ev){
         const label = String(ch && ch.label || "");
         const textW = measureCtx ? measureCtx.measureText(label).width : label.length * fontSize * 0.62;
         const padded = textW + Math.max(28, 36 * uiScale);
-        return Math.min(availableW, Math.max(btnMinW, Math.ceil(padded)));
+        const maxButtonW = autoFitText && !role ? autoFitColumnW : availableW;
+        return Math.min(maxButtonW, Math.max(btnMinW, Math.ceil(padded)));
       });
 
       let layoutW = btnMinW;
