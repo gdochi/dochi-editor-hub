@@ -5,6 +5,26 @@
   "description": "Versioned script package library for Dochi editors",
   "base_path": "minecraft/customnpcs/scripts/ecmascript/dc_lib",
   "package_index": {
+    "addon_battle_intro:common": {
+      "package": "addon_battle_intro",
+      "editor": "dialogue_addon",
+      "mc_version": "common",
+      "sub_path": "addon_battle_intro",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_battle_intro/common/1.0.0/manifest.json"
+      ]
+    },
+    "addon_select_starting:common": {
+      "package": "addon_select_starting",
+      "editor": "dialogue_addon",
+      "mc_version": "common",
+      "sub_path": "addon_select_starting",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_select_starting/common/1.0.0/manifest.json"
+      ]
+    },
     "npc_trainer:fabric_1_21_1": {
       "package": "npc_trainer",
       "editor": "npc_trainer",
@@ -77,6 +97,26 @@
     }
   },
   "packages": [
+    {
+      "package": "addon_battle_intro",
+      "editor": "dialogue_addon",
+      "mc_version": "common",
+      "sub_path": "addon_battle_intro",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_battle_intro/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "addon_select_starting",
+      "editor": "dialogue_addon",
+      "mc_version": "common",
+      "sub_path": "addon_select_starting",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_select_starting/common/1.0.0/manifest.json"
+      ]
+    },
     {
       "package": "npc_trainer",
       "editor": "npc_trainer",

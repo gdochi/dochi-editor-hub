@@ -1,11 +1,8 @@
 {
   "guiType": "dialogue",
-  "id": "sample_dialogue_gui",
+  "id": "sample_gui",
   "font": {
-    "source": "default",
-    "family": "",
-    "path": "",
-    "format": ""
+    "source": "default"
   },
   "stage": {
     "width": 1280,
@@ -106,7 +103,15 @@
       "choiceColumns": 2,
       "choiceBtnImage": "",
       "choiceBtnImagePath": "",
-      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
+      "choiceBtnImageCrop": {
+        "enabled": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "sourceW": 0,
+        "sourceH": 0
+      },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -191,7 +196,15 @@
       "choiceColumns": 2,
       "choiceBtnImage": "",
       "choiceBtnImagePath": "",
-      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
+      "choiceBtnImageCrop": {
+        "enabled": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "sourceW": 0,
+        "sourceH": 0
+      },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -276,7 +289,15 @@
       "choiceColumns": 2,
       "choiceBtnImage": "",
       "choiceBtnImagePath": "",
-      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
+      "choiceBtnImageCrop": {
+        "enabled": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "sourceW": 0,
+        "sourceH": 0
+      },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -361,7 +382,15 @@
       "choiceColumns": 2,
       "choiceBtnImage": "",
       "choiceBtnImagePath": "",
-      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
+      "choiceBtnImageCrop": {
+        "enabled": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "sourceW": 0,
+        "sourceH": 0
+      },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "#61dafb",
@@ -450,7 +479,15 @@
       "choiceColumns": 2,
       "choiceBtnImage": "",
       "choiceBtnImagePath": "",
-      "choiceBtnImageCrop": { "enabled": false, "x": 0, "y": 0, "w": 0, "h": 0, "sourceW": 0, "sourceH": 0 },
+      "choiceBtnImageCrop": {
+        "enabled": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "sourceW": 0,
+        "sourceH": 0
+      },
       "choiceBtnFill": "#111827",
       "choiceBtnFillNone": false,
       "choiceBtnBorder": "",

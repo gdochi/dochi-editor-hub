@@ -34,7 +34,7 @@ GUI files:
 ```json
 {
   "guiType": "dialogue",
-  "id": "sample_dialogue_gui",
+  "id": "sample_gui",
   "globalStyleBase": "none",
   "themeMix": { "pixel": 0, "medieval": 0, "cyber": 0 },
   "stage": {},

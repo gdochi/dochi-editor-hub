@@ -7,8 +7,16 @@ var DcGuiRuntimeModule = (function () {
   var OVERLAY_NAME = "dc_gui_runtime";
   var DEFAULT_HTML = "html/dc_util/dc_gui_runtime.html";
   var DEFAULT_ENTITY_SLOT_BASE = 0;
-  var LOCALE_PREF_KEY = "npc_browser_locale_pref";
   var LANG_RESOURCE_CACHE = {};
+  var McComponent = null;
+  var McText = null;
+
+  try{
+    if(typeof Java !== "undefined" && Java.type){
+      try{ McComponent = Java.type("net.minecraft.network.chat.Component"); }catch(eForgeComponent){}
+      try{ McText = Java.type("net.minecraft.text.Text"); }catch(eFabricText){}
+    }
+  }catch(eComponent){}
 
   function unwrapEventTarget(target) {
     try {
@@ -32,8 +40,7 @@ var DcGuiRuntimeModule = (function () {
   }
 
   function getPlayerLocale(player){
-var pref=getStoredLocalePreference(player),candidates=[],mc=null,opts=null;
-if(pref)return pref;
+var candidates=[],mc=null,opts=null;
 addLocaleCandidate(candidates,readJavaNoArgString(player,["getLanguage"]));
 try{if(player&&typeof player.getMCEntity==="function")mc=player.getMCEntity();}catch(err1){}
 addLocaleCandidate(candidates,readJavaNoArgString(mc,["getLanguage"]));
@@ -42,10 +49,6 @@ opts=readJavaNoArgValue(mc,["method_53823","clientInformation","getClientInforma
 if(opts)addLocaleCandidate(candidates,readJavaNoArgString(opts,["comp_1951","language","getLanguage","getLocale","locale"]));
 if(opts)addLocaleCandidate(candidates,readJavaFieldString(opts,["comp_1951","language","locale"]));
 return pickBestLocaleCandidate(candidates)||"en_us";
-}
-function getStoredLocalePreference(player){
-try{return normalizeLocaleCandidate(player.getStoreddata().get(LOCALE_PREF_KEY)||"");}catch(err){}
-return "";
 }
 function addLocaleCandidate(list,value){
 var locale=normalizeLocaleCandidate(value);
@@ -117,7 +120,27 @@ return locale||"en_us";
 function translateNpcNameForPlayer(player,name){
 name=String(name||"");
 if(!isTranslationKeyText(name))return name;
-return getLangResourceValue(getPlayerLocale(player),name)||name;
+return getLangResourceValue(getPlayerLocale(player),name)||vanillaTranslateKey(name)||name;
+}
+function componentString(comp){
+if(comp==null)return "";
+try{if(typeof comp.getString==="function")return String(comp.getString());}catch(err0){}
+try{if(typeof comp.getContents==="function")return String(comp.getContents());}catch(err1){}
+return String(comp);
+}
+function vanillaTranslateKey(key){
+key=String(key||"");
+if(!key)return "";
+if(McComponent&&typeof McComponent.m_237115_==="function"){
+try{return componentString(McComponent.m_237115_(key));}catch(err0){}
+}
+if(McComponent&&typeof McComponent.translatable==="function"){
+try{return componentString(McComponent.translatable(key));}catch(err1){}
+}
+if(McText&&typeof McText.translatable==="function"){
+try{return componentString(McText.translatable(key));}catch(err2){}
+}
+return "";
 }
 function isTranslationKeyText(text){
 text=String(text||"");
