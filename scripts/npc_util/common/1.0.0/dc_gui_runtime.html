@@ -216,7 +216,7 @@
       const path = String(raw.path || raw.assetPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
       return {
         source: source === "system" || source === "asset-loader" ? source : "default",
-        family: String(raw.family || (source === "asset-loader" ? "dochi_gui_font" : "")).trim(),
+        family: source === "system" ? String(raw.family || "").trim() : "",
         path,
         format: String(raw.format || getFontFormatByPath(path)).trim()
       };
@@ -226,16 +226,12 @@
     function applyGuiFont(){
       const font = normalizeGuiFontConfig();
       if(font.source === "asset-loader" && font.path){
-        const family = font.family || "dochi_gui_font";
-        if(!guiFontStyleNode){
-          guiFontStyleNode = document.createElement("style");
-          guiFontStyleNode.dataset.dochiGuiFont = "1";
-          document.head.appendChild(guiFontStyleNode);
+        if(guiFontStyleNode) guiFontStyleNode.textContent = "";
+        const family = ensureRuntimeFontFace(font.path, font.format);
+        if(family){
+          document.documentElement.style.setProperty("--gui-font-family", family + ", Segoe UI, Arial, sans-serif");
+          return;
         }
-        const format = font.format ? ' format("' + font.format.replace(/"/g, '\\"') + '")' : "";
-        guiFontStyleNode.textContent = '@font-face{font-family:' + quoteFontFamily(family) + ';src:url("' + assetUrl(font.path).replace(/"/g, '\\"') + '")' + format + ';font-display:swap;}';
-        document.documentElement.style.setProperty("--gui-font-family", quoteFontFamily(family) + ", Segoe UI, Arial, sans-serif");
-        return;
       }
       if(guiFontStyleNode) guiFontStyleNode.textContent = "";
       if(font.source === "system" && font.family){
@@ -254,10 +250,10 @@
       return "dochi_font_" + Math.abs(hash);
     }
 
-    function ensureRuntimeFontFace(path){
+    function ensureRuntimeFontFace(path, explicitFormat){
       const clean = String(path || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
       if(!clean) return "";
-      const format = getFontFormatByPath(clean);
+      const format = String(explicitFormat || getFontFormatByPath(clean)).trim();
       if(!format) return "";
       const family = fontKeyFromPath(clean);
       if(runtimeFontFaceCache[clean]) return runtimeFontFaceCache[clean];
