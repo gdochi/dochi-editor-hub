@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dochi Script Library</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    background: transparent;
+    color: #f1f4f8;
+    font-family: "Segoe UI", Arial, sans-serif;
+    user-select: none;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shell {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 18px;
+    padding: 24px;
+    background: rgba(14, 17, 23, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.34);
+    border-radius: 8px;
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.54);
+  }
+
+  .top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+  }
+
+  .eyebrow {
+    color: #88b7ff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    margin-top: 4px;
+    font-size: 44px;
+    line-height: 1.08;
+    letter-spacing: 0;
+  }
+
+  .sub {
+    margin-top: 10px;
+    color: #b8c3d4;
+    font-size: 16px;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .localeSelect {
+    width: 150px;
+    flex-shrink: 0;
+  }
+
+  button,
+  select,
+  input {
+    height: 48px;
+    border: 1px solid rgba(148, 163, 184, 0.36);
+    border-radius: 6px;
+    background: rgba(31, 36, 46, 0.98);
+    color: #f7fafc;
+    font: inherit;
+    outline: none;
+  }
+
+  button {
+    min-width: 112px;
+    padding: 0 18px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  button:hover,
+  select:hover,
+  input:focus {
+    border-color: rgba(101, 149, 255, 0.92);
+  }
+
+  button.primary {
+    background: #2e6fdb;
+    border-color: #4d8fff;
+  }
+
+  button.danger {
+    background: #703137;
+    border-color: #b85a64;
+  }
+
+  button.ghost {
+    background: rgba(18, 22, 30, 0.98);
+  }
+
+  button:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+
+  .bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .info {
+    min-height: 96px;
+    padding: 18px 20px;
+    background: rgba(28, 32, 40, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 8px;
+  }
+
+  .label {
+    color: #88b7ff;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .value {
+    margin-top: 10px;
+    color: #e8edf6;
+    font-size: 16px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .main {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 520px 1fr;
+    gap: 18px;
+  }
+
+  .panel {
+    min-height: 0;
+    overflow: hidden;
+    background: rgba(25, 29, 37, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 8px;
+  }
+
+  .panelHead {
+    min-height: 112px;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .detailHead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .detailHeadMain {
+    min-width: 0;
+  }
+
+  .panelTitle {
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  .panelHint {
+    margin-top: 8px;
+    color: #b8c3d4;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: 172px 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  select,
+  input {
+    width: 100%;
+    padding: 0 14px;
+    font-size: 16px;
+  }
+
+  .list {
+    height: calc(100% - 112px);
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .card {
+    width: 100%;
+    height: auto;
+    min-height: 126px;
+    padding: 18px 18px 16px;
+    margin-bottom: 14px;
+    display: block;
+    overflow: hidden;
+    text-align: left;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(37, 42, 52, 0.9);
+    border-radius: 8px;
+  }
+
+  .card.active {
+    border-color: #4d8fff;
+    background: rgba(48, 68, 104, 0.95);
+  }
+
+  .pkgName {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 25px;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  .installed {
+    display: block;
+    margin-top: 10px;
+    color: #b8c3d4;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    margin-top: 10px;
+  }
+
+  .tag {
+    max-width: 210px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 5px 12px;
+    color: #f3f7ff;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.15;
+    background: rgba(9, 12, 18, 0.42);
+    border: 1px solid rgba(148, 163, 184, 0.20);
+    border-radius: 999px;
+  }
+
+  .detail {
+    height: calc(100% - 112px);
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .empty {
+    height: 100%;
+    min-height: 210px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b8c3d4;
+    border: 1px dashed rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+  }
+
+  .detailTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .detailName {
+    font-size: 36px;
+    line-height: 1.15;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .detailDesc {
+    margin-top: 12px;
+    color: #c8d2df;
+    line-height: 1.45;
+    font-size: 17px;
+  }
+
+  .versionBox {
+    width: 300px;
+    flex-shrink: 0;
+  }
+
+  .versionBox select {
+    margin-top: 8px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 22px;
+  }
+
+  .mini {
+    min-height: 92px;
+    padding: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.20);
+    background: rgba(14, 17, 23, 0.48);
+    border-radius: 8px;
+  }
+
+  .mini strong {
+    display: block;
+    margin-top: 10px;
+    overflow: hidden;
+    color: #f6f8fb;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .section {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .section h3 {
+    font-size: 19px;
+    font-weight: 900;
+  }
+
+  .deps {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .dep {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 10px 12px;
+    background: rgba(14, 17, 23, 0.44);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 6px;
+  }
+
+  .depPath {
+    overflow: hidden;
+    color: #d9e2ee;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 16px;
+    min-height: 48px;
+  }
+
+  .status {
+    overflow: hidden;
+    color: #c8d2df;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .progress {
+    height: 14px;
+    overflow: hidden;
+    background: rgba(9, 12, 18, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.20);
+    border-radius: 999px;
+  }
+
+  .fill {
+    width: 0%;
+    height: 100%;
+    background: #4d8fff;
+  }
+
+  .progressOverlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .progressOverlay.show {
+    display: flex;
+  }
+
+  .progressBox {
+    width: min(560px, calc(100vw - 80px));
+    padding: 22px;
+    background: rgba(18, 22, 30, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.36);
+    border-radius: 8px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62);
+  }
+
+  .progressTitle {
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  .progressMessage {
+    min-height: 24px;
+    margin-top: 10px;
+    color: #c8d2df;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .progressBox .progress {
+    height: 16px;
+    margin-top: 16px;
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.48);
+  }
+
+  .modal.show {
+    display: flex;
+  }
+
+  .dialog {
+    width: min(1100px, calc(100vw - 60px));
+    max-height: min(820px, calc(100vh - 60px));
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    background: rgba(22, 26, 34, 0.98);
+    border: 1px solid rgba(148, 163, 184, 0.34);
+    border-radius: 8px;
+    box-shadow: 0 24px 90px rgba(0, 0, 0, 0.65);
+  }
+
+  .dialogHead,
+  .dialogFoot {
+    padding: 20px;
+  }
+
+  .dialogHead {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .dialogBody {
+    overflow-y: auto;
+    padding: 14px 20px;
+  }
+
+  .fileRow {
+    display: grid;
+    grid-template-columns: auto 104px 1fr 116px;
+    align-items: center;
+    gap: 12px;
+    min-height: 54px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .fileRow input {
+    width: 22px;
+    height: 22px;
+  }
+
+  .filePath {
+    overflow: hidden;
+    color: #dce6f3;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dialogFoot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div>
+      <div class="eyebrow" id="eyebrowText">Standalone Package Installer</div>
+      <h1 id="titleText">Script Library</h1>
+      <div class="sub" id="repoText">Waiting for CNPC bridge</div>
+    </div>
+    <div class="actions">
+      <select class="localeSelect" id="localeSelect"></select>
+      <button class="ghost" id="refreshBtn" type="button">Refresh</button>
+      <button class="ghost" id="closeBtn" type="button">Close</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="info">
+      <div class="label" id="filterLabel">Filter</div>
+      <div class="value" id="filterText">All packages</div>
+    </div>
+    <div class="info">
+      <div class="label" id="targetLabel">Target</div>
+      <div class="value" id="targetText">Not loaded</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <div class="panelHead">
+        <div class="panelTitle" id="countText">Packages</div>
+        <div class="filters">
+          <select id="editorFilter"></select>
+          <input id="searchInput" type="text" placeholder="Search package">
+        </div>
+      </div>
+      <div class="list" id="packageList"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panelHead detailHead">
+        <div class="detailHeadMain">
+          <div class="panelTitle" id="detailTitle">Detail</div>
+          <div class="panelHint" id="detailHint">Select a package first.</div>
+        </div>
+        <button class="primary" id="detailInstallBtn" type="button">Install</button>
+      </div>
+      <div class="detail" id="detailPane"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="status" id="statusText">Ready</div>
+  </div>
+</div>
+
+<div class="progressOverlay" id="progressOverlay">
+  <div class="progressBox">
+    <div class="progressTitle" id="centerProgressTitle">Working</div>
+    <div class="progressMessage" id="centerProgressText">Please wait</div>
+    <div class="progress"><div class="fill" id="centerProgressFill"></div></div>
+  </div>
+</div>
+
+<div class="modal" id="overwriteModal">
+  <div class="dialog">
+    <div class="dialogHead">
+      <h2 id="overwriteTitle">Existing Files</h2>
+      <div class="panelHint" id="overwriteHint">Choose which existing files should be overwritten.</div>
+    </div>
+    <div class="dialogBody" id="overwriteList"></div>
+    <div class="dialogFoot">
+      <button class="ghost" id="skipExistingBtn" type="button">Skip Existing</button>
+      <button class="danger" id="cancelOverwriteBtn" type="button">Cancel</button>
+      <button class="primary" id="confirmOverwriteBtn" type="button">Overwrite Selected</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var cnpc = window.cnpc || null
+  var RAW = cnpc && cnpc.initData ? cnpc.initData : {}
+  var I18N = RAW.i18n && RAW.i18n.messages ? RAW.i18n.messages : {}
+  var I18N_LOCALE = normalizeLocale((RAW.i18n && RAW.i18n.locale) || RAW.locale || "en_us")
+  var LOCALE_OPTIONS = RAW.localeOptions instanceof Array ? RAW.localeOptions : []
+  var state = {
+    ok: false,
+    repo: "",
+    branch: "",
+    basePath: "",
+    customNpcsRoot: "",
+    packages: [],
+    errors: []
+  }
+  var selectedKey = ""
+  var selectedVersion = ""
+  var editorFilter = "all"
+  var query = ""
+  var busy = false
+  var pendingOverwrite = null
+
+  function byId(id){
+    return document.getElementById(id)
+  }
+
+  function text(value){
+    return value == null ? "" : String(value)
+  }
+
+  function lower(value){
+    return text(value).toLowerCase()
+  }
+
+  function normalizeLocale(value){
+    var locale = text(value || "en_us").toLowerCase().replace("-", "_")
+    return locale || "en_us"
+  }
+
+  function format(value, vars){
+    var out = text(value)
+    var key
+    vars = vars || {}
+    for(key in vars){
+      if(vars.hasOwnProperty(key)){
+        out = out.replace(new RegExp("\\{" + key + "\\}", "g"), text(vars[key]))
+      }
+    }
+    return out
+  }
+
+  function t(key, fallback, vars){
+    var value = I18N && I18N[key] != null ? I18N[key] : fallback
+    return format(value, vars)
+  }
+
+  function setText(id, value){
+    var el = byId(id)
+    if(el) el.textContent = text(value)
+  }
+
+  function setPlaceholder(id, value){
+    var el = byId(id)
+    if(el) el.setAttribute("placeholder", text(value))
+  }
+
+  function parseData(data){
+    if(!data) return {}
+    if(typeof data === "string"){
+      try{ return JSON.parse(data) }catch(err){ return {} }
+    }
+    return data
+  }
+
+  function setStatus(message){
+    byId("statusText").textContent = text(message || "")
+  }
+
+  function setProgress(current, total){
+    var pct = 0
+    var footerFill = byId("progressFill")
+    var centerFill = byId("centerProgressFill")
+    if(total && total > 0) pct = Math.max(0, Math.min(100, Math.floor((current / total) * 100)))
+    if(footerFill) footerFill.style.width = pct + "%"
+    if(centerFill) centerFill.style.width = pct + "%"
+  }
+
+  function showProgress(title, message, current, total){
+    var overlay = byId("progressOverlay")
+    setText("centerProgressTitle", title || t("script_library.working", "Working"))
+    setText("centerProgressText", message || t("script_library.please_wait", "Please wait"))
+    setProgress(current || 0, total || 0)
+    if(overlay) overlay.className = "progressOverlay show"
+  }
+
+  function hideProgress(){
+    var overlay = byId("progressOverlay")
+    if(overlay) overlay.className = "progressOverlay"
+    setProgress(0, 0)
+  }
+
+  function translatedProgress(data){
+    var status = text(data.status || "")
+    var message = text(data.message || "")
+    if(status === "loading") return t("script_library.progress_loading", "Loading package manifests...")
+    if(status === "ready" && lower(message) === "refreshed") return t("script_library.refreshed", "Refreshed")
+    if(status === "ready") return message || t("script_library.ready", "Ready")
+    if(status === "checking") return t("script_library.progress_checking", "Checking {file}", { file: message })
+    if(status === "writing") return t("script_library.progress_writing", "Writing {file}", { file: message })
+    if(status === "skipping") return t("script_library.progress_skipping", "Skipping {file}", { file: message })
+    return message || status
+  }
+
+  function localeLabel(locale){
+    locale = normalizeLocale(locale)
+    if(locale === "en_us") return "English"
+    if(locale === "ko_kr") return "Korea"
+    if(locale === "ja_jp") return "Japan"
+    if(locale === "zh_cn") return "China"
+    if(locale === "ru_ru") return "Russia"
+    return locale
+  }
+
+  function ensureLocaleOptions(){
+    var seen = {}
+    var out = []
+    var i, opt, locale
+    if(!(LOCALE_OPTIONS instanceof Array)) LOCALE_OPTIONS = []
+    for(i = 0; i < LOCALE_OPTIONS.length; i++){
+      opt = LOCALE_OPTIONS[i] || {}
+      locale = normalizeLocale(opt.locale || "")
+      if(!locale || seen[locale]) continue
+      seen[locale] = true
+      out.push({ locale: locale, label: opt.label || localeLabel(locale) })
+    }
+    if(!seen.en_us) out.unshift({ locale: "en_us", label: "English" })
+    LOCALE_OPTIONS = out
+  }
+
+  function setupLocaleSelect(){
+    var select = byId("localeSelect")
+    var i, option
+    if(!select) return
+    ensureLocaleOptions()
+    select.innerHTML = ""
+    for(i = 0; i < LOCALE_OPTIONS.length; i++){
+      option = document.createElement("option")
+      option.value = LOCALE_OPTIONS[i].locale
+      option.textContent = LOCALE_OPTIONS[i].label
+      select.appendChild(option)
+    }
+    select.value = I18N_LOCALE
+    if(select.value !== I18N_LOCALE && LOCALE_OPTIONS.length){
+      I18N_LOCALE = LOCALE_OPTIONS[0].locale
+      select.value = I18N_LOCALE
+    }
+  }
+
+  function applyStaticText(){
+    setText("eyebrowText", t("script_library.eyebrow", "Standalone Package Installer"))
+    setText("titleText", t("script_library.title", "Script Library"))
+    setText("filterLabel", t("script_library.filter", "Filter"))
+    setText("targetLabel", t("script_library.target", "Target"))
+    setText("detailTitle", t("script_library.detail", "Detail"))
+    setText("refreshBtn", t("script_library.refresh", "Refresh"))
+    setText("closeBtn", t("script_library.close", "Close"))
+    setText("detailInstallBtn", t("script_library.install", "Install"))
+    setText("overwriteTitle", t("script_library.existing_files", "Existing Files"))
+    setText("overwriteHint", t("script_library.overwrite_hint", "Choose which existing files should be overwritten."))
+    setText("skipExistingBtn", t("script_library.skip_existing", "Skip Existing"))
+    setText("cancelOverwriteBtn", t("script_library.cancel", "Cancel"))
+    setText("confirmOverwriteBtn", t("script_library.overwrite_selected", "Overwrite Selected"))
+    setPlaceholder("searchInput", t("script_library.search_package", "Search package"))
+  }
+
+  function uniqueEditors(packages){
+    var seen = {}
+    var out = []
+    var i, editor
+    for(i = 0; i < packages.length; i++){
+      editor = text(packages[i].editor || "common")
+      if(seen[editor]) continue
+      seen[editor] = true
+      out.push(editor)
+    }
+    out.sort()
+    return out
+  }
+
+  function refillEditorFilter(){
+    var select = byId("editorFilter")
+    var editors = uniqueEditors(state.packages || [])
+    var i, option
+    select.innerHTML = ""
+    option = document.createElement("option")
+    option.value = "all"
+    option.textContent = t("script_library.all", "All")
+    select.appendChild(option)
+    for(i = 0; i < editors.length; i++){
+      option = document.createElement("option")
+      option.value = editors[i]
+      option.textContent = editors[i]
+      select.appendChild(option)
+    }
+    select.value = editorFilter
+    if(select.value !== editorFilter){
+      editorFilter = "all"
+      select.value = "all"
+    }
+  }
+
+  function filteredPackages(){
+    var packages = state.packages || []
+    var out = []
+    var needle = lower(query)
+    var i, pkg, blob
+    for(i = 0; i < packages.length; i++){
+      pkg = packages[i]
+      if(editorFilter !== "all" && text(pkg.editor) !== editorFilter) continue
+      blob = lower([pkg.packageName, pkg.editor, pkg.mcVersion, pkg.description].join(" "))
+      if(needle && blob.indexOf(needle) < 0) continue
+      out.push(pkg)
+    }
+    return out
+  }
+
+  function findPackage(key){
+    var packages = state.packages || []
+    var i
+    for(i = 0; i < packages.length; i++){
+      if(packages[i].key === key) return packages[i]
+    }
+    return null
+  }
+
+  function findVersion(pkg, version){
+    var versions = pkg && pkg.versions ? pkg.versions : []
+    var i
+    for(i = 0; i < versions.length; i++){
+      if(versions[i].version === version) return versions[i]
+    }
+    return versions.length ? versions[0] : null
+  }
+
+  function chooseSelectedPackage(list){
+    var current = findPackage(selectedKey)
+    if(current) return current
+    if(list.length){
+      selectedKey = list[0].key
+      selectedVersion = list[0].latest || (list[0].versions[0] ? list[0].versions[0].version : "")
+      return list[0]
+    }
+    selectedKey = ""
+    selectedVersion = ""
+    return null
+  }
+
+  function tag(textValue){
+    var span = document.createElement("span")
+    span.className = "tag"
+    span.textContent = textValue
+    return span
+  }
+
+  function renderPackages(){
+    var list = filteredPackages()
+    var container = byId("packageList")
+    var selected = chooseSelectedPackage(list)
+    var i, pkg, card, name, installed, tags
+    container.innerHTML = ""
+    byId("countText").textContent = t("script_library.packages_count", "{count} package(s)", { count: list.length })
+    byId("filterText").textContent = (editorFilter === "all" ? t("script_library.all", "All") : editorFilter) + " / " + (query ? query : t("script_library.no_search", "no search"))
+    if(!list.length){
+      container.innerHTML = '<div class="empty">' + escapeHtml(t("script_library.no_packages", "No packages")) + '</div>'
+      return
+    }
+    for(i = 0; i < list.length; i++){
+      pkg = list[i]
+      card = document.createElement("button")
+      card.type = "button"
+      card.className = "card" + (selected && selected.key === pkg.key ? " active" : "")
+      card.setAttribute("data-key", pkg.key)
+      name = document.createElement("span")
+      name.className = "pkgName"
+      name.textContent = pkg.packageName || "(unnamed)"
+      installed = document.createElement("span")
+      installed.className = "installed"
+      installed.textContent = t("script_library.installed_value", "Installed: {value}", { value: pkg.installedVersion || t("script_library.none", "none") })
+      tags = document.createElement("div")
+      tags.className = "tags"
+      tags.appendChild(tag(pkg.editor || "common"))
+      tags.appendChild(tag(pkg.mcVersion || "all"))
+      tags.appendChild(tag(t("script_library.latest_value", "Latest {value}", { value: pkg.latest || "-" })))
+      card.appendChild(name)
+      card.appendChild(installed)
+      card.appendChild(tags)
+      card.onclick = function(){
+        selectedKey = this.getAttribute("data-key")
+        var picked = findPackage(selectedKey)
+        selectedVersion = picked ? picked.latest : ""
+        render()
+      }
+      container.appendChild(card)
+    }
+  }
+
+  function renderDetail(){
+    var pane = byId("detailPane")
+    var pkg = findPackage(selectedKey)
+    var version, versions, i, option, deps, dep, row
+    if(!pkg){
+      byId("detailHint").textContent = t("script_library.select_package_first", "Select a package first.")
+      byId("detailInstallBtn").textContent = t("script_library.install", "Install")
+      byId("detailInstallBtn").disabled = true
+      pane.innerHTML = '<div class="empty">' + escapeHtml(t("script_library.select_package_left", "Select a package on the left.")) + '</div>'
+      return
+    }
+    versions = pkg.versions || []
+    if(!selectedVersion) selectedVersion = pkg.latest || (versions[0] ? versions[0].version : "")
+    version = findVersion(pkg, selectedVersion)
+    if(version) selectedVersion = version.version
+    byId("detailHint").textContent = pkg.editor + " / " + pkg.mcVersion
+    byId("detailInstallBtn").textContent = t("script_library.install", "Install")
+    byId("detailInstallBtn").disabled = !version
+    pane.innerHTML = ""
+
+    var top = document.createElement("div")
+    top.className = "detailTop"
+    var copy = document.createElement("div")
+    var title = document.createElement("div")
+    title.className = "detailName"
+    title.textContent = pkg.packageName || "(unnamed)"
+    var desc = document.createElement("div")
+    desc.className = "detailDesc"
+    desc.textContent = (version && version.description) || pkg.description || t("script_library.no_description", "No description.")
+    copy.appendChild(title)
+    copy.appendChild(desc)
+
+    var versionBox = document.createElement("div")
+    versionBox.className = "versionBox"
+    var versionLabel = document.createElement("div")
+    versionLabel.className = "label"
+    versionLabel.textContent = t("script_library.version", "Version")
+    var versionSelect = document.createElement("select")
+    versionSelect.id = "versionSelect"
+    for(i = 0; i < versions.length; i++){
+      option = document.createElement("option")
+      option.value = versions[i].version
+      option.textContent = versions[i].version
+      versionSelect.appendChild(option)
+    }
+    versionSelect.value = selectedVersion
+    versionSelect.onchange = function(){
+      selectedVersion = this.value
+      renderDetail()
+    }
+    versionBox.appendChild(versionLabel)
+    versionBox.appendChild(versionSelect)
+    top.appendChild(copy)
+    top.appendChild(versionBox)
+    pane.appendChild(top)
+
+    var grid = document.createElement("div")
+    grid.className = "grid"
+    grid.appendChild(mini(t("script_library.installed", "Installed"), pkg.installedVersion || t("script_library.none", "none")))
+    grid.appendChild(mini(t("script_library.files", "Files"), version ? String(version.fileCount || 0) : "0"))
+    grid.appendChild(mini(t("script_library.player_scripts", "Player Scripts"), version ? String(version.playerScriptCount || 0) : "0"))
+    pane.appendChild(grid)
+
+    var target = document.createElement("div")
+    target.className = "section"
+    target.innerHTML = '<h3>' + escapeHtml(t("script_library.manifest", "Manifest")) + '</h3><div class="value">' + escapeHtml(version ? version.manifestPath : "") + '</div>'
+    pane.appendChild(target)
+
+    deps = version && version.dependencies ? version.dependencies : []
+    var depSection = document.createElement("div")
+    depSection.className = "section"
+    depSection.innerHTML = "<h3>" + escapeHtml(t("script_library.dependencies", "Dependencies")) + "</h3>"
+    var depList = document.createElement("div")
+    depList.className = "deps"
+    if(!deps.length){
+      depList.innerHTML = '<div class="panelHint">' + escapeHtml(t("script_library.no_dependencies", "No dependencies.")) + '</div>'
+    }else{
+      for(i = 0; i < deps.length; i++){
+        dep = deps[i]
+        row = document.createElement("div")
+        row.className = "dep"
+        row.appendChild(tag(dep.type || "file"))
+        var path = document.createElement("div")
+        path.className = "depPath"
+        path.textContent = dep.path || dep.id || ""
+        row.appendChild(path)
+        row.appendChild(tag(dep.required === false ? t("script_library.optional", "optional") : t("script_library.required", "required")))
+        depList.appendChild(row)
+      }
+    }
+    depSection.appendChild(depList)
+    pane.appendChild(depSection)
+  }
+
+  function mini(label, value){
+    var node = document.createElement("div")
+    node.className = "mini"
+    node.innerHTML = '<div class="label">' + escapeHtml(label) + '</div><strong>' + escapeHtml(value) + '</strong>'
+    return node
+  }
+
+  function escapeHtml(value){
+    return text(value).replace(/[&<>"']/g, function(ch){
+      if(ch === "&") return "&amp;"
+      if(ch === "<") return "&lt;"
+      if(ch === ">") return "&gt;"
+      if(ch === '"') return "&quot;"
+      return "&#39;"
+    })
+  }
+
+  function renderHeader(){
+    var repo = state.repo ? state.repo + " / " + state.branch : t("script_library.waiting_index", "Waiting for package index")
+    byId("repoText").textContent = repo
+    byId("targetText").textContent = state.customNpcsRoot ? state.customNpcsRoot : t("script_library.not_loaded", "Not loaded")
+  }
+
+  function render(){
+    applyStaticText()
+    setupLocaleSelect()
+    refillEditorFilter()
+    renderHeader()
+    renderPackages()
+    renderDetail()
+  }
+
+  function send(name, payload){
+    if(!cnpc || !cnpc.sendEvent){
+      setStatus(t("script_library.bridge_unavailable", "CNPC bridge unavailable"))
+      return
+    }
+    cnpc.sendEvent(name, payload || {})
+  }
+
+  function installSelected(){
+    var pkg = findPackage(selectedKey)
+    if(!pkg || !selectedVersion) return
+    busy = true
+    setProgress(0, 0)
+    setStatus(t("script_library.preparing_install", "Preparing install..."))
+    showProgress(t("script_library.installing", "Installing"), t("script_library.preparing_install", "Preparing install..."), 0, 0)
+    renderDetail()
+    send("script_library_install", { key: selectedKey, version: selectedVersion })
+  }
+
+  function onState(data){
+    data = parseData(data)
+    if(!data.ok){
+      hideProgress()
+      setStatus(data.error || t("script_library.package_index_failed", "Package index failed"))
+      return
+    }
+    state = data
+    setStatus(t("script_library.loaded_count", "Loaded {count} package(s)", { count: state.packages ? state.packages.length : 0 }))
+    setProgress(0, 0)
+    hideProgress()
+    render()
+  }
+
+  function onProgress(data){
+    data = parseData(data)
+    var message = translatedProgress(data)
+    if(data.current && data.total){
+      message = message + " (" + data.current + "/" + data.total + ")"
+      setProgress(data.current, data.total)
+    }
+    if(data.status === "ready"){
+      hideProgress()
+    }else{
+      showProgress(t("script_library.working", "Working"), message, data.current || 0, data.total || 0)
+    }
+    setStatus(message)
+  }
+
+  function onInstallResult(data){
+    data = parseData(data)
+    busy = false
+    if(data.ok){
+      setStatus(t("script_library.install_result", "Installed {package} {version} / written {written}, skipped {skipped}", { package: data.packageName, version: data.version, written: data.written, skipped: data.skipped }))
+      setProgress(1, 1)
+    }else{
+      setStatus(data.error || t("script_library.install_failed", "Install failed"))
+      setProgress(0, 0)
+    }
+    hideProgress()
+    hideOverwrite()
+    renderDetail()
+  }
+
+  function onOverwrite(data){
+    var files, list, i, row, check, stateTag, path, kind
+    data = parseData(data)
+    hideProgress()
+    pendingOverwrite = data
+    files = data.files || []
+    list = byId("overwriteList")
+    list.innerHTML = ""
+    for(i = 0; i < files.length; i++){
+      row = document.createElement("label")
+      row.className = "fileRow"
+      check = document.createElement("input")
+      check.type = "checkbox"
+      check.value = files[i].key || files[i].path
+      check.checked = files[i].state === "same"
+      stateTag = tag(translateFileState(files[i].state || "existing"))
+      path = document.createElement("div")
+      path.className = "filePath"
+      path.textContent = files[i].path || files[i].name || ""
+      kind = tag(translateFileKind(files[i].kind || "file"))
+      row.appendChild(check)
+      row.appendChild(stateTag)
+      row.appendChild(path)
+      row.appendChild(kind)
+      list.appendChild(row)
+    }
+    byId("overwriteModal").className = "modal show"
+    setStatus(t("script_library.existing_confirmation", "Existing files need confirmation"))
+  }
+
+  function translateFileState(value){
+    if(value === "same") return t("script_library.file_same", "same")
+    if(value === "changed") return t("script_library.file_changed", "changed")
+    if(value === "new") return t("script_library.file_new", "new")
+    return t("script_library.file_existing", "existing")
+  }
+
+  function translateFileKind(value){
+    if(value === "dependency") return t("script_library.kind_dependency", "dependency")
+    if(value === "selected") return t("script_library.kind_selected", "selected")
+    return value
+  }
+
+  function selectedOverwriteKeys(){
+    var boxes = byId("overwriteList").getElementsByTagName("input")
+    var out = []
+    var i
+    for(i = 0; i < boxes.length; i++){
+      if(boxes[i].checked) out.push(boxes[i].value)
+    }
+    return out
+  }
+
+  function hideOverwrite(){
+    pendingOverwrite = null
+    byId("overwriteModal").className = "modal"
+  }
+
+  function confirmOverwrite(keys){
+    if(!pendingOverwrite) return
+    showProgress(t("script_library.installing", "Installing"), t("script_library.preparing_install", "Preparing install..."), 0, 0)
+    send("script_library_install_confirm", {
+      requestId: pendingOverwrite.requestId,
+      selectedKeys: keys || []
+    })
+    hideOverwrite()
+  }
+
+  function cancelOverwrite(){
+    if(pendingOverwrite){
+      send("script_library_install_cancel", { requestId: pendingOverwrite.requestId })
+    }
+    hideProgress()
+    hideOverwrite()
+  }
+
+  function bind(){
+    byId("refreshBtn").onclick = function(){
+      busy = true
+      setStatus(t("script_library.refreshing_index", "Refreshing package index..."))
+      showProgress(t("script_library.refreshing", "Refreshing"), t("script_library.refreshing_index", "Refreshing package index..."), 0, 0)
+      send("script_library_refresh", {})
+    }
+    byId("closeBtn").onclick = function(){
+      if(cnpc && cnpc.close) cnpc.close()
+    }
+    byId("detailInstallBtn").onclick = function(){
+      installSelected()
+    }
+    byId("localeSelect").onchange = function(){
+      I18N_LOCALE = normalizeLocale(this.value)
+      setStatus(t("script_library.loading_language", "Loading language..."))
+      send("script_library_i18n_request", { locale: I18N_LOCALE, persist: true })
+    }
+    byId("editorFilter").onchange = function(){
+      editorFilter = this.value || "all"
+      render()
+    }
+    byId("searchInput").oninput = function(){
+      query = this.value || ""
+      render()
+    }
+    byId("confirmOverwriteBtn").onclick = function(){
+      confirmOverwrite(selectedOverwriteKeys())
+    }
+    byId("skipExistingBtn").onclick = function(){
+      confirmOverwrite([])
+    }
+    byId("cancelOverwriteBtn").onclick = function(){
+      cancelOverwrite()
+    }
+  }
+
+  function listen(){
+    if(!cnpc || !cnpc.onEvent){
+      setStatus(t("script_library.bridge_unavailable", "CNPC bridge unavailable"))
+      return
+    }
+    cnpc.onEvent("scriptLibraryState", onState)
+    cnpc.onEvent("scriptLibraryProgress", onProgress)
+    cnpc.onEvent("scriptLibraryOverwrite", onOverwrite)
+    cnpc.onEvent("scriptLibraryInstallResult", onInstallResult)
+    cnpc.onEvent("scriptLibraryI18nPack", onI18nPack)
+  }
+
+  function onI18nPack(data){
+    data = parseData(data)
+    I18N_LOCALE = normalizeLocale(data.locale || data.requested || I18N_LOCALE)
+    I18N = data.messages || {}
+    if(data.localeOptions instanceof Array) LOCALE_OPTIONS = data.localeOptions
+    if(data.error) setStatus(t("script_library.translation_load_failed", "Translation load failed: {error}", { error: data.error }))
+    else setStatus(t("script_library.language_updated", "Language updated."))
+    render()
+  }
+
+  bind()
+  listen()
+  render()
+  setStatus(t("script_library.ready", "Ready"))
+  send("script_library_ready", {})
+})()
+</script>
+</body>
+</html>
