@@ -1,17 +1,17 @@
 // ============================================================================
-// Dochi Standalone Script Library
+// Dochi Script Library In-game Manager
 // Script Type: Player script or NPC script
 // Requires: CNPCExtended + MCEF
 // Open: chat dce, or attach to an NPC and interact with it
 // ============================================================================
 
-var DochiStandaloneScriptLibrary = (function(){
-  var HTML_PATH = "html/script_library_standalone.html"
+var DochiScriptLibraryIngameManager = (function(){
+  var HTML_PATH = "html/script_library_ingame_manager.html"
   var REPO_OWNER = "gdochi"
   var REPO_NAME = "dochi-editor-hub"
   var REPO_BRANCH = "main"
   var ROOT_MANIFEST = "manifest.json"
-  var USER_AGENT = "DochiStandaloneScriptLibrary/1.0"
+  var USER_AGENT = "DochiScriptLibraryIngameManager/1.0"
   var DEFAULT_BASE_PATH = "minecraft/customnpcs/scripts/ecmascript/dc_lib"
   var LANG_DIR = "dc_data/dc_lang/script_library"
   var LANG_DIRS = [LANG_DIR, "scripts/ecmascript/dc_lang/script_library"]
@@ -658,7 +658,7 @@ var DochiStandaloneScriptLibrary = (function(){
   }
 
   function registryFile(){
-    return resolveTargetFile("dc_data/dc_script_library_standalone_installs.json")
+    return resolveTargetFile("dc_data/dc_script_library_ingame_manager_installs.json")
   }
 
   function loadRegistry(){
@@ -1089,7 +1089,7 @@ var DochiStandaloneScriptLibrary = (function(){
 function chat(e){
   var msg = String(e.message || "")
   if(msg !== "dce") return
-  DochiStandaloneScriptLibrary.open(e, e.player)
+  DochiScriptLibraryIngameManager.open(e, e.player)
   try{ e.setCanceled(true) }catch(err){}
 }
 
@@ -1098,7 +1098,7 @@ function chat(e){
  */
 function interact(e){
   if(!e || !e.player || !e.npc) return
-  DochiStandaloneScriptLibrary.open(e, e.player)
+  DochiScriptLibraryIngameManager.open(e, e.player)
 }
 
 /**
@@ -1106,7 +1106,7 @@ function interact(e){
  */
 function htmlGuiEvent(e){
   try{
-    DochiStandaloneScriptLibrary.htmlGuiEvent(e)
+    DochiScriptLibraryIngameManager.htmlGuiEvent(e)
   }catch(err){
     try{ if(e && e.player) e.player.message("Script Library error: " + String(err)) }catch(ignore){}
   }

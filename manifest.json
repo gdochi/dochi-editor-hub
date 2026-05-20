@@ -75,14 +75,14 @@
         "scripts/npc_editor/common/1.0.0/manifest.json"
       ]
     },
-    "script_library_standalone:common": {
-      "package": "script_library_standalone",
+    "script_library_ingame_manager:common": {
+      "package": "script_library_ingame_manager",
       "editor": "script_library",
       "mc_version": "common",
-      "sub_path": "script_library_standalone",
+      "sub_path": "script_library_ingame_manager",
       "latest": "1.0.0",
       "versions": [
-        "scripts/script_library_standalone/common/1.0.0/manifest.json"
+        "scripts/script_library_ingame_manager/common/1.0.0/manifest.json"
       ]
     },
     "npc_util:common": {
@@ -178,13 +178,13 @@
       ]
     },
     {
-      "package": "script_library_standalone",
+      "package": "script_library_ingame_manager",
       "editor": "script_library",
       "mc_version": "common",
-      "sub_path": "script_library_standalone",
+      "sub_path": "script_library_ingame_manager",
       "latest": "1.0.0",
       "versions": [
-        "scripts/script_library_standalone/common/1.0.0/manifest.json"
+        "scripts/script_library_ingame_manager/common/1.0.0/manifest.json"
       ]
     },
     {

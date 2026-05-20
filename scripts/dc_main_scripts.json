@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-20T12:39:15.835Z",
+  "generated_at": "2026-05-20T12:45:42.341Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -317,21 +317,21 @@
       ]
     },
     {
-      "id": "script_library_standalone",
-      "package": "script_library_standalone",
-      "script": "script_library_standalone.js",
+      "id": "script_library_ingame_manager",
+      "package": "script_library_ingame_manager",
+      "script": "script_library_ingame_manager.js",
       "versions": [
         {
           "mc_version": "common",
           "version": "1.0.0",
-          "manifest": "script_library_standalone/common/1.0.0/manifest.json",
-          "source_path": "script_library_standalone/common/1.0.0/script_library_standalone.js"
+          "manifest": "script_library_ingame_manager/common/1.0.0/manifest.json",
+          "source_path": "script_library_ingame_manager/common/1.0.0/script_library_ingame_manager.js"
         }
       ],
       "script_dependencies": [],
       "html_dependencies": [
         {
-          "path": "html/script_library_standalone.html",
+          "path": "html/script_library_ingame_manager.html",
           "required": true
         }
       ]

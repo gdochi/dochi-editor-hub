@@ -1,20 +1,20 @@
 {
-  "id": "script_library_standalone/common/1.0.0",
-  "package": "script_library_standalone",
+  "id": "script_library_ingame_manager/common/1.0.0",
+  "package": "script_library_ingame_manager",
   "version": "1.0.0",
   "editor": "script_library",
   "mc_version": "common",
-  "description": "Standalone in-game Dochi script library installer opened with the dce chat command.",
-  "entry": "script_library_standalone.js",
+  "description": "Script Library In-game Manager opened with the dce chat command.",
+  "entry": "script_library_ingame_manager.js",
   "player_scripts": [
     {
-      "path": "script_library_standalone.js"
+      "path": "script_library_ingame_manager.js"
     }
   ],
   "files": [
     {
-      "source": "script_library_standalone.js",
-      "install_as": "script_library_standalone.js",
+      "source": "script_library_ingame_manager.js",
+      "install_as": "script_library_ingame_manager.js",
       "type": "script",
       "dependencies": [
         {
@@ -31,20 +31,20 @@
         },
         {
           "type": "html",
-          "path": "html/script_library_standalone.html",
+          "path": "html/script_library_ingame_manager.html",
           "required": true
         },
         {
           "type": "json_dir",
           "path": "customnpcs/dc_data/dc_lang/script_library/",
           "required": true,
-          "note": "Script Library language packs loaded by the standalone HTML UI."
+          "note": "Script Library language packs loaded by the in-game manager HTML UI."
         }
       ]
     },
     {
-      "source": "script_library_standalone.html",
-      "install_as": "script_library_standalone.html",
+      "source": "script_library_ingame_manager.html",
+      "install_as": "script_library_ingame_manager.html",
       "type": "html",
       "dependencies": []
     },
