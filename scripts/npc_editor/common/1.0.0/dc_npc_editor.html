@@ -328,6 +328,7 @@ function bind(){
 byId("nameInput").addEventListener("input",applyFilter);
 byId("adminFlyoutBtn").onclick=toggleAdminFlyout;
 if(byId("addonFlyoutBtn"))byId("addonFlyoutBtn").onclick=toggleAddonFlyout;
+if(byId("scriptLibraryBtn"))byId("scriptLibraryBtn").onclick=openScriptLibraryAddon;
 byId("bootstrapAdminBtn").onclick=function(){sendEvt("admin_bootstrap",{});};
 byId("adminAddBtn").onclick=submitAdminAdd;
 byId("adminResetBtn").onclick=resetAdmins;
@@ -496,6 +497,7 @@ card.innerHTML=[
 '<div class="topbar-cardBody">',
 '<div class="addon-toggle">',
 '<button type="button" id="addonFlyoutBtn">Addons</button>',
+'<button type="button" id="scriptLibraryBtn" class="secondary">Script Library</button>',
 '<div id="addonPanel" class="field addon-flyout">',
 '<div class="field-label">Addons</div>',
 '<div class="small">Loaded player script addons.</div>',
@@ -583,6 +585,11 @@ window.cnpc.onEvent("npcAddonActionResult",function(d){
 d=parsePayload(d);
 if(!d)return;
 setStatus(d.ok?"Addon action complete: "+(d.id||d.action||"open"):"Addon action failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
+});
+window.cnpc.onEvent("npcScriptLibraryResult",function(d){
+d=parsePayload(d);
+if(!d)return;
+if(d.ok===false)setStatus("Script Library failed: "+(d.error||"unknown"),"status-err");
 });
 window.cnpc.onEvent("npcScriptData",function(d){
 d=parsePayload(d);
@@ -680,6 +687,7 @@ function handleDocumentClick(ev){var admin=byId("adminPanel"),adminBtn=byId("adm
 function renderAdminState(){var admin=APP_STATE.admin,setup=byId("adminSetupBox"),manage=byId("adminManageBox"),ownerLine=byId("adminOwnerLine"),roleLine=byId("adminRoleLine"),editBox=byId("adminEditBox");setup.style.display=!admin.initialized?"block":"none";manage.style.display=admin.initialized?"block":"none";ownerLine.textContent=tr("npc_editor.owner_line","Owner: {value}",{value:formatAdminEntry(admin.owner)});roleLine.textContent=tr("npc_editor.role_line","Role: {value}",{value:getAdminRoleLabel(admin)});editBox.style.display=admin.canManageAdmins?"block":"none";syncKeybindSelection(admin.keybind||"");renderAdminPlayerOptions();renderAdminList();setEditorAccess(admin.canEdit);updatePreviewToggleButton();}
 function renderAdminList(){var box=byId("adminListBox"),admin=APP_STATE.admin,list=Array.isArray(admin.admins)?admin.admins:[];box.innerHTML="";if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("npc_editor.no_admins_registered","No admins registered."))+'</div>';return;}list.forEach(function(entry){var row=document.createElement("div"),meta=document.createElement("div");row.className="loaded-item";meta.className="file-name";meta.innerHTML='<div>'+esc(entry.name||"(unknown)")+'</div><div class="small">'+esc(entry.uuid||"")+"</div>";row.appendChild(meta);if(admin.canManageAdmins&&entry.uuid!==String(admin.owner&&admin.owner.uuid||"")){var btn=document.createElement("button");btn.type="button";btn.className="icon-btn danger";btn.textContent=tr("npc_editor.remove","Remove");btn.onclick=function(){removeAdmin(entry.uuid);};row.appendChild(btn);}box.appendChild(row);});}
 function renderAddonState(){var box=byId("addonListBox"),btn=byId("addonFlyoutBtn"),list=APP_STATE.addons||[],enabled=0;if(!box)return;box.innerHTML="";list.forEach(function(addon){var row=document.createElement("div"),meta=document.createElement("div"),toggle=document.createElement("button");if(addon.enabled)enabled++;row.className="addon-row";meta.className="file-name";meta.innerHTML='<div class="addon-title">'+esc(addon.name||addon.id)+'</div><div class="addon-meta">'+esc(addon.id)+(addon.targetPrefix?" / "+esc(addon.targetPrefix):"")+'</div>'+(addon.description?'<div class="addon-meta">'+esc(addon.description)+'</div>':"");toggle.type="button";toggle.className="addon-switch";toggle.textContent=addon.enabled?"On":"Off";toggle.disabled=!APP_STATE.admin.canEdit;toggle.onclick=function(){sendEvt("npc_addon_toggle",{id:addon.id,enabled:!addon.enabled});};row.appendChild(meta);row.appendChild(toggle);box.appendChild(row);});if(!list.length)box.innerHTML='<div class="empty">No addons loaded.</div>';if(btn)btn.textContent=list.length?"Addons "+enabled+"/"+list.length:"Addons";updateDcAddonEditButton();}
+function openScriptLibraryAddon(){if(!APP_STATE.admin.canEdit){setStatus("Script Library requires editor access.","status-warn");return;}setStatus("Opening Script Library...","status-ok");sendEvt("npc_script_library_open",{});}
 function findAddonById(id){var list=APP_STATE.addons||[],i;for(i=0;i<list.length;i++)if(String(list[i].id||"")===String(id||""))return list[i];return null;}
 function getEnabledAddonForPrefix(prefix){var list=APP_STATE.addons||[],i;prefix=String(prefix||"");for(i=0;i<list.length;i++)if(list[i].enabled===true&&String(list[i].targetPrefix||"")===prefix)return list[i];return null;}
 function renderAdminPlayerOptions(){var select=byId("adminPlayerSelect"),admin=APP_STATE.admin,players=(admin.players||[]).filter(function(p){return !admin.admins.some(function(a){return a.uuid===p.uuid;});});select.innerHTML="";appendOption(select,"","Select player");players.forEach(function(p){appendOption(select,p.uuid,p.name+" ("+p.uuid+")");});}
@@ -690,7 +698,7 @@ function saveKeybind(){sendEvt("keybind_save",{key:String(byId("keybindTrigger")
 function findAdminPlayer(uuid){var i,list=APP_STATE.admin.players||[];for(i=0;i<list.length;i++)if(String(list[i].uuid||"")===String(uuid||""))return list[i];return null;}
 function formatAdminEntry(entry){entry=entry||{};if(entry.name&&entry.uuid)return entry.name+" ("+entry.uuid+")";return entry.name||entry.uuid||"-";}
 function getAdminRoleLabel(admin){if(!admin.initialized)return "Setup pending";if(admin.isOwner)return "Owner";if(admin.isAdmin)return "Admin";if(admin.canOpen)return "Viewer";return "No access";}
-function setEditorAccess(enabled){["tpBtn","editBtn","deleteBtn","scriptToggleBtn","applyScriptBtn","reloadScriptBtn","addFileBtn","browseFileBtn","pickerAddBtn","scriptEnabledCheckbox","inlineEditor","scriptTabBtn","topbarDceBtn","addonFlyoutBtn","dcScriptBrowseBtn","dcAddonEditBtn","dcJsonBrowseBtn","dcSaveBtn","dcPanelCloseBtn","dcListBackBtn","dcFlyoutCloseBtn"].forEach(function(id){var el=byId(id);if(el)el.disabled=!enabled;});updateTopbarModeButtons();renderAddonState();}
+function setEditorAccess(enabled){["tpBtn","editBtn","deleteBtn","scriptToggleBtn","applyScriptBtn","reloadScriptBtn","addFileBtn","browseFileBtn","pickerAddBtn","scriptEnabledCheckbox","inlineEditor","scriptTabBtn","topbarDceBtn","addonFlyoutBtn","scriptLibraryBtn","dcScriptBrowseBtn","dcAddonEditBtn","dcJsonBrowseBtn","dcSaveBtn","dcPanelCloseBtn","dcListBackBtn","dcFlyoutCloseBtn"].forEach(function(id){var el=byId(id);if(el)el.disabled=!enabled;});updateTopbarModeButtons();renderAddonState();}
 
 function syncScanRange(v){
 var n=Math.max(8,Math.min(128,Number(v)||48));

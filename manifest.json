@@ -25,6 +25,16 @@
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
       ]
     },
+    "addon_script_library:common": {
+      "package": "addon_script_library",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_script_library/common/1.0.0/manifest.json"
+      ]
+    },
     "npc_trainer:fabric_1_21_1": {
       "package": "npc_trainer",
       "editor": "npc_trainer",
@@ -115,6 +125,16 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "addon_script_library",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_script_library/common/1.0.0/manifest.json"
       ]
     },
     {
