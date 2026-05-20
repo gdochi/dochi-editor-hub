@@ -68,7 +68,6 @@ var data={};
  if(e.eventName==="npc_addon_toggle"){if(requireCanEdit(e,"npcAddonState","addon_toggle"))onNpcAddonToggle(e,data);return;}
  if(e.eventName==="npc_addon_refresh"){if(requireCanBrowse(e,"npcAddonState","addon_refresh"))pushAddonState(e.player);return;}
  if(e.eventName==="npc_addon_open"){if(requireCanEdit(e,"npcAddonActionResult","addon_open"))onNpcAddonOpen(e,data);return;}
- if(e.eventName==="npc_script_library_open"){if(requireCanEdit(e,"npcScriptLibraryResult","script_library_open"))onScriptLibraryOpen(e,data);return;}
 }
 
 function customGuiButton(e){dispatchNpcEditorAddonEvent("customGuiButton",e);}
@@ -561,14 +560,6 @@ res=addon.open({player:e.player,npc:npc,uuid:uuid,jsonPath:jsonPath,prefix:prefi
 pushBrowser(e.player,"npcAddonActionResult",{ok:res!==false,action:"open",id:id});
 }catch(err){
 pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",id:id,error:String(err)});
-}
-}
-function onScriptLibraryOpen(e,data){
-try{
-if(typeof DcScriptLibraryAddon==="undefined"||!DcScriptLibraryAddon||typeof DcScriptLibraryAddon.open!=="function"){pushBrowser(e.player,"npcScriptLibraryResult",{ok:false,error:"Script Library addon is not loaded."});return;}
-DcScriptLibraryAddon.open(e.player);
-}catch(err){
-pushBrowser(e.player,"npcScriptLibraryResult",{ok:false,error:String(err)});
 }
 }
 function dispatchNpcEditorAddonEvent(name,e){

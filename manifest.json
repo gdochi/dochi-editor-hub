@@ -15,16 +15,6 @@
         "scripts/addon_battle_intro/common/1.0.0/manifest.json"
       ]
     },
-    "addon_npc_shop_item_editor:common": {
-      "package": "addon_npc_shop_item_editor",
-      "editor": "npc_editor_addon",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/addon_npc_shop_item_editor/common/1.0.0/manifest.json"
-      ]
-    },
     "addon_select_starting:common": {
       "package": "addon_select_starting",
       "editor": "dialogue_addon",
@@ -33,16 +23,6 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
-      ]
-    },
-    "addon_script_library:common": {
-      "package": "addon_script_library",
-      "editor": "npc_editor_addon",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/addon_script_library/common/1.0.0/manifest.json"
       ]
     },
     "npc_trainer:fabric_1_21_1": {
@@ -128,16 +108,6 @@
       ]
     },
     {
-      "package": "addon_npc_shop_item_editor",
-      "editor": "npc_editor_addon",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/addon_npc_shop_item_editor/common/1.0.0/manifest.json"
-      ]
-    },
-    {
       "package": "addon_select_starting",
       "editor": "dialogue_addon",
       "mc_version": "common",
@@ -145,16 +115,6 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
-      ]
-    },
-    {
-      "package": "addon_script_library",
-      "editor": "npc_editor_addon",
-      "mc_version": "common",
-      "sub_path": "",
-      "latest": "1.0.0",
-      "versions": [
-        "scripts/addon_script_library/common/1.0.0/manifest.json"
       ]
     },
     {

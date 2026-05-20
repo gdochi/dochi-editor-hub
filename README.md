@@ -1,4 +1,3 @@
-![downloads](https://img.shields.io/github/downloads/gdochi/dochi-editor-hub/latest/total.svg)
 # dochi_lib
 
 Local package library for Dochi script distribution.
