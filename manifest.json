@@ -15,6 +15,16 @@
         "scripts/addon_battle_intro/common/1.0.0/manifest.json"
       ]
     },
+    "addon_npc_shop_item_editor:common": {
+      "package": "addon_npc_shop_item_editor",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_npc_shop_item_editor/common/1.0.0/manifest.json"
+      ]
+    },
     "addon_select_starting:common": {
       "package": "addon_select_starting",
       "editor": "dialogue_addon",
@@ -115,6 +125,16 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_battle_intro/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "addon_npc_shop_item_editor",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_npc_shop_item_editor/common/1.0.0/manifest.json"
       ]
     },
     {
