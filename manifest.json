@@ -75,6 +75,16 @@
         "scripts/npc_editor/common/1.0.0/manifest.json"
       ]
     },
+    "script_library_standalone:common": {
+      "package": "script_library_standalone",
+      "editor": "script_library",
+      "mc_version": "common",
+      "sub_path": "script_library_standalone",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/script_library_standalone/common/1.0.0/manifest.json"
+      ]
+    },
     "npc_util:common": {
       "package": "npc_util",
       "editor": "npc_util",
@@ -165,6 +175,16 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/npc_editor/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "script_library_standalone",
+      "editor": "script_library",
+      "mc_version": "common",
+      "sub_path": "script_library_standalone",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/script_library_standalone/common/1.0.0/manifest.json"
       ]
     },
     {

@@ -1,0 +1,64 @@
+{
+  "id": "script_library_standalone/common/1.0.0",
+  "package": "script_library_standalone",
+  "version": "1.0.0",
+  "editor": "script_library",
+  "mc_version": "common",
+  "description": "Standalone in-game Dochi script library installer opened with the dce chat command.",
+  "entry": "script_library_standalone.js",
+  "player_scripts": [
+    {
+      "path": "script_library_standalone.js"
+    }
+  ],
+  "files": [
+    {
+      "source": "script_library_standalone.js",
+      "install_as": "script_library_standalone.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "mod",
+          "id": "CNPCExtended",
+          "required": true,
+          "note": "Required for HTML GUI and browser bridge calls."
+        },
+        {
+          "type": "mod",
+          "id": "MCEF",
+          "required": true,
+          "note": "Required by CNPCExtended HTML GUI rendering."
+        },
+        {
+          "type": "html",
+          "path": "html/script_library_standalone.html",
+          "required": true
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_lang/script_library/",
+          "required": true,
+          "note": "Script Library language packs loaded by the standalone HTML UI."
+        }
+      ]
+    },
+    {
+      "source": "script_library_standalone.html",
+      "install_as": "script_library_standalone.html",
+      "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/script_library/en_us.json",
+      "install_as": "dc_data/dc_lang/script_library/en_us.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_lang/script_library/ko_kr.json",
+      "install_as": "dc_data/dc_lang/script_library/ko_kr.json",
+      "type": "json",
+      "dependencies": []
+    }
+  ]
+}

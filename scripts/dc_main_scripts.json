@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-17T04:13:45.066Z",
+  "generated_at": "2026-05-20T12:39:15.835Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -28,6 +28,28 @@
           "path": "npc_util/common/1.0.0/dc_util_common.js",
           "required": true,
           "load_order": 3
+        }
+      ],
+      "html_dependencies": []
+    },
+    {
+      "id": "addon_npc_shop_item_editor",
+      "package": "addon_npc_shop_item_editor",
+      "script": "shop_item_editor.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "addon_npc_shop_item_editor/common/1.0.0/manifest.json",
+          "source_path": "addon_npc_shop_item_editor/common/1.0.0/shop_item_editor.js"
+        }
+      ],
+      "script_dependencies": [
+        {
+          "script": "dc_cfg_checker.js",
+          "path": "npc_util/common/1.0.0/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
         }
       ],
       "html_dependencies": []
@@ -290,6 +312,26 @@
         },
         {
           "path": "html/dc_util/dc_gui_runtime.html",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "script_library_standalone",
+      "package": "script_library_standalone",
+      "script": "script_library_standalone.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "script_library_standalone/common/1.0.0/manifest.json",
+          "source_path": "script_library_standalone/common/1.0.0/script_library_standalone.js"
+        }
+      ],
+      "script_dependencies": [],
+      "html_dependencies": [
+        {
+          "path": "html/script_library_standalone.html",
           "required": true
         }
       ]
