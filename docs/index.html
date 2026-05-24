@@ -616,7 +616,7 @@
           </div>
           <div class="path-card">
             <div class="path-name">몹 설정 JSON</div>
-            <div><code>minecraft/customnpcs/dc_mob/soulmob</code>, <code>minecraft/customnpcs/dc_mob/taczmob</code><br><span class="small">Soulslike Mob, TACZ Mob 에디터가 사용하는 설정입니다.</span></div>
+            <div><code>minecraft/customnpcs/dc_mob/soulmob</code>, <code>minecraft/customnpcs/dc_mob/taczmob</code><br><span class="small">Soulslike Mob, TACZ Mob 개발용/예정 설정입니다. 두 에디터는 아직 정식 준비 전입니다.</span></div>
           </div>
           <div class="path-card">
             <div class="path-name">에디터 웹 캐시</div>
@@ -696,8 +696,8 @@
           <div class="card"><div class="card-title">NPC Editor</div><p>설치된 CustomNPCs 플레이어 스크립트를 통해 인게임 NPC 에디터를 실행합니다.</p><div class="tag-row"><span class="tag warn">런처 상태 확인</span></div></div>
           <div class="card"><div class="card-title">NPC Shop</div><p>상점 ID, 화폐, 접근 조건, GUI 연결, 카테고리, 상품, 재고를 설정합니다.</p><div class="tag-row"><span class="tag">상점 JSON</span></div></div>
           <div class="card"><div class="card-title">GUI Maker</div><p>대화/상점 GUI 레이아웃을 시각적으로 만들고 JSON으로 내보냅니다.</p><div class="tag-row"><span class="tag good">의존 모드 없음</span></div></div>
-          <div class="card"><div class="card-title">Soulslike Mob Editor</div><p>몹 패턴, 이벤트 타이밍, 히트박스, 이펙트, 모델 프리뷰를 편집합니다.</p><div class="tag-row"><span class="tag">Gecko/모델 워크플로</span></div></div>
-          <div class="card"><div class="card-title">TACZ Mob Editor</div><p>TACZ 총기 기반 몹의 사격 거리, 탄약, 부착물, 근접 전환, 수류탄, 명중률을 설정합니다.</p><div class="tag-row"><span class="tag">TACZ</span></div></div>
+          <div class="card"><div class="card-title">Soulslike Mob Editor</div><p>아직 개발 중인 기능입니다. 현재 설명은 예정 구조와 개발 참고용이며, 실제 제작용으로 준비되지 않았습니다.</p><div class="tag-row"><span class="tag warn">개발 중</span><span class="tag">Gecko/모델 워크플로</span></div></div>
+          <div class="card"><div class="card-title">TACZ Mob Editor</div><p>아직 개발 중인 기능입니다. TACZ 총기 기반 몹 제작 기능은 정식 사용 준비가 끝나지 않았습니다.</p><div class="tag-row"><span class="tag warn">개발 중</span><span class="tag">TACZ</span></div></div>
         </div>
       </div>
     </section>
@@ -903,9 +903,13 @@
     <section id="soulmob-editor" data-title="14. Soulslike Mob Editor">
       <div class="section-head">
         <h2>14. Soulslike Mob Editor</h2>
-        <div class="section-desc">액션 RPG 스타일 몹의 패턴, 이벤트, 히트박스, 이펙트를 한 화면에서 조정합니다.</div>
+        <div class="section-desc">아직 개발 중인 기능입니다. 현재 내용은 예정 구조와 개발 참고용입니다.</div>
       </div>
       <div class="section-body">
+        <div class="callout warn">
+          <h3>개발 중</h3>
+          <p>Soulslike Mob Editor는 아직 정식 제작용으로 준비되지 않았습니다. 이 섹션의 표와 설명은 구현 방향을 남겨둔 것이며, 실제 서버/배포 월드 작업에는 사용하지 않는 것을 권장합니다.</p>
+        </div>
         <table>
           <tr><th>단계</th><th>주요 내용</th></tr>
           <tr><td>Project</td><td>프로젝트 이름, 기본 체력/속도, 애니메이션 이름, 공격 간격, AI 틱 같은 기본값을 설정합니다.</td></tr>
@@ -922,9 +926,13 @@
     <section id="tacz-editor" data-title="15. TACZ Mob Editor">
       <div class="section-head">
         <h2>15. TACZ Mob Editor</h2>
-        <div class="section-desc">TACZ 총기 기반 NPC 전투 프로필을 만듭니다.</div>
+        <div class="section-desc">아직 개발 중인 기능입니다. TACZ 몹 제작 기능은 정식 사용 준비 전입니다.</div>
       </div>
       <div class="section-body">
+        <div class="callout warn">
+          <h3>개발 중</h3>
+          <p>TACZ Mob Editor는 아직 정식 제작용으로 준비되지 않았습니다. TACZ 데이터 스캔과 전투 프로필 편집 흐름은 개발 중인 구조이므로, 현재 설명은 기능 계획과 테스트 참고용으로 봐주세요.</p>
+        </div>
         <table>
           <tr><th>영역</th><th>설명</th></tr>
           <tr><td>Profile</td><td>프로필 이름, 감지/교전 거리, 근접 전환 거리, 높이 제한, 기본/원거리/근접 속도를 설정합니다.</td></tr>
@@ -1025,7 +1033,7 @@
           <div class="card">
             <div class="card-title">전투 몹</div>
             <ol>
-              <li>Soulslike 또는 TACZ 에디터에서 기본 프로필을 고릅니다.</li>
+              <li>Soulslike 또는 TACZ 에디터는 아직 개발 중이므로, 현재는 구조 검토와 테스트 참고용으로만 봅니다.</li>
               <li>패턴, 거리, 데미지, 이펙트 값을 먼저 작게 잡습니다.</li>
               <li>프리뷰와 평가 패널로 지나친 범위/압박을 줄입니다.</li>
               <li>JSON을 Export한 뒤 테스트 월드에서 반복 조정합니다.</li>
@@ -1166,7 +1174,7 @@
           <div class="path-card"><div class="path-name">GUI JSON</div><div><code>minecraft/customnpcs/dc_data/dc_gui</code><br><span class="small">Dialogue/shop GUI layouts from GUI Maker.</span></div></div>
           <div class="path-card"><div class="path-name">Shop JSON</div><div><code>minecraft/customnpcs/dc_data/dc_shops</code><br><span class="small">Shop data exported by NPC Shop.</span></div></div>
           <div class="path-card"><div class="path-name">Pokemon party JSON</div><div><code>minecraft/customnpcs/dc_data/dc_trainers/pokemonparty</code><br><span class="small">Trainer party specs from Pokemon Editor.</span></div></div>
-          <div class="path-card"><div class="path-name">Mob JSON</div><div><code>minecraft/customnpcs/dc_mob/soulmob</code>, <code>minecraft/customnpcs/dc_mob/taczmob</code><br><span class="small">Soulslike Mob and TACZ Mob configuration.</span></div></div>
+          <div class="path-card"><div class="path-name">Mob JSON</div><div><code>minecraft/customnpcs/dc_mob/soulmob</code>, <code>minecraft/customnpcs/dc_mob/taczmob</code><br><span class="small">Development/planned configuration for Soulslike Mob and TACZ Mob. Both editors are not production-ready yet.</span></div></div>
           <div class="path-card"><div class="path-name">Editor web cache</div><div><code>minecraft/config/dochi_editor/web</code><br><span class="small">Internal editor UI cache, not a package install target.</span></div></div>
         </div>
         <div class="callout bad"><h3>HTML Path Warning</h3><p>If HTML GUI files are installed into the instance folder instead of the active world folder, related tools can remain locked. Open the correct world and reinstall the HTML package.</p></div>
@@ -1228,8 +1236,8 @@
           <div class="card"><div class="card-title">NPC Editor</div><p>Launches an installed CustomNPCs player script.</p></div>
           <div class="card"><div class="card-title">NPC Shop</div><p>Shop ID, currency, access rules, categories, products, and GUI mapping.</p></div>
           <div class="card"><div class="card-title">GUI Maker</div><p>Visual layout builder for dialogue and shop GUI JSON.</p></div>
-          <div class="card"><div class="card-title">Soulslike Mob Editor</div><p>Mob patterns, events, hitboxes, effects, and model preview.</p></div>
-          <div class="card"><div class="card-title">TACZ Mob Editor</div><p>TACZ gun combat profiles, ranges, ammo, attachments, accuracy, and grenades.</p></div>
+          <div class="card"><div class="card-title">Soulslike Mob Editor</div><p>This feature is still in development. The current notes are for planned structure and development reference, not production use.</p><div class="tag-row"><span class="tag warn">In development</span></div></div>
+          <div class="card"><div class="card-title">TACZ Mob Editor</div><p>This feature is still in development. TACZ gun-based mob authoring is not ready for regular production use yet.</p><div class="tag-row"><span class="tag warn">In development</span></div></div>
         </div>
       `
     },
@@ -1368,8 +1376,9 @@
     {
       id: "soulmob-editor",
       title: "14. Soulslike Mob Editor",
-      desc: "Tune action-RPG style mob patterns, events, hitboxes, and effects.",
+      desc: "In development. Current content is planned structure and development reference.",
       body: `
+        <div class="callout warn"><h3>In Development</h3><p>Soulslike Mob Editor is not ready for production authoring yet. The tables and descriptions in this section document the intended structure, so avoid using it for live server or release-world work.</p></div>
         <table>
           <tr><th>Step</th><th>Main content</th></tr>
           <tr><td>Project</td><td>Project name, health, speed, animation names, attack interval, and AI tick.</td></tr>
@@ -1385,8 +1394,9 @@
     {
       id: "tacz-editor",
       title: "15. TACZ Mob Editor",
-      desc: "Build TACZ gun-based NPC combat profiles.",
+      desc: "In development. TACZ mob authoring is not ready for regular use yet.",
       body: `
+        <div class="callout warn"><h3>In Development</h3><p>TACZ Mob Editor is not ready for production authoring yet. TACZ data scanning and combat profile editing are still development-stage workflows, so treat this section as a feature plan and testing reference.</p></div>
         <table>
           <tr><th>Area</th><th>Description</th></tr>
           <tr><td>Profile</td><td>Profile name, detection range, melee switch range, height limit, and movement speeds.</td></tr>
@@ -1445,7 +1455,7 @@
           <div class="card"><div class="card-title">Dialogue NPC</div><ol><li>Create a dialogue GUI in GUI Maker.</li><li>Create dialogue sets and choices in Dialogue Editor.</li><li>Review Overview and Blueprint.</li><li>Export to <code>dc_data/dc_dialogues</code>.</li><li>Call the dialogue from NPC runtime scripts.</li></ol></div>
           <div class="card"><div class="card-title">Shop NPC</div><ol><li>Create a Shop GUI layout.</li><li>Write shop ID, currency, access rules, and products.</li><li>Connect the GUI with <code>Pick GUI</code>.</li><li>Export to <code>dc_data/dc_shops</code>.</li><li>Open the shop from dialogue or scripts.</li></ol></div>
           <div class="card"><div class="card-title">Cobblemon Trainer</div><ol><li>Create party JSON in Pokemon Editor.</li><li>Configure Basic and Battle in Trainer Editor.</li><li>Connect trainer spec JSON per round.</li><li>Add conditions and after rewards.</li><li>Use Flow Guide, then export.</li></ol></div>
-          <div class="card"><div class="card-title">Combat Mob</div><ol><li>Start from a Soulslike or TACZ preset.</li><li>Keep range, damage, and pressure conservative first.</li><li>Use previews/evaluation to reduce excessive behavior.</li><li>Export and test in a test world.</li><li>Copy only the finished JSON to the live server/world.</li></ol></div>
+          <div class="card"><div class="card-title">Combat Mob</div><ol><li>Soulslike and TACZ editors are still in development, so treat them as structure/testing references only.</li><li>Do not use their output for live server or release-world work yet.</li><li>When they become ready, keep range, damage, and pressure conservative first.</li><li>Export and test in a test world before copying anything to production.</li></ol></div>
         </div>
       `
     }
