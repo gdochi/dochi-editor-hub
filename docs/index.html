@@ -63,7 +63,7 @@
       display:grid;
       grid-template-columns:minmax(260px,1fr) 170px minmax(260px,460px) auto;
       gap:14px;
-      align-items:center;
+      align-items:end;
     }
     .title-wrap{min-width:0}
     h1{
@@ -80,18 +80,13 @@
     }
     .lang-wrap{
       min-width:0;
-      display:grid;
-      gap:5px;
-    }
-    .lang-wrap label{
-      color:var(--accent);
-      font-size:11px;
-      font-weight:900;
-      text-transform:uppercase;
+      display:flex;
+      align-items:center;
     }
     .lang-wrap select{
       width:100%;
-      min-height:42px;
+      height:44px;
+      min-height:44px;
       padding:0 11px;
       border:1px solid var(--line);
       border-radius:8px;
@@ -105,10 +100,13 @@
     .search-wrap{
       position:relative;
       min-width:0;
+      display:flex;
+      align-items:center;
     }
     #searchInput{
       width:100%;
-      min-height:42px;
+      height:44px;
+      min-height:44px;
       padding:0 46px 0 13px;
       border:1px solid var(--line);
       border-radius:8px;
@@ -119,8 +117,8 @@
     #searchInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(112,223,154,.12)}
     #clearSearch{
       position:absolute;
-      top:5px;
-      right:5px;
+      top:6px;
+      right:6px;
       width:32px;
       height:32px;
       min-height:32px;
@@ -132,6 +130,7 @@
       gap:8px;
       flex-wrap:wrap;
       justify-content:flex-end;
+      align-items:center;
     }
     button,.button{
       min-height:38px;
@@ -165,20 +164,39 @@
       background:rgba(27,29,32,.92);
       box-shadow:var(--shadow);
     }
-    .nav-head{
-      padding:13px 14px 10px;
-      border-bottom:1px solid var(--line);
+    .nav-list{padding:10px}
+    .nav-group{
+      margin:0 0 12px;
+      padding:0 0 11px;
+      border-bottom:1px solid var(--line-soft);
+    }
+    .nav-group:last-child{
+      margin-bottom:0;
+      padding-bottom:0;
+      border-bottom:0;
+    }
+    .nav-group-title{
+      height:28px;
+      display:flex;
+      align-items:center;
+      padding:0 10px;
       color:var(--accent);
-      font-size:12px;
+      font-size:11px;
       font-weight:900;
       text-transform:uppercase;
+      letter-spacing:0;
     }
-    .nav-list{padding:7px}
+    .nav-group-list{
+      display:grid;
+      gap:4px;
+    }
     .nav-link{
-      display:block;
+      display:flex;
+      align-items:center;
       width:100%;
-      min-height:0;
-      padding:10px 11px;
+      height:38px;
+      min-height:38px;
+      padding:0 11px;
       border:0;
       border-radius:6px;
       background:transparent;
@@ -186,7 +204,10 @@
       text-align:left;
       font-size:13px;
       font-weight:800;
-      line-height:1.35;
+      line-height:1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .nav-link:hover{background:#252a31}
     .nav-link.active{
@@ -197,6 +218,7 @@
     .content{min-width:0;display:grid;gap:16px}
     section{
       display:none;
+      min-height:calc(100vh - 150px);
       border:1px solid var(--line);
       border-radius:8px;
       background:rgba(27,29,32,.95);
@@ -207,6 +229,7 @@
     section.active-page{display:block}
     section.is-hidden{display:none !important}
     .section-head{
+      min-height:92px;
       padding:18px 20px;
       border-bottom:1px solid var(--line);
       background:
@@ -430,7 +453,7 @@
       .actions{justify-content:flex-start}
       main{grid-template-columns:1fr}
       nav{position:static;max-height:none}
-      .nav-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+      .nav-group-list{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
       .grid-2,.grid-3{grid-template-columns:1fr}
       .path-card{grid-template-columns:1fr}
     }
@@ -453,8 +476,7 @@
       <div class="subtitle" id="manualSubtitle">설치 대상 선택, 스크립트 라이브러리, 각 에디터 사용법, 문제 해결까지 한 곳에서 확인하는 한국어 매뉴얼입니다.</div>
     </div>
     <div class="lang-wrap">
-      <label for="languageSelect" id="languageLabel">언어</label>
-      <select id="languageSelect">
+      <select id="languageSelect" aria-label="언어">
         <option value="ko">한국어</option>
         <option value="en">English</option>
       </select>
@@ -473,7 +495,6 @@
 
 <main>
   <nav aria-label="설명서 목차">
-    <div class="nav-head" id="navTitle">목차</div>
     <div class="nav-list" id="navList"></div>
   </nav>
 
@@ -1027,8 +1048,6 @@
   const languageSelect = document.getElementById("languageSelect");
   const manualTitle = document.getElementById("manualTitle");
   const manualSubtitle = document.getElementById("manualSubtitle");
-  const languageLabel = document.getElementById("languageLabel");
-  const navTitle = document.getElementById("navTitle");
   const expandAll = document.getElementById("expandAll");
   const collapseAll = document.getElementById("collapseAll");
   const printGuide = document.getElementById("printGuide");
@@ -1065,6 +1084,29 @@
       empty: "No matching pages. Try another keyword."
     }
   };
+
+  const navGroups = [
+    {
+      label: { ko: "시작", en: "Start" },
+      ids: ["overview", "quick-start", "requirements", "paths", "open-editor"]
+    },
+    {
+      label: { ko: "기본 기능", en: "Core" },
+      ids: ["topbar", "main-menu", "script-library", "npc-editor"]
+    },
+    {
+      label: { ko: "에디터", en: "Editors" },
+      ids: ["dialogue-editor", "gui-maker", "npc-shop", "pokemon-editor", "trainer-editor", "soulmob-editor", "tacz-editor"]
+    },
+    {
+      label: { ko: "데이터", en: "Data" },
+      ids: ["json-workflow"]
+    },
+    {
+      label: { ko: "점검", en: "Support" },
+      ids: ["troubleshooting", "recommended-flow"]
+    }
+  ];
 
   const enSections = [
     {
@@ -1502,14 +1544,71 @@
     document.title = t.title;
     manualTitle.textContent = t.title;
     manualSubtitle.textContent = t.subtitle;
-    languageLabel.textContent = t.language;
-    navTitle.textContent = t.nav;
+    languageSelect.setAttribute("aria-label", t.language);
     searchInput.placeholder = t.search;
     clearSearch.textContent = t.clear;
     expandAll.textContent = t.expand;
     collapseAll.textContent = t.collapse;
     printGuide.textContent = t.print;
     languageSelect.value = currentLang;
+  }
+
+  function buildNavButton(section){
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "nav-link" + (section.id === activeId ? " active" : "");
+    button.textContent = section.title;
+    button.title = section.title;
+    button.addEventListener("click", () => {
+      activeId = section.id;
+      localStorage.setItem("dochi.manual.activePage", activeId);
+      history.replaceState(null, "", `#${encodeURIComponent(activeId)}`);
+      refresh({ scroll:true });
+    });
+    return button;
+  }
+
+  function renderNav(matches){
+    const byId = new Map(matches.map((section) => [section.id, section]));
+    const groupedIds = new Set();
+    navList.innerHTML = "";
+
+    navGroups.forEach((group) => {
+      const groupMatches = group.ids.map((id) => byId.get(id)).filter(Boolean);
+      if(!groupMatches.length) return;
+
+      const groupEl = document.createElement("div");
+      groupEl.className = "nav-group";
+
+      const title = document.createElement("div");
+      title.className = "nav-group-title";
+      title.textContent = group.label[currentLang] || group.label.en;
+      groupEl.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "nav-group-list";
+      groupMatches.forEach((section) => {
+        groupedIds.add(section.id);
+        list.appendChild(buildNavButton(section));
+      });
+      groupEl.appendChild(list);
+      navList.appendChild(groupEl);
+    });
+
+    const ungrouped = matches.filter((section) => !groupedIds.has(section.id));
+    if(ungrouped.length){
+      const groupEl = document.createElement("div");
+      groupEl.className = "nav-group";
+      const title = document.createElement("div");
+      title.className = "nav-group-title";
+      title.textContent = currentLang === "ko" ? "기타" : "Other";
+      groupEl.appendChild(title);
+      const list = document.createElement("div");
+      list.className = "nav-group-list";
+      ungrouped.forEach((section) => list.appendChild(buildNavButton(section)));
+      groupEl.appendChild(list);
+      navList.appendChild(groupEl);
+    }
   }
 
   function renderEmpty(){
@@ -1536,8 +1635,8 @@
     const sections = getSections();
     const matches = query ? sections.filter((section) => sectionSearchText(section).includes(query)) : sections;
 
-    navList.innerHTML = "";
     if(!matches.length){
+      navList.innerHTML = "";
       renderEmpty();
       return;
     }
@@ -1546,19 +1645,7 @@
       activeId = matches[0].id;
     }
 
-    matches.forEach((section) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "nav-link" + (section.id === activeId ? " active" : "");
-      button.textContent = section.title;
-      button.addEventListener("click", () => {
-        activeId = section.id;
-        localStorage.setItem("dochi.manual.activePage", activeId);
-        history.replaceState(null, "", `#${encodeURIComponent(activeId)}`);
-        refresh({ scroll:true });
-      });
-      navList.appendChild(button);
-    });
+    renderNav(matches);
 
     const active = matches.find((section) => section.id === activeId) || matches[0];
     activeId = active.id;
