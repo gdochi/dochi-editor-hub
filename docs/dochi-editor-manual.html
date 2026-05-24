@@ -231,6 +231,7 @@
       scroll-margin-top:108px;
     }
     section.active-page{display:block}
+    section.feedback-page{min-height:auto}
     section.is-hidden{display:none !important}
     .section-head{
       min-height:92px;
@@ -445,12 +446,14 @@
     }
     .empty-state.show{display:block}
     .comments-panel{
+      display:none;
       border:1px solid #404040;
       border-radius:14px;
       background:var(--panel-gradient-soft);
       box-shadow:var(--shadow);
       overflow:hidden;
     }
+    .comments-panel.show{display:block}
     .comments-head{
       min-height:74px;
       padding:16px 20px;
@@ -472,6 +475,64 @@
       font-size:13px;
     }
     .comments-body{padding:16px 20px 20px}
+    .feedback-target{
+      display:grid;
+      gap:10px;
+      padding:13px 14px;
+      margin-bottom:14px;
+      border:1px solid #3d3d3d;
+      border-radius:12px;
+      background:linear-gradient(180deg,#252525 0%, #1f1f1f 100%);
+    }
+    .feedback-target-row{
+      display:grid;
+      grid-template-columns:150px minmax(0,1fr);
+      gap:10px;
+      align-items:center;
+    }
+    .feedback-target label{
+      color:var(--accent-text-soft);
+      font-size:12px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    #feedbackTargetSelect{
+      width:100%;
+      min-height:40px;
+      border:1px solid color-mix(in srgb, var(--border) 70%, #000 30%);
+      border-radius:12px;
+      background:var(--panel-soft);
+      color:var(--text);
+      padding:0 11px;
+      outline:none;
+    }
+    #feedbackTargetSelect:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+    .feedback-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .feedback-tag{
+      min-height:28px;
+      padding:0 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg,#242424 0%, #1d1d1d 100%);
+      color:#dddddd;
+      font-size:12px;
+      font-weight:800;
+      box-shadow:none;
+    }
+    .feedback-tag.active{
+      border-color:var(--accent);
+      color:var(--accent-text);
+      box-shadow:0 0 0 1px var(--accent-soft) inset;
+    }
+    .feedback-target-note{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
     .comments-setup{
       padding:13px 14px;
       border:1px solid color-mix(in srgb, var(--border-2) 58%, var(--accent) 42%);
@@ -499,6 +560,7 @@
       main{grid-template-columns:1fr}
       nav{position:static;max-height:none}
       .nav-group-list{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+      .feedback-target-row{grid-template-columns:1fr}
       .grid-2,.grid-3{grid-template-columns:1fr}
       .path-card{grid-template-columns:1fr}
     }
@@ -1093,6 +1155,14 @@
         <div class="comments-desc" id="commentsDesc">Leave questions, corrections, or suggestions through GitHub Discussions.</div>
       </div>
       <div class="comments-body">
+        <div class="feedback-target" id="feedbackTargetBox">
+          <div class="feedback-target-row">
+            <label for="feedbackTargetSelect" id="feedbackTargetLabel">Feedback target</label>
+            <select id="feedbackTargetSelect"></select>
+          </div>
+          <div class="feedback-tags" id="feedbackTargetTags" aria-label="Feedback target tags"></div>
+          <div class="feedback-target-note" id="feedbackTargetNote">Choose the manual page this comment is about. Each target uses a separate discussion thread.</div>
+        </div>
         <div id="giscusMount" class="giscus"></div>
         <div class="comments-setup" id="giscusSetup" hidden>
           <strong>Comments setup is not complete yet.</strong>
@@ -1119,6 +1189,11 @@
   const manualSubtitle = document.getElementById("manualSubtitle");
   const commentsTitle = document.getElementById("commentsTitle");
   const commentsDesc = document.getElementById("commentsDesc");
+  const commentsPanel = document.getElementById("manualComments");
+  const feedbackTargetLabel = document.getElementById("feedbackTargetLabel");
+  const feedbackTargetSelect = document.getElementById("feedbackTargetSelect");
+  const feedbackTargetTags = document.getElementById("feedbackTargetTags");
+  const feedbackTargetNote = document.getElementById("feedbackTargetNote");
   const giscusMount = document.getElementById("giscusMount");
   const giscusSetup = document.getElementById("giscusSetup");
 
@@ -1127,7 +1202,7 @@
     repoId: "R_kgDORzDaCw",
     category: "General",
     categoryId: "DIC_kwDORzDaC84C9u8n",
-    term: "Dochi Editor Manual Feedback"
+    baseTerm: "Dochi Editor Manual Feedback"
   };
 
   const koSections = Array.from(content.querySelectorAll("section")).map((section) => ({
@@ -1150,7 +1225,10 @@
       commentsSetup: "댓글 설정이 아직 완료되지 않았습니다. GitHub Discussions를 켜고, giscus 앱을 설치한 뒤, Manual Feedback 카테고리의 category ID를 이 매뉴얼에 넣어야 합니다.",
       settingsLink: "Repository settings",
       giscusInstallLink: "Install giscus",
-      giscusConfigLink: "Get giscus config"
+      giscusConfigLink: "Get giscus config",
+      feedbackTarget: "피드백 대상",
+      feedbackTargetGeneral: "전체 매뉴얼",
+      feedbackTargetNote: "댓글이 어떤 세부 목차에 대한 내용인지 선택하세요. 대상별로 GitHub Discussion 스레드가 분리됩니다."
     },
     en: {
       title: "Dochi Editor Manual",
@@ -1165,7 +1243,10 @@
       commentsSetup: "Comments setup is not complete yet. Enable GitHub Discussions, install the giscus app, then set the category ID for the Manual Feedback category in this manual.",
       settingsLink: "Repository settings",
       giscusInstallLink: "Install giscus",
-      giscusConfigLink: "Get giscus config"
+      giscusConfigLink: "Get giscus config",
+      feedbackTarget: "Feedback target",
+      feedbackTargetGeneral: "Whole manual",
+      feedbackTargetNote: "Choose which manual page this comment is about. Each target uses a separate GitHub Discussion thread."
     }
   };
 
@@ -1189,6 +1270,10 @@
     {
       label: { ko: "점검", en: "Support" },
       ids: ["troubleshooting", "recommended-flow"]
+    },
+    {
+      label: { ko: "피드백", en: "Feedback" },
+      ids: ["feedback"]
     }
   ];
 
@@ -1547,6 +1632,29 @@
     }
   ];
 
+  const feedbackSections = {
+    ko: {
+      id: "feedback",
+      title: "피드백",
+      desc: "매뉴얼에 대한 질문, 오타, 수정 제안, 기능 설명 보강 요청을 남기는 공간입니다.",
+      body: `
+        <p class="lead">아래 피드백 대상에서 관련된 세부 목차를 먼저 선택한 뒤 댓글을 남기세요.</p>
+        <div class="callout"><h3>분리 방식</h3><p>전체 매뉴얼, GUI Maker, NPC Shop처럼 선택한 대상마다 별도의 GitHub Discussion 스레드를 사용합니다. 덕분에 피드백이 한 곳에 뒤섞이지 않고 주제별로 정리됩니다.</p></div>
+      `
+    },
+    en: {
+      id: "feedback",
+      title: "Feedback",
+      desc: "Leave questions, corrections, suggestions, or requests for clearer manual coverage.",
+      body: `
+        <p class="lead">Choose the related manual target below before writing a comment.</p>
+        <div class="callout"><h3>How feedback is separated</h3><p>Each selected target, such as Whole manual, GUI Maker, or NPC Shop, uses a separate GitHub Discussion thread. This keeps comments grouped by subject instead of mixing everything together.</p></div>
+      `
+    }
+  };
+  koSections.push(feedbackSections.ko);
+  enSections.push(feedbackSections.en);
+
   const languages = {
     ko: { sections: koSections },
     en: { sections: enSections }
@@ -1559,6 +1667,10 @@
 
   function normalize(value){
     return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function displayTitle(value){
+    return String(value || "").replace(/^\s*\d+\.\s*/, "");
   }
 
   function escapeHtml(value){
@@ -1579,10 +1691,33 @@
     return languages[currentLang].sections;
   }
 
+  function getFeedbackTargetId(){
+    const saved = localStorage.getItem("dochi.manual.feedbackTarget") || "general";
+    const ids = new Set(getFeedbackTargets().map((target) => target.id));
+    return ids.has(saved) ? saved : "general";
+  }
+
+  function getFeedbackTargets(){
+    const t = ui[currentLang] || ui.ko;
+    return [
+      { id: "general", title: t.feedbackTargetGeneral },
+      ...getSections()
+        .filter((section) => section.id !== "feedback")
+        .map((section) => ({ id: section.id, title: displayTitle(section.title) }))
+    ];
+  }
+
+  function getFeedbackTerm(targetId = getFeedbackTargetId()){
+    if(targetId === "general") return giscusConfig.baseTerm;
+    const english = enSections.find((section) => section.id === targetId);
+    const title = displayTitle(english?.title || targetId);
+    return `${giscusConfig.baseTerm} - ${title}`;
+  }
+
   function buildSectionHtml(section){
     if(section.html) return section.html;
     return `
-      <section id="${escapeHtml(section.id)}" data-title="${escapeHtml(section.title)}">
+      <section id="${escapeHtml(section.id)}" class="${section.id === "feedback" ? "feedback-page" : ""}" data-title="${escapeHtml(section.title)}">
         <div class="section-head">
           <h2>${escapeHtml(section.title)}</h2>
           <div class="section-desc">${escapeHtml(section.desc || "")}</div>
@@ -1632,6 +1767,10 @@
     const t = ui[currentLang] || ui.ko;
     commentsTitle.textContent = t.commentsTitle;
     commentsDesc.textContent = t.commentsDesc;
+    feedbackTargetLabel.textContent = t.feedbackTarget;
+    feedbackTargetSelect.setAttribute("aria-label", t.feedbackTarget);
+    feedbackTargetTags.setAttribute("aria-label", t.feedbackTarget);
+    feedbackTargetNote.textContent = t.feedbackTargetNote;
     giscusSetup.innerHTML = `
       <strong>${escapeHtml(t.commentsTitle)}</strong><br>
       ${escapeHtml(t.commentsSetup)}
@@ -1641,18 +1780,57 @@
         <a class="button" href="https://giscus.app/" target="_blank" rel="noopener">${escapeHtml(t.giscusConfigLink)}</a>
       </div>
     `;
+    renderFeedbackTargets();
   }
 
-  function syncGiscusLanguage(){
+  function renderFeedbackTargets(){
+    const targets = getFeedbackTargets();
+    const selected = getFeedbackTargetId();
+    feedbackTargetSelect.innerHTML = "";
+    feedbackTargetTags.innerHTML = "";
+
+    targets.forEach((target) => {
+      const option = document.createElement("option");
+      option.value = target.id;
+      option.textContent = target.title;
+      option.selected = target.id === selected;
+      feedbackTargetSelect.appendChild(option);
+
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "feedback-tag" + (target.id === selected ? " active" : "");
+      tag.textContent = target.title;
+      tag.addEventListener("click", () => setFeedbackTarget(target.id));
+      feedbackTargetTags.appendChild(tag);
+    });
+  }
+
+  function setFeedbackTarget(targetId){
+    localStorage.setItem("dochi.manual.feedbackTarget", targetId);
+    renderFeedbackTargets();
+    syncGiscusConfig();
+  }
+
+  function syncGiscusConfig(){
     const frame = document.querySelector("iframe.giscus-frame");
     if(!frame || !frame.contentWindow) return;
     frame.contentWindow.postMessage({
       giscus: {
         setConfig: {
-          lang: currentLang === "ko" ? "ko" : "en"
+          lang: currentLang === "ko" ? "ko" : "en",
+          term: getFeedbackTerm()
         }
       }
     }, "https://giscus.app");
+  }
+
+  function syncGiscusLanguage(){
+    syncGiscusConfig();
+  }
+
+  function updateCommentsVisibility(show){
+    commentsPanel.classList.toggle("show", !!show);
+    if(show) initComments();
   }
 
   function initComments(){
@@ -1677,7 +1855,7 @@
     script.dataset.category = giscusConfig.category;
     script.dataset.categoryId = giscusConfig.categoryId;
     script.dataset.mapping = "specific";
-    script.dataset.term = giscusConfig.term;
+    script.dataset.term = getFeedbackTerm();
     script.dataset.strict = "0";
     script.dataset.reactionsEnabled = "1";
     script.dataset.emitMetadata = "0";
@@ -1705,8 +1883,8 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "nav-link" + (section.id === activeId ? " active" : "");
-    button.textContent = section.title;
-    button.title = section.title;
+    button.textContent = displayTitle(section.title);
+    button.title = displayTitle(section.title);
     button.addEventListener("click", () => {
       activeId = section.id;
       localStorage.setItem("dochi.manual.activePage", activeId);
@@ -1761,6 +1939,7 @@
 
   function renderEmpty(){
     const t = ui[currentLang] || ui.ko;
+    updateCommentsVisibility(false);
     content.innerHTML = `<div class="empty-state show" id="emptyState">${escapeHtml(t.empty)}</div>`;
   }
 
@@ -1772,6 +1951,7 @@
       rendered.classList.add("active-page");
     }
     bindChecks();
+    updateCommentsVisibility(section.id === "feedback");
     if(options.scroll !== false){
       window.scrollTo({ top:0, behavior:"smooth" });
     }
@@ -1815,9 +1995,11 @@
     refresh({ scroll:false });
     searchInput.focus();
   });
+  feedbackTargetSelect.addEventListener("change", () => {
+    setFeedbackTarget(feedbackTargetSelect.value);
+  });
 
   refresh({ scroll:false });
-  initComments();
 })();
 </script>
 </body>
