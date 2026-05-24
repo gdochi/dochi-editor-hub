@@ -29,6 +29,8 @@ DEBUG:false
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
 var HashMap=Java.type("java.util.HashMap");
 var ArrayList=Java.type("java.util.ArrayList");
+var DOCHI_EDITOR_ACCESS=null;
+try{DOCHI_EDITOR_ACCESS=Java.type("net.hodu.dochieditor.server.DochiEditorAccess");}catch(err){}
 var LANG_RESOURCE_CACHE={};
 var DC_ENTRY_SPEC_ERRORS=[];
 var DC_ENTRY_SPEC_CACHE=null;
@@ -588,18 +590,28 @@ var wanted=getStoredOpenKey(player);
 if(!wanted)return false;
 return String(e.key||"")===wanted;
 }
+function getDochiEditorModPermission(player){
+if(!DOCHI_EDITOR_ACCESS||!player||typeof player.getMCEntity!=="function")return null;
+try{return DOCHI_EDITOR_ACCESS.canOpenEditor(player.getMCEntity())===true;}catch(err){return null;}
+}
 
 function getEditorAccessState(player){
 return buildAdminBrowserState(player);
 }
 function canOpenEditor(player){
+var modAllowed=getDochiEditorModPermission(player);
+if(modAllowed!==null)return modAllowed;
 return !!getEditorAccessState(player).canOpen;
 }
 function canBrowseEditor(player){
+var modAllowed=getDochiEditorModPermission(player);
+if(modAllowed!==null)return modAllowed;
 var state=getEditorAccessState(player);
 return !!state.initialized&&!!state.canOpen;
 }
 function canEditEditor(player){
+var modAllowed=getDochiEditorModPermission(player);
+if(modAllowed!==null)return modAllowed;
 return !!getEditorAccessState(player).canEdit;
 }
 function requireCanOpen(e,resultEvent,action){
@@ -1534,10 +1546,19 @@ for(i=0;i<list.length;i++)if(sameUuid(list[i].uuid,id.uuid))return true;
 return false;
 }
 function buildAdminBrowserState(player){
-var state=loadAdminStateCache();
+var state=loadAdminStateCache(),modAllowed=getDochiEditorModPermission(player);
 state.players=getOnlinePlayers(player);
 state.isOwner=isAdminOwner(player,state);
 state.isAdmin=isAdminMember(player,state);
+if(modAllowed!==null){
+state.initialized=true;
+state.canOpen=modAllowed;
+state.canManageAdmins=false;
+state.canEdit=modAllowed;
+state.permissionSource="dochi_editor_mod";
+state.keybind=getStoredOpenKey(player)||state.keybind||"";
+return state;
+}
 state.canOpen=!state.initialized||state.isOwner||state.isAdmin||state.canOpen;
 state.canManageAdmins=!state.initialized||state.isOwner;
 state.canEdit=!!state.initialized&&(state.isOwner||state.isAdmin);
