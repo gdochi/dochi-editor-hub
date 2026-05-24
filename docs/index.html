@@ -1202,6 +1202,7 @@
           <div class="feedback-target-note" id="feedbackTargetNote">Choose the manual page this comment is about. Each target uses a separate discussion thread.</div>
           <div class="feedback-admin">
             <a class="button" id="feedbackAdminLink" href="https://github.com/gdochi/dochi-editor-hub/discussions/1" target="_blank" rel="noopener">Manage selected thread</a>
+            <a class="button" id="feedbackDiscordLink" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a>
             <span class="feedback-admin-note" id="feedbackAdminNote">Repository admins can delete or hide comments in GitHub Discussions.</span>
           </div>
         </div>
@@ -1238,6 +1239,7 @@
   const feedbackTargetTags = document.getElementById("feedbackTargetTags");
   const feedbackTargetNote = document.getElementById("feedbackTargetNote");
   const feedbackAdminLink = document.getElementById("feedbackAdminLink");
+  const feedbackDiscordLink = document.getElementById("feedbackDiscordLink");
   const feedbackAdminNote = document.getElementById("feedbackAdminNote");
   const giscusMount = document.getElementById("giscusMount");
   const giscusSetup = document.getElementById("giscusSetup");
@@ -1298,6 +1300,7 @@
       feedbackTargetGeneral: "전체 매뉴얼",
       feedbackTargetNote: "댓글이 어떤 세부 목차에 대한 내용인지 선택하세요. 대상별로 GitHub Discussion 스레드가 분리됩니다.",
       feedbackAdmin: "선택한 스레드 관리",
+      feedbackDiscord: "디스코드",
       feedbackAdminNote: "저장소 관리자 권한으로 GitHub Discussions에서 댓글을 삭제하거나 숨길 수 있습니다.",
       feedbackGroupGeneral: "전체"
     },
@@ -1319,6 +1322,7 @@
       feedbackTargetGeneral: "Whole manual",
       feedbackTargetNote: "Choose which manual page this comment is about. Each target uses a separate GitHub Discussion thread.",
       feedbackAdmin: "Manage selected thread",
+      feedbackDiscord: "Discord",
       feedbackAdminNote: "Repository admins can delete or hide comments in GitHub Discussions.",
       feedbackGroupGeneral: "General"
     }
@@ -1723,6 +1727,7 @@
       body: `
         <p class="lead">Choose the related manual target below before writing a comment.</p>
         <div class="callout"><h3>How feedback is separated</h3><p>Each selected target, such as Whole manual, GUI Maker, or NPC Shop, uses a separate GitHub Discussion thread. This keeps comments grouped by subject instead of mixing everything together.</p></div>
+        <div class="section-tools"><a class="button" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a></div>
       `
     }
   };
@@ -1872,6 +1877,7 @@
     feedbackTargetNote.textContent = t.feedbackTargetNote;
     feedbackAdminLink.textContent = t.feedbackAdmin;
     feedbackAdminLink.href = getFeedbackDiscussionUrl();
+    feedbackDiscordLink.textContent = t.feedbackDiscord;
     feedbackAdminNote.textContent = t.feedbackAdminNote;
     giscusSetup.innerHTML = `
       <strong>${escapeHtml(t.commentsTitle)}</strong><br>
