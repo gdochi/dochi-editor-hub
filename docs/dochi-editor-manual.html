@@ -81,6 +81,7 @@
       letter-spacing:0;
     }
     .subtitle{
+      display:none;
       margin-top:4px;
       color:var(--muted);
       font-size:13px;
@@ -236,6 +237,8 @@
     }
     section.active-page{display:block}
     section.feedback-page{min-height:auto}
+    section.feedback-page .section-head{min-height:auto}
+    section.feedback-page .section-desc{display:none}
     section.is-hidden{display:none !important}
     .section-head{
       min-height:92px;
@@ -465,7 +468,7 @@
       overflow:auto;
     }
     .comments-head{
-      min-height:74px;
+      min-height:auto;
       padding:16px 20px;
       border-bottom:1px solid #404040;
       background:
@@ -480,6 +483,7 @@
       font-weight:900;
     }
     .comments-desc{
+      display:none;
       margin-top:5px;
       color:var(--muted);
       font-size:13px;
@@ -496,11 +500,12 @@
     }
     .feedback-target-row{
       display:grid;
-      grid-template-columns:150px minmax(0,1fr);
+      grid-template-columns:1fr;
       gap:10px;
       align-items:center;
     }
     .feedback-target label{
+      display:none;
       color:var(--accent-text-soft);
       font-size:12px;
       font-weight:900;
@@ -518,9 +523,7 @@
     }
     #feedbackTargetSelect:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
     .feedback-tags{
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
+      display:none;
     }
     .feedback-tag{
       min-height:28px;
@@ -539,12 +542,13 @@
       box-shadow:0 0 0 1px var(--accent-soft) inset;
     }
     .feedback-target-note{
+      display:none;
       color:var(--muted);
       font-size:12px;
       line-height:1.45;
     }
     .feedback-admin{
-      display:flex;
+      display:none;
       align-items:center;
       gap:10px;
       flex-wrap:wrap;
@@ -573,6 +577,12 @@
       flex-wrap:wrap;
       margin:14px 0 4px;
     }
+    .feedback-link-line{
+      margin:12px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .feedback-link-line a{font-weight:800}
     .small{font-size:13px;color:var(--muted)}
     .status-ok{color:var(--good);font-weight:900}
     .status-warn{color:var(--warn);font-weight:900}
@@ -1712,7 +1722,7 @@
       body: `
         <p class="lead">Choose the comment type below before writing feedback.</p>
         <div class="callout"><h3>How feedback is separated</h3><p>General notes, questions, suggestions, bug reports, corrections, translations, and other feedback each use a separate GitHub Discussion thread.</p></div>
-        <div class="section-tools"><a class="button" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a></div>
+        <p class="feedback-link-line"><a href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a></p>
       `
     }
   };
