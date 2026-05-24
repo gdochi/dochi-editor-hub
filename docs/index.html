@@ -74,6 +74,27 @@
       align-items:end;
     }
     .title-wrap{min-width:0}
+    .title-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .discord-logo-link{
+      display:inline-grid;
+      place-items:center;
+      width:32px;
+      height:32px;
+      border:1px solid var(--border-2);
+      border-radius:10px;
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      color:var(--accent-text);
+      text-decoration:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 8px 20px rgba(0,0,0,.32);
+      flex:0 0 auto;
+    }
+    .discord-logo-link:hover{border-color:var(--accent);background:linear-gradient(180deg,#303030,#252525)}
+    .discord-logo-link svg{width:19px;height:19px;display:block;fill:currentColor}
     h1{
       margin:0;
       font-size:25px;
@@ -221,9 +242,10 @@
     }
     .content-column{min-width:0;display:grid;gap:16px}
     .content-column.feedback-layout{
-      grid-template-columns:minmax(280px,.55fr) minmax(720px,1.45fr);
+      grid-template-columns:1fr;
       align-items:start;
     }
+    .content-column.feedback-layout .content{display:none}
     .content{min-width:0;display:grid;gap:16px}
     section{
       display:none;
@@ -577,12 +599,6 @@
       flex-wrap:wrap;
       margin:14px 0 4px;
     }
-    .feedback-link-line{
-      margin:12px 0 0;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .feedback-link-line a{font-weight:800}
     .small{font-size:13px;color:var(--muted)}
     .status-ok{color:var(--good);font-weight:900}
     .status-warn{color:var(--warn);font-weight:900}
@@ -615,7 +631,14 @@
 <header>
   <div class="topbar">
     <div class="title-wrap">
-      <h1 id="manualTitle">도치 에디터 사용 설명서</h1>
+      <div class="title-row">
+        <h1 id="manualTitle">도치 에디터 사용 설명서</h1>
+        <a class="discord-logo-link" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.32 4.37A19.8 19.8 0 0 0 15.36 2.8a.07.07 0 0 0-.08.04c-.21.38-.45.88-.62 1.27a18.3 18.3 0 0 0-5.32 0 12.7 12.7 0 0 0-.63-1.27.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.96 1.57.07.07 0 0 0-.03.03C.49 9.09-.32 13.67.1 18.19c0 .02.02.05.04.06a19.9 19.9 0 0 0 6.08 3.06.08.08 0 0 0 .09-.03c.47-.64.89-1.31 1.25-2.02a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.9-.9.08.08 0 0 1 0-.13l.37-.29a.07.07 0 0 1 .08 0c3.91 1.78 8.15 1.78 12.01 0a.07.07 0 0 1 .08 0l.38.29a.08.08 0 0 1-.01.13c-.6.36-1.23.66-1.9.9a.08.08 0 0 0-.04.11c.37.71.79 1.38 1.25 2.02.02.03.06.04.09.03a19.84 19.84 0 0 0 6.08-3.06.08.08 0 0 0 .03-.06c.5-5.23-.84-9.77-3.62-13.79a.06.06 0 0 0-.04-.03ZM8.02 15.43c-1.18 0-2.16-1.08-2.16-2.41 0-1.33.96-2.41 2.16-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.33-.96 2.41-2.16 2.41Zm7.98 0c-1.18 0-2.16-1.08-2.16-2.41 0-1.33.96-2.41 2.16-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.33-.95 2.41-2.16 2.41Z"/>
+          </svg>
+        </a>
+      </div>
       <div class="subtitle" id="manualSubtitle">설치 대상 선택, 스크립트 라이브러리, 각 에디터 사용법, 문제 해결까지 한 곳에서 확인하는 한국어 매뉴얼입니다.</div>
     </div>
     <div class="lang-wrap">
@@ -1200,7 +1223,6 @@
           <div class="feedback-target-note" id="feedbackTargetNote">Choose whether this comment is general feedback, a question, a suggestion, or a bug report.</div>
           <div class="feedback-admin">
             <a class="button" id="feedbackAdminLink" href="https://github.com/gdochi/dochi-editor-hub/discussions/1" target="_blank" rel="noopener">Manage selected thread</a>
-            <a class="button" id="feedbackDiscordLink" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a>
             <span class="feedback-admin-note" id="feedbackAdminNote">Repository admins can delete or hide comments in GitHub Discussions.</span>
           </div>
         </div>
@@ -1237,7 +1259,6 @@
   const feedbackTargetTags = document.getElementById("feedbackTargetTags");
   const feedbackTargetNote = document.getElementById("feedbackTargetNote");
   const feedbackAdminLink = document.getElementById("feedbackAdminLink");
-  const feedbackDiscordLink = document.getElementById("feedbackDiscordLink");
   const feedbackAdminNote = document.getElementById("feedbackAdminNote");
   const giscusMount = document.getElementById("giscusMount");
   const giscusSetup = document.getElementById("giscusSetup");
@@ -1295,7 +1316,6 @@
       feedbackTargetGeneral: "일반",
       feedbackTargetNote: "댓글의 성격을 선택하세요. 일반, 질문, 제안, 버그, 수정, 번역, 기타 스레드로 분리됩니다.",
       feedbackAdmin: "선택한 스레드 관리",
-      feedbackDiscord: "디스코드",
       feedbackAdminNote: "저장소 관리자 권한으로 GitHub Discussions에서 댓글을 삭제하거나 숨길 수 있습니다.",
       feedbackGroupGeneral: "종류"
     },
@@ -1317,7 +1337,6 @@
       feedbackTargetGeneral: "General",
       feedbackTargetNote: "Choose the comment type. General, questions, suggestions, bugs, corrections, translations, and other feedback use separate discussion threads.",
       feedbackAdmin: "Manage selected thread",
-      feedbackDiscord: "Discord",
       feedbackAdminNote: "Repository admins can delete or hide comments in GitHub Discussions.",
       feedbackGroupGeneral: "Type"
     }
@@ -1722,7 +1741,6 @@
       body: `
         <p class="lead">Choose the comment type below before writing feedback.</p>
         <div class="callout"><h3>How feedback is separated</h3><p>General notes, questions, suggestions, bug reports, corrections, translations, and other feedback each use a separate GitHub Discussion thread.</p></div>
-        <p class="feedback-link-line"><a href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a></p>
       `
     }
   };
@@ -1847,7 +1865,6 @@
     feedbackTargetNote.textContent = t.feedbackTargetNote;
     feedbackAdminLink.textContent = t.feedbackAdmin;
     feedbackAdminLink.href = getFeedbackDiscussionUrl();
-    feedbackDiscordLink.textContent = t.feedbackDiscord;
     feedbackAdminNote.textContent = t.feedbackAdminNote;
     giscusSetup.innerHTML = `
       <strong>${escapeHtml(t.commentsTitle)}</strong><br>
