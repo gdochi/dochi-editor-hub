@@ -518,20 +518,6 @@
     }
     #feedbackTargetSelect:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
     .feedback-tags{
-      display:grid;
-      gap:10px;
-    }
-    .feedback-target-section{
-      display:grid;
-      gap:7px;
-    }
-    .feedback-target-section-title{
-      color:var(--accent-text-soft);
-      font-size:11px;
-      font-weight:900;
-      text-transform:uppercase;
-    }
-    .feedback-target-section-tags{
       display:flex;
       flex-wrap:wrap;
       gap:6px;
@@ -1195,11 +1181,11 @@
       <div class="comments-body">
         <div class="feedback-target" id="feedbackTargetBox">
           <div class="feedback-target-row">
-            <label for="feedbackTargetSelect" id="feedbackTargetLabel">Feedback target</label>
+            <label for="feedbackTargetSelect" id="feedbackTargetLabel">Feedback type</label>
             <select id="feedbackTargetSelect"></select>
           </div>
-          <div class="feedback-tags" id="feedbackTargetTags" aria-label="Feedback target tags"></div>
-          <div class="feedback-target-note" id="feedbackTargetNote">Choose the manual page this comment is about. Each target uses a separate discussion thread.</div>
+          <div class="feedback-tags" id="feedbackTargetTags" aria-label="Feedback type tags"></div>
+          <div class="feedback-target-note" id="feedbackTargetNote">Choose whether this comment is general feedback, a question, a suggestion, or a bug report.</div>
           <div class="feedback-admin">
             <a class="button" id="feedbackAdminLink" href="https://github.com/gdochi/dochi-editor-hub/discussions/1" target="_blank" rel="noopener">Manage selected thread</a>
             <a class="button" id="feedbackDiscordLink" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a>
@@ -1254,26 +1240,23 @@
 
   const feedbackDiscussionUrls = {
     general: "https://github.com/gdochi/dochi-editor-hub/discussions/1",
-    "overview": "https://github.com/gdochi/dochi-editor-hub/discussions/21",
-    "quick-start": "https://github.com/gdochi/dochi-editor-hub/discussions/22",
-    "requirements": "https://github.com/gdochi/dochi-editor-hub/discussions/23",
-    "paths": "https://github.com/gdochi/dochi-editor-hub/discussions/24",
-    "open-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/25",
-    "topbar": "https://github.com/gdochi/dochi-editor-hub/discussions/26",
-    "main-menu": "https://github.com/gdochi/dochi-editor-hub/discussions/27",
-    "script-library": "https://github.com/gdochi/dochi-editor-hub/discussions/28",
-    "npc-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/29",
-    "dialogue-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/30",
-    "gui-maker": "https://github.com/gdochi/dochi-editor-hub/discussions/31",
-    "npc-shop": "https://github.com/gdochi/dochi-editor-hub/discussions/32",
-    "pokemon-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/33",
-    "trainer-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/34",
-    "soulmob-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/35",
-    "tacz-editor": "https://github.com/gdochi/dochi-editor-hub/discussions/36",
-    "json-workflow": "https://github.com/gdochi/dochi-editor-hub/discussions/37",
-    "troubleshooting": "https://github.com/gdochi/dochi-editor-hub/discussions/38",
-    "recommended-flow": "https://github.com/gdochi/dochi-editor-hub/discussions/39"
+    question: "https://github.com/gdochi/dochi-editor-hub/discussions/40",
+    suggestion: "https://github.com/gdochi/dochi-editor-hub/discussions/41",
+    bug: "https://github.com/gdochi/dochi-editor-hub/discussions/42",
+    correction: "https://github.com/gdochi/dochi-editor-hub/discussions/43",
+    translation: "https://github.com/gdochi/dochi-editor-hub/discussions/44",
+    other: "https://github.com/gdochi/dochi-editor-hub/discussions/45"
   };
+
+  const feedbackTypes = [
+    { id: "general", term: "Dochi Editor Manual Feedback", label: { ko: "일반", en: "General" } },
+    { id: "question", term: "Dochi Editor Manual Feedback - Question", label: { ko: "질문", en: "Question" } },
+    { id: "suggestion", term: "Dochi Editor Manual Feedback - Suggestion", label: { ko: "제안", en: "Suggestion" } },
+    { id: "bug", term: "Dochi Editor Manual Feedback - Bug Report", label: { ko: "버그", en: "Bug" } },
+    { id: "correction", term: "Dochi Editor Manual Feedback - Correction", label: { ko: "수정", en: "Correction" } },
+    { id: "translation", term: "Dochi Editor Manual Feedback - Translation", label: { ko: "번역", en: "Translation" } },
+    { id: "other", term: "Dochi Editor Manual Feedback - Other", label: { ko: "기타", en: "Other" } }
+  ];
 
   const koSections = Array.from(content.querySelectorAll("section")).map((section) => ({
     id: section.id,
@@ -1296,13 +1279,13 @@
       settingsLink: "Repository settings",
       giscusInstallLink: "Install giscus",
       giscusConfigLink: "Get giscus config",
-      feedbackTarget: "피드백 대상",
-      feedbackTargetGeneral: "전체 매뉴얼",
-      feedbackTargetNote: "댓글이 어떤 세부 목차에 대한 내용인지 선택하세요. 대상별로 GitHub Discussion 스레드가 분리됩니다.",
+      feedbackTarget: "댓글 종류",
+      feedbackTargetGeneral: "일반",
+      feedbackTargetNote: "댓글의 성격을 선택하세요. 일반, 질문, 제안, 버그, 수정, 번역, 기타 스레드로 분리됩니다.",
       feedbackAdmin: "선택한 스레드 관리",
       feedbackDiscord: "디스코드",
       feedbackAdminNote: "저장소 관리자 권한으로 GitHub Discussions에서 댓글을 삭제하거나 숨길 수 있습니다.",
-      feedbackGroupGeneral: "전체"
+      feedbackGroupGeneral: "종류"
     },
     en: {
       title: "Dochi Editor Manual",
@@ -1318,13 +1301,13 @@
       settingsLink: "Repository settings",
       giscusInstallLink: "Install giscus",
       giscusConfigLink: "Get giscus config",
-      feedbackTarget: "Feedback target",
-      feedbackTargetGeneral: "Whole manual",
-      feedbackTargetNote: "Choose which manual page this comment is about. Each target uses a separate GitHub Discussion thread.",
+      feedbackTarget: "Feedback type",
+      feedbackTargetGeneral: "General",
+      feedbackTargetNote: "Choose the comment type. General, questions, suggestions, bugs, corrections, translations, and other feedback use separate discussion threads.",
       feedbackAdmin: "Manage selected thread",
       feedbackDiscord: "Discord",
       feedbackAdminNote: "Repository admins can delete or hide comments in GitHub Discussions.",
-      feedbackGroupGeneral: "General"
+      feedbackGroupGeneral: "Type"
     }
   };
 
@@ -1725,8 +1708,8 @@
       title: "Feedback",
       desc: "Leave questions, corrections, suggestions, or requests for clearer manual coverage.",
       body: `
-        <p class="lead">Choose the related manual target below before writing a comment.</p>
-        <div class="callout"><h3>How feedback is separated</h3><p>Each selected target, such as Whole manual, GUI Maker, or NPC Shop, uses a separate GitHub Discussion thread. This keeps comments grouped by subject instead of mixing everything together.</p></div>
+        <p class="lead">Choose the comment type below before writing feedback.</p>
+        <div class="callout"><h3>How feedback is separated</h3><p>General notes, questions, suggestions, bug reports, corrections, translations, and other feedback each use a separate GitHub Discussion thread.</p></div>
         <div class="section-tools"><a class="button" href="https://discord.gg/ryvWyRkr4c" target="_blank" rel="noopener">Discord</a></div>
       `
     }
@@ -1770,35 +1753,12 @@
     return languages[currentLang].sections;
   }
 
-  function getFeedbackGroups(){
-    const t = ui[currentLang] || ui.ko;
-    const sectionById = new Map(getSections().map((section) => [section.id, section]));
-    const groups = [
-      {
-        label: t.feedbackGroupGeneral,
-        targets: [{ id: "general", title: t.feedbackTargetGeneral }]
-      }
-    ];
-
-    navGroups.forEach((group) => {
-      const targets = group.ids
-        .filter((id) => id !== "feedback")
-        .map((id) => sectionById.get(id))
-        .filter(Boolean)
-        .map((section) => ({ id: section.id, title: displayTitle(section.title) }));
-      if(targets.length){
-        groups.push({
-          label: group.label[currentLang] || group.label.en,
-          targets
-        });
-      }
-    });
-
-    return groups;
-  }
-
   function getFeedbackTargets(){
-    return getFeedbackGroups().flatMap((group) => group.targets);
+    return feedbackTypes.map((type) => ({
+      id: type.id,
+      title: type.label[currentLang] || type.label.en,
+      term: type.term
+    }));
   }
 
   function getFeedbackTargetId(){
@@ -1808,10 +1768,8 @@
   }
 
   function getFeedbackTerm(targetId = getFeedbackTargetId()){
-    if(targetId === "general") return giscusConfig.baseTerm;
-    const english = enSections.find((section) => section.id === targetId);
-    const title = displayTitle(english?.title || targetId);
-    return `${giscusConfig.baseTerm} - ${title}`;
+    const target = getFeedbackTargets().find((item) => item.id === targetId);
+    return target?.term || giscusConfig.baseTerm;
   }
 
   function getFeedbackDiscussionUrl(targetId = getFeedbackTargetId()){
@@ -1892,44 +1850,25 @@
   }
 
   function renderFeedbackTargets(){
-    const groups = getFeedbackGroups();
+    const targets = getFeedbackTargets();
     const selected = getFeedbackTargetId();
     feedbackTargetSelect.innerHTML = "";
     feedbackTargetTags.innerHTML = "";
     feedbackAdminLink.href = getFeedbackDiscussionUrl(selected);
 
-    groups.forEach((group) => {
-      const optgroup = document.createElement("optgroup");
-      optgroup.label = group.label;
-      group.targets.forEach((target) => {
-        const option = document.createElement("option");
-        option.value = target.id;
-        option.textContent = target.title;
-        option.selected = target.id === selected;
-        optgroup.appendChild(option);
-      });
-      feedbackTargetSelect.appendChild(optgroup);
+    targets.forEach((target) => {
+      const option = document.createElement("option");
+      option.value = target.id;
+      option.textContent = target.title;
+      option.selected = target.id === selected;
+      feedbackTargetSelect.appendChild(option);
 
-      const section = document.createElement("div");
-      section.className = "feedback-target-section";
-
-      const title = document.createElement("div");
-      title.className = "feedback-target-section-title";
-      title.textContent = group.label;
-      section.appendChild(title);
-
-      const tags = document.createElement("div");
-      tags.className = "feedback-target-section-tags";
-      group.targets.forEach((target) => {
-        const tag = document.createElement("button");
-        tag.type = "button";
-        tag.className = "feedback-tag" + (target.id === selected ? " active" : "");
-        tag.textContent = target.title;
-        tag.addEventListener("click", () => setFeedbackTarget(target.id));
-        tags.appendChild(tag);
-      });
-      section.appendChild(tags);
-      feedbackTargetTags.appendChild(section);
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "feedback-tag" + (target.id === selected ? " active" : "");
+      tag.textContent = target.title;
+      tag.addEventListener("click", () => setFeedbackTarget(target.id));
+      feedbackTargetTags.appendChild(tag);
     });
   }
 
