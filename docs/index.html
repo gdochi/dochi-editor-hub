@@ -218,6 +218,7 @@
       box-shadow:0 0 0 1px var(--accent-soft) inset;
       border:1px solid var(--accent);
     }
+    .content-column{min-width:0;display:grid;gap:16px}
     .content{min-width:0;display:grid;gap:16px}
     section{
       display:none;
@@ -443,6 +444,46 @@
       text-align:center;
     }
     .empty-state.show{display:block}
+    .comments-panel{
+      border:1px solid #404040;
+      border-radius:14px;
+      background:var(--panel-gradient-soft);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .comments-head{
+      min-height:74px;
+      padding:16px 20px;
+      border-bottom:1px solid #404040;
+      background:
+        radial-gradient(circle at 88% 24%, rgba(255,255,255,.035), transparent 24%),
+        linear-gradient(180deg,rgba(39,39,39,.96),rgba(28,28,28,.97));
+    }
+    .comments-title{
+      margin:0;
+      font-size:18px;
+      line-height:1.25;
+      color:var(--text);
+      font-weight:900;
+    }
+    .comments-desc{
+      margin-top:5px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .comments-body{padding:16px 20px 20px}
+    .comments-setup{
+      padding:13px 14px;
+      border:1px solid color-mix(in srgb, var(--border-2) 58%, var(--accent) 42%);
+      border-radius:12px;
+      background:
+        radial-gradient(circle at 86% 22%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 24%),
+        linear-gradient(180deg,color-mix(in srgb, #2b3135 82%, var(--accent) 18%),rgba(24,27,25,.97));
+      color:var(--soft);
+    }
+    .comments-setup strong{color:var(--text)}
+    .comments-setup a{font-weight:800}
+    .giscus,.giscus-frame{width:100%}
     .section-tools{
       display:flex;
       gap:8px;
@@ -497,8 +538,9 @@
     <div class="nav-list" id="navList"></div>
   </nav>
 
-  <div class="content" id="content">
-    <div class="empty-state" id="emptyState">검색 결과가 없습니다. 다른 단어로 다시 찾아보세요.</div>
+  <div class="content-column">
+    <div class="content" id="content">
+      <div class="empty-state" id="emptyState">검색 결과가 없습니다. 다른 단어로 다시 찾아보세요.</div>
 
     <section id="overview" class="active-page" data-title="0. 설명서 개요">
       <div class="section-head">
@@ -1043,6 +1085,26 @@
         </div>
       </div>
     </section>
+    </div>
+
+    <div class="comments-panel" id="manualComments">
+      <div class="comments-head">
+        <h2 class="comments-title" id="commentsTitle">Manual feedback</h2>
+        <div class="comments-desc" id="commentsDesc">Leave questions, corrections, or suggestions through GitHub Discussions.</div>
+      </div>
+      <div class="comments-body">
+        <div id="giscusMount" class="giscus"></div>
+        <div class="comments-setup" id="giscusSetup" hidden>
+          <strong>Comments setup is not complete yet.</strong>
+          Enable GitHub Discussions, install the giscus app, create/select a discussion category, then set the generated category ID in this manual.
+          <div class="tag-row">
+            <a class="button" href="https://github.com/gdochi/dochi-editor-hub/settings" target="_blank" rel="noopener">Repository settings</a>
+            <a class="button" href="https://github.com/apps/giscus" target="_blank" rel="noopener">Install giscus</a>
+            <a class="button" href="https://giscus.app/" target="_blank" rel="noopener">Get giscus config</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -1055,6 +1117,18 @@
   const languageSelect = document.getElementById("languageSelect");
   const manualTitle = document.getElementById("manualTitle");
   const manualSubtitle = document.getElementById("manualSubtitle");
+  const commentsTitle = document.getElementById("commentsTitle");
+  const commentsDesc = document.getElementById("commentsDesc");
+  const giscusMount = document.getElementById("giscusMount");
+  const giscusSetup = document.getElementById("giscusSetup");
+
+  const giscusConfig = {
+    repo: "gdochi/dochi-editor-hub",
+    repoId: "R_kgDORzDaCw",
+    category: "General",
+    categoryId: "DIC_kwDORzDaC84C9u8n",
+    term: "Dochi Editor Manual Feedback"
+  };
 
   const koSections = Array.from(content.querySelectorAll("section")).map((section) => ({
     id: section.id,
@@ -1070,7 +1144,13 @@
       nav: "목차",
       search: "기능, 버튼, 경로, 오류 검색",
       clear: "X",
-      empty: "검색 결과가 없습니다. 다른 단어로 다시 찾아보세요."
+      empty: "검색 결과가 없습니다. 다른 단어로 다시 찾아보세요.",
+      commentsTitle: "Manual feedback",
+      commentsDesc: "질문, 오타, 제안은 GitHub Discussions 댓글로 남길 수 있습니다.",
+      commentsSetup: "댓글 설정이 아직 완료되지 않았습니다. GitHub Discussions를 켜고, giscus 앱을 설치한 뒤, Manual Feedback 카테고리의 category ID를 이 매뉴얼에 넣어야 합니다.",
+      settingsLink: "Repository settings",
+      giscusInstallLink: "Install giscus",
+      giscusConfigLink: "Get giscus config"
     },
     en: {
       title: "Dochi Editor Manual",
@@ -1079,7 +1159,13 @@
       nav: "Contents",
       search: "Search features, buttons, paths, errors",
       clear: "X",
-      empty: "No matching pages. Try another keyword."
+      empty: "No matching pages. Try another keyword.",
+      commentsTitle: "Manual feedback",
+      commentsDesc: "Leave questions, corrections, or suggestions through GitHub Discussions.",
+      commentsSetup: "Comments setup is not complete yet. Enable GitHub Discussions, install the giscus app, then set the category ID for the Manual Feedback category in this manual.",
+      settingsLink: "Repository settings",
+      giscusInstallLink: "Install giscus",
+      giscusConfigLink: "Get giscus config"
     }
   };
 
@@ -1538,6 +1624,70 @@
     loadChecks();
   }
 
+  function isGiscusConfigured(){
+    return !!(giscusConfig.repo && giscusConfig.repoId && giscusConfig.categoryId && !giscusConfig.categoryId.includes("TODO"));
+  }
+
+  function renderCommentsChrome(){
+    const t = ui[currentLang] || ui.ko;
+    commentsTitle.textContent = t.commentsTitle;
+    commentsDesc.textContent = t.commentsDesc;
+    giscusSetup.innerHTML = `
+      <strong>${escapeHtml(t.commentsTitle)}</strong><br>
+      ${escapeHtml(t.commentsSetup)}
+      <div class="tag-row">
+        <a class="button" href="https://github.com/gdochi/dochi-editor-hub/settings" target="_blank" rel="noopener">${escapeHtml(t.settingsLink)}</a>
+        <a class="button" href="https://github.com/apps/giscus" target="_blank" rel="noopener">${escapeHtml(t.giscusInstallLink)}</a>
+        <a class="button" href="https://giscus.app/" target="_blank" rel="noopener">${escapeHtml(t.giscusConfigLink)}</a>
+      </div>
+    `;
+  }
+
+  function syncGiscusLanguage(){
+    const frame = document.querySelector("iframe.giscus-frame");
+    if(!frame || !frame.contentWindow) return;
+    frame.contentWindow.postMessage({
+      giscus: {
+        setConfig: {
+          lang: currentLang === "ko" ? "ko" : "en"
+        }
+      }
+    }, "https://giscus.app");
+  }
+
+  function initComments(){
+    renderCommentsChrome();
+    if(!isGiscusConfigured()){
+      giscusMount.innerHTML = "";
+      giscusSetup.hidden = false;
+      return;
+    }
+    giscusSetup.hidden = true;
+    if(document.getElementById("giscusScript")){
+      syncGiscusLanguage();
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "giscusScript";
+    script.src = "https://giscus.app/client.js";
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.dataset.repo = giscusConfig.repo;
+    script.dataset.repoId = giscusConfig.repoId;
+    script.dataset.category = giscusConfig.category;
+    script.dataset.categoryId = giscusConfig.categoryId;
+    script.dataset.mapping = "specific";
+    script.dataset.term = giscusConfig.term;
+    script.dataset.strict = "0";
+    script.dataset.reactionsEnabled = "1";
+    script.dataset.emitMetadata = "0";
+    script.dataset.inputPosition = "top";
+    script.dataset.theme = "dark";
+    script.dataset.lang = currentLang === "ko" ? "ko" : "en";
+    script.dataset.loading = "lazy";
+    giscusMount.appendChild(script);
+  }
+
   function renderChrome(){
     const t = ui[currentLang] || ui.ko;
     document.documentElement.lang = currentLang;
@@ -1548,6 +1698,7 @@
     searchInput.placeholder = t.search;
     clearSearch.textContent = t.clear;
     languageSelect.value = currentLang;
+    renderCommentsChrome();
   }
 
   function buildNavButton(section){
@@ -1655,6 +1806,7 @@
     if(!languages[currentLang]) currentLang = "ko";
     localStorage.setItem("dochi.manual.lang", currentLang);
     refresh({ scroll:true });
+    syncGiscusLanguage();
   });
 
   searchInput.addEventListener("input", () => refresh({ scroll:false }));
@@ -1665,6 +1817,7 @@
   });
 
   refresh({ scroll:false });
+  initComments();
 })();
 </script>
 </body>
