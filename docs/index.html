@@ -61,7 +61,7 @@
       margin:0 auto;
       padding:16px 0;
       display:grid;
-      grid-template-columns:minmax(260px,1fr) 170px minmax(260px,460px) auto;
+      grid-template-columns:minmax(260px,1fr) 170px minmax(260px,460px);
       gap:14px;
       align-items:end;
     }
@@ -124,13 +124,6 @@
       min-height:32px;
       padding:0;
       border-radius:7px;
-    }
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      align-items:center;
     }
     button,.button{
       min-height:38px;
@@ -450,7 +443,6 @@
     .status-bad{color:var(--bad);font-weight:900}
     @media (max-width:1100px){
       .topbar{grid-template-columns:1fr;align-items:stretch}
-      .actions{justify-content:flex-start}
       main{grid-template-columns:1fr}
       nav{position:static;max-height:none}
       .nav-group-list{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
@@ -484,11 +476,6 @@
     <div class="search-wrap">
       <input id="searchInput" type="search" autocomplete="off" placeholder="기능, 버튼, 경로, 오류 검색">
       <button id="clearSearch" type="button" title="검색 지우기">X</button>
-    </div>
-    <div class="actions">
-      <button id="expandAll" type="button">전체 펼치기</button>
-      <button id="collapseAll" type="button">전체 접기</button>
-      <button id="printGuide" class="primary" type="button">인쇄</button>
     </div>
   </div>
 </header>
@@ -1048,9 +1035,6 @@
   const languageSelect = document.getElementById("languageSelect");
   const manualTitle = document.getElementById("manualTitle");
   const manualSubtitle = document.getElementById("manualSubtitle");
-  const expandAll = document.getElementById("expandAll");
-  const collapseAll = document.getElementById("collapseAll");
-  const printGuide = document.getElementById("printGuide");
 
   const koSections = Array.from(content.querySelectorAll("section")).map((section) => ({
     id: section.id,
@@ -1066,9 +1050,6 @@
       nav: "목차",
       search: "기능, 버튼, 경로, 오류 검색",
       clear: "X",
-      expand: "전체 펼치기",
-      collapse: "전체 접기",
-      print: "인쇄",
       empty: "검색 결과가 없습니다. 다른 단어로 다시 찾아보세요."
     },
     en: {
@@ -1078,9 +1059,6 @@
       nav: "Contents",
       search: "Search features, buttons, paths, errors",
       clear: "X",
-      expand: "Expand",
-      collapse: "Collapse",
-      print: "Print",
       empty: "No matching pages. Try another keyword."
     }
   };
@@ -1547,9 +1525,6 @@
     languageSelect.setAttribute("aria-label", t.language);
     searchInput.placeholder = t.search;
     clearSearch.textContent = t.clear;
-    expandAll.textContent = t.expand;
-    collapseAll.textContent = t.collapse;
-    printGuide.textContent = t.print;
     languageSelect.value = currentLang;
   }
 
@@ -1666,14 +1641,6 @@
     refresh({ scroll:false });
     searchInput.focus();
   });
-
-  expandAll.addEventListener("click", () => {
-    content.querySelectorAll("details").forEach((item) => item.open = true);
-  });
-  collapseAll.addEventListener("click", () => {
-    content.querySelectorAll("details").forEach((item) => item.open = false);
-  });
-  printGuide.addEventListener("click", () => window.print());
 
   refresh({ scroll:false });
 })();
