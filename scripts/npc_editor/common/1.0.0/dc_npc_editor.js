@@ -454,6 +454,10 @@ return CFG.PREVIEW_DEFAULT===true;
 function setStoredPreviewEnabled(player,enabled){
 player.getStoreddata().put(CFG.PREVIEW_PREF_KEY,enabled?"1":"0");
 }
+function npcEditorInt(value,fallback){
+var n=parseInt(String(value),10);
+return isNaN(n)?fallback:n;
+}
 function normalizeNpcEditorAddonSpec(spec){
 spec=spec||{};
 var id=String(spec.id||"").trim();
@@ -470,7 +474,7 @@ customGuiButton:typeof spec.customGuiButton==="function"?spec.customGuiButton:nu
 customGuiSlot:typeof spec.customGuiSlot==="function"?spec.customGuiSlot:null,
 customGuiClosed:typeof spec.customGuiClosed==="function"?spec.customGuiClosed:null,
 htmlGuiEvent:typeof spec.htmlGuiEvent==="function"?spec.htmlGuiEvent:null,
-customGuiId:spec.customGuiId!=null?toInt(spec.customGuiId,-1):(spec.guiId!=null?toInt(spec.guiId,-1):-1)
+customGuiId:spec.customGuiId!=null?npcEditorInt(spec.customGuiId,-1):(spec.guiId!=null?npcEditorInt(spec.guiId,-1):-1)
 };
 }
 function ensureNpcEditorAddonArrays(){
@@ -574,10 +578,10 @@ pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",id:id,error:
 function getCustomGuiEventId(e){
 var gui=e&&e.gui?e.gui:null,v;
 if(!gui)return -1;
-try{if(typeof gui.getID==="function")return toInt(gui.getID(),-1);}catch(err0){}
-try{if(typeof gui.getId==="function")return toInt(gui.getId(),-1);}catch(err1){}
+try{if(typeof gui.getID==="function")return npcEditorInt(gui.getID(),-1);}catch(err0){}
+try{if(typeof gui.getId==="function")return npcEditorInt(gui.getId(),-1);}catch(err1){}
 try{v=gui.id;}catch(err2){v=null;}
-return toInt(v,-1);
+return npcEditorInt(v,-1);
 }
 function dispatchNpcEditorAddonEvent(name,e){
 var i,a,fn,eventGuiId,customGuiEvent;
@@ -586,7 +590,7 @@ customGuiEvent=String(name||"").indexOf("customGui")===0;
 eventGuiId=customGuiEvent?getCustomGuiEventId(e):-1;
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
 a=DC_NPC_EDITOR_ADDONS[i];
-if(customGuiEvent&&a&&a.customGuiId!=null&&toInt(a.customGuiId,-1)>=0&&eventGuiId!==toInt(a.customGuiId,-1))continue;
+if(customGuiEvent&&a&&a.customGuiId!=null&&npcEditorInt(a.customGuiId,-1)>=0&&eventGuiId!==npcEditorInt(a.customGuiId,-1))continue;
 fn=a&&a[name];
 if(typeof fn==="function"){
 try{if(fn(e)===true)return true;}catch(err){try{if(e&&e.player)e.player.message("NPC editor addon error: "+String(err));}catch(ignore){}}
