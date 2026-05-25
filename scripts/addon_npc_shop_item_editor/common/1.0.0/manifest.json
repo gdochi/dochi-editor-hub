@@ -8,13 +8,13 @@
   "entry": "shop_item_editor.js",
   "player_scripts": [
     {
-      "path": "shop_item_editor.js"
+      "path": "addon/shop_item_editor.js"
     }
   ],
   "files": [
     {
       "source": "shop_item_editor.js",
-      "install_as": "shop_item_editor.js",
+      "install_as": "addon/shop_item_editor.js",
       "type": "script",
       "dependencies": [
         {

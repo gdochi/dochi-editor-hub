@@ -5,7 +5,7 @@ var Paths = Java.type("java.nio.file.Paths");
 
 var PokemonBattleIntroModule = (function () {
   var OVERLAY_NAME = "pokemon_battle_intro";
-  var OVERLAY_HTML = "html/addon_battle_intro/battle_intro_view_party.html";
+  var OVERLAY_HTML = "html/addon/battle_intro_view_party.html";
   var DEFAULT_NPC_TEAM = "verdantia_trainers/gryon_city/cimon.json";
   var PLAYER_ENTITY_SLOT = 99;
   var NPC_ENTITY_SLOT = 100;

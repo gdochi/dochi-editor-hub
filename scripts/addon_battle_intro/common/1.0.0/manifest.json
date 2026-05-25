@@ -9,7 +9,7 @@
   "files": [
     {
       "source": "battle_intro_view_party.js",
-      "install_as": "battle_intro_view_party.js",
+      "install_as": "addon/battle_intro_view_party.js",
       "type": "script",
       "dependencies": [
         {
@@ -34,7 +34,7 @@
     },
     {
       "source": "html/battle_intro_view_party.html",
-      "install_as": "addon_battle_intro/battle_intro_view_party.html",
+      "install_as": "addon/battle_intro_view_party.html",
       "type": "html",
       "dependencies": []
     }

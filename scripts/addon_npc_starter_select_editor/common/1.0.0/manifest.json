@@ -39,7 +39,7 @@
     },
     {
       "source": "html/starter_select_editor.html",
-      "install_as": "dc_util/starter_select_editor.html",
+      "install_as": "addon/starter_select_editor.html",
       "type": "html",
       "dependencies": [
         {

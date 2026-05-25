@@ -538,8 +538,15 @@ var DochiScriptLibraryIngameManager = (function(){
     var source = lower(file && file.source)
     if(t === "html" || t === "htm") return "html"
     if(t === "json" || t === "json_dir") return t
+    if(t === "data") return "data"
     if(installAs.indexOf(".html") >= 0 || source.indexOf(".html") >= 0) return "html"
     return "script"
+  }
+
+  function isAddonEntry(entry){
+    var pkg = lower(entry && entry.package)
+    var editor = lower(entry && entry.editor)
+    return startsWith(pkg, "addon_") || editor.indexOf("addon") >= 0
   }
 
   function resolveManifestTarget(path, type){
@@ -554,12 +561,13 @@ var DochiScriptLibraryIngameManager = (function(){
       if(startsWith(p, "scripts/ecmascript/")) return normalizeTargetRel(p)
       return normalizeTargetRel("scripts/ecmascript/" + p)
     }
+    if(t === "data") return normalizeTargetRel(p)
     return normalizeTargetRel(p)
   }
 
   function installBase(entry){
     var base = entry.installDir || sharedBasePath()
-    if(!entry.installDir && entry.subPath) base = joinRel(base, entry.subPath)
+    if(!entry.installDir && entry.subPath && !isAddonEntry(entry)) base = joinRel(base, entry.subPath)
     return base || DEFAULT_BASE_PATH
   }
 

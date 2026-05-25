@@ -10,6 +10,6 @@
     "dc_npc_util/dc_cfg_checker.js"
   ],
   "html_deps": [
-    "dc_util/select_starting.html"
+    "addon/select_starting.html"
   ]
 }

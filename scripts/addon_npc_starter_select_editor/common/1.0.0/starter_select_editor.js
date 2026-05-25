@@ -2,7 +2,7 @@ var StarterSelectEditorAPI = Java.type("noppes.npcs.api.NpcAPI").Instance()
 
 var StarterSelectEditorModule = (function(){
   var ADDON_ID = "dc_starter_select_editor"
-  var HTML_PATH = "html/dc_util/starter_select_editor.html"
+  var HTML_PATH = "html/addon/starter_select_editor.html"
   var sessions = {}
 
   function key(player){
@@ -429,3 +429,11 @@ var StarterSelectEditorModule = (function(){
     htmlGuiEvent:handleHtmlEvent
   }
 })()
+
+var __starterSelectEditorPreviousHtmlGuiEvent = (typeof htmlGuiEvent === "function" && !htmlGuiEvent.__starterSelectEditorBridge) ? htmlGuiEvent : null
+htmlGuiEvent = function(e){
+  var name = String(e && e.eventName || "")
+  if(name.indexOf("starterEditor") === 0) return StarterSelectEditorModule.htmlGuiEvent(e)
+  if(typeof __starterSelectEditorPreviousHtmlGuiEvent === "function") return __starterSelectEditorPreviousHtmlGuiEvent(e)
+}
+htmlGuiEvent.__starterSelectEditorBridge = true
