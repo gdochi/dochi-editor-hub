@@ -49,6 +49,16 @@
           "note": "Required for the HTML starter list editor."
         }
       ]
+    },
+    {
+      "source": "dc_lang/addon_npc_starter_select_editor/en_us.json",
+      "install_as": "dc_data/dc_lang/addon_npc_starter_select_editor/en_us.json",
+      "type": "data"
+    },
+    {
+      "source": "dc_lang/addon_npc_starter_select_editor/ko_kr.json",
+      "install_as": "dc_data/dc_lang/addon_npc_starter_select_editor/ko_kr.json",
+      "type": "data"
     }
   ]
 }

@@ -176,27 +176,135 @@ var StarterSelectEditorModule = (function(){
 
   function pushBrowser(player, eventName, obj){
     try{
-      cnpcext.getClientBridge(player.getMCEntity()).sendToBrowser(String(eventName), stringifyBrowserPayload(obj))
+      var br = cnpcext.getClientBridge(player.getMCEntity())
+      var payload = stringifyBrowserPayload(obj)
+      if(!br || typeof br.sendToBrowser !== "function") return false
+      try{
+        br.sendToBrowser(player.getMCEntity(), String(eventName), payload)
+        return true
+      }catch(errEntity){}
+      br.sendToBrowser(String(eventName), payload)
+      return true
     }catch(err){
       try{ player.message("Starter editor browser send failed: " + String(err)) }catch(ignore){}
     }
+    return false
   }
 
   function closeHtml(player){
     var br
     try{
       br = cnpcext.getClientBridge(player.getMCEntity())
-      if(br && typeof br.closeHtmlGui === "function") br.closeHtmlGui()
+      if(br && typeof br.closeHtmlGui === "function"){
+        try{
+          br.closeHtmlGui(player.getMCEntity())
+          return true
+        }catch(errEntity){}
+        br.closeHtmlGui()
+        return true
+      }
     }catch(err){}
+    try{
+      if(player && typeof player.closeGui === "function"){
+        player.closeGui()
+        return true
+      }
+    }catch(errClose){}
+    return false
   }
 
-  function buildInitData(session){
+  function normalizeLocaleValue(value){
+    var locale = String(value || "en_us").toLowerCase().replace("-", "_")
+    if(!/^[a-z]{2,3}_[a-z0-9_]+$/.test(locale)) return "en_us"
+    return locale
+  }
+
+  function cleanLocaleValue(value){
+    var locale = String(value || "").toLowerCase().replace("-", "_")
+    if(!/^[a-z]{2,3}_[a-z0-9_]+$/.test(locale)) return ""
+    return locale
+  }
+
+  function getEditorLocale(player){
+    try{
+      if(typeof getStoredLocalePreference === "function"){
+        var pref = cleanLocaleValue(getStoredLocalePreference(player))
+        if(pref) return pref
+      }
+    }catch(errPref){}
+    try{
+      if(typeof getPlayerLocale === "function") return normalizeLocaleValue(getPlayerLocale(player))
+    }catch(errLocale){}
+    return "en_us"
+  }
+
+  function findStarterLangRoots(){
+    var File = Java.type("java.io.File")
+    return [
+      new File("customnpcs/dc_data/dc_lang/addon_npc_starter_select_editor"),
+      new File("minecraft/customnpcs/dc_data/dc_lang/addon_npc_starter_select_editor"),
+      new File("./customnpcs/dc_data/dc_lang/addon_npc_starter_select_editor"),
+      new File("./minecraft/customnpcs/dc_data/dc_lang/addon_npc_starter_select_editor")
+    ]
+  }
+
+  function mergeMessages(target, source){
+    var k
+    if(!source) return
+    for(k in source) if(source.hasOwnProperty(k)) target[k] = source[k]
+  }
+
+  function loadJsonFileIfExists(file){
+    if(!file || !file.isFile()) return null
+    return JSON.parse(readTextFile(file))
+  }
+
+  function loadStarterEditorI18n(locale){
+    var roots = findStarterLangRoots()
+    var messages = {}
+    var normalized = normalizeLocaleValue(locale)
+    var queue = ["en_us"]
+    var File = Java.type("java.io.File")
+    var i, j, file, loaded
+    if(normalized !== "en_us") queue.push(normalized)
+    for(i = 0; i < queue.length; i++){
+      for(j = 0; j < roots.length; j++){
+        file = new File(roots[j], queue[i] + ".json")
+        try{
+          loaded = loadJsonFileIfExists(file)
+          if(loaded) mergeMessages(messages, loaded)
+        }catch(err){}
+      }
+    }
+    return { locale:normalized, messages:messages }
+  }
+
+  function buildEditorI18n(player){
+    var locale = getEditorLocale(player)
+    var base = { locale:locale, messages:{} }
+    var addon = loadStarterEditorI18n(locale)
+    try{
+      if(typeof loadNpcEditorI18n === "function"){
+        base = loadNpcEditorI18n(locale)
+        if(!base || typeof base !== "object") base = { locale:locale, messages:{} }
+      }
+    }catch(errBase){}
+    base.locale = normalizeLocaleValue(base.locale || locale)
+    base.messages = base.messages || {}
+    mergeMessages(base.messages, addon.messages)
+    return base
+  }
+
+  function buildInitData(session, player){
+    var i18n = buildEditorI18n(player)
     return {
       ok:true,
       addonId:ADDON_ID,
       jsonPath:session.jsonPath,
       fileName:String(session.file && session.file.getName ? session.file.getName() : session.jsonPath),
-      json:session.json
+      json:session.json,
+      locale:i18n.locale,
+      i18n:{ locale:i18n.locale, messages:i18n.messages || {}, error:i18n.error || "" }
     }
   }
 
@@ -221,7 +329,7 @@ var StarterSelectEditorModule = (function(){
       player.message("CNPCExtended HTML GUI is required.")
       return false
     }
-    payload = stringifyBrowserPayload(buildInitData(session))
+    payload = stringifyBrowserPayload(buildInitData(session, player))
     cnpcext.openHtmlGui(player, HTML_PATH, 0, 0, payload)
     return true
   }
@@ -235,19 +343,28 @@ var StarterSelectEditorModule = (function(){
     session = sessions[key(player)]
     data = parsePayload(e.data)
     if(!session){
-      if(name !== "starterEditorClose") pushBrowser(player, "starterEditorResult", { ok:false, error:"Starter editor session expired." })
+      if(name === "starterEditorClose"){
+        closeHtml(player)
+        return
+      }
+      if(name === "starterEditorBack"){
+        closeHtml(player)
+        if(typeof tryOpenEditor === "function") tryOpenEditor(player)
+        return
+      }
+      pushBrowser(player, "starterEditorResult", { ok:false, action:name, error:"Starter editor session expired." })
       return
     }
     if(name === "starterEditorReady"){
-      pushBrowser(player, "starterEditorState", buildInitData(session))
+      pushBrowser(player, "starterEditorState", buildInitData(session, player))
       return
     }
     if(name === "starterEditorSave"){
       try{
         session.json = normalizeStarterJson(data.json)
         saveStarter(session)
-        pushBrowser(player, "starterEditorResult", { ok:true, action:"save", message:"Saved " + session.jsonPath })
-        pushBrowser(player, "starterEditorState", buildInitData(session))
+        pushBrowser(player, "starterEditorResult", { ok:true, action:"save", path:session.jsonPath })
+        pushBrowser(player, "starterEditorState", buildInitData(session, player))
       }catch(errSave){
         pushBrowser(player, "starterEditorResult", { ok:false, action:"save", error:String(errSave) })
       }

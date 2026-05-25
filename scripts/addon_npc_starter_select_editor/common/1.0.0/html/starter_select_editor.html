@@ -283,7 +283,7 @@ input:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,255,.18)}
 }
 </style>
 <script>
-var STATE={jsonPath:"",fileName:"",json:null,index:0}
+var STATE={jsonPath:"",fileName:"",json:null,index:0,locale:"en_us",i18n:{},saveTimer:null}
 var NATURES=["","hardy","lonely","brave","adamant","naughty","bold","docile","relaxed","impish","lax","timid","hasty","serious","jolly","naive","modest","mild","quiet","bashful","rash","calm","gentle","sassy","careful","quirky"]
 var FALLBACK_POKEMON=["bulbasaur","ivysaur","venusaur","charmander","charmeleon","charizard","squirtle","wartortle","blastoise","pikachu","eevee","chikorita","cyndaquil","totodile","treecko","torchic","mudkip","turtwig","chimchar","piplup","snivy","tepig","oshawott","chespin","fennekin","froakie","rowlet","litten","popplio","grookey","scorbunny","sobble","sprigatito","fuecoco","quaxly","riolu","ralts","gible","bagon","dratini","sylveon"]
 var FALLBACK_ABILITIES=["","overgrow","blaze","torrent","shield-dust","shed-skin","compound-eyes","swarm","keen-eye","tangled-feet","static","lightning-rod","run-away","adaptability","anticipation","inner-focus","synchronize","trace","intimidate","levitate","pressure","chlorophyll","solar-power","swift-swim","rain-dish","protean","battle-bond","long-reach","liquid-voice","grassy-surge","libero","sniper","unaware"]
@@ -292,10 +292,41 @@ var POKEMON_OPTIONS=FALLBACK_POKEMON.slice()
 var ABILITY_OPTIONS=FALLBACK_ABILITIES.slice()
 var MOVE_OPTIONS=["","tackle","growl","scratch","tail-whip","vine-whip","ember","water-gun","razor-leaf","quick-attack","thunder-shock","bubble","pound"]
 var GENDER_OPTIONS=["","random","male","female","genderless"]
-var PICKER={open:false,kind:"",targetId:"",title:"",items:[]}
+var PICKER={open:false,kind:"",targetId:"",title:"",titleKey:"",items:[]}
 
 function byId(id){return document.getElementById(id)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]})}
+function parsePayload(data){
+  if(data&&data.charAt){
+    try{return JSON.parse(data)}catch(err){return null}
+  }
+  return data||null
+}
+function normalizeLocale(locale){locale=String(locale||"en_us").toLowerCase().replace("-","_");return locale||"en_us"}
+function tr(key,fallback,vars){
+  var text=STATE.i18n&&STATE.i18n[key]!=null?String(STATE.i18n[key]):String(fallback==null?key:fallback)
+  vars=vars||{}
+  return text.replace(/\{([A-Za-z0-9_]+)\}/g,function(all,name){return vars[name]!=null?String(vars[name]):all})
+}
+function setText(id,key,fallback,vars){
+  var el=byId(id)
+  if(el)el.textContent=tr(key,fallback,vars)
+}
+function applyI18n(root){
+  var nodes,i,el,key,placeholder,title
+  root=root||document
+  nodes=root.querySelectorAll("[data-i18n],[data-i18n-placeholder],[data-i18n-title]")
+  for(i=0;i<nodes.length;i++){
+    el=nodes[i]
+    key=el.getAttribute("data-i18n")
+    if(key)el.textContent=tr(key,el.getAttribute("data-i18n-fallback")||el.textContent)
+    placeholder=el.getAttribute("data-i18n-placeholder")
+    if(placeholder)el.setAttribute("placeholder",tr(placeholder,el.getAttribute("placeholder")||""))
+    title=el.getAttribute("data-i18n-title")
+    if(title)el.setAttribute("title",tr(title,el.getAttribute("title")||""))
+  }
+  if(byId("status")&&!byId("status").textContent) setStatus(tr("starter_editor.ready","Ready"),"")
+}
 function toInt(v,f){var n=parseInt(String(v),10);return isNaN(n)?f:n}
 function cleanToken(v){return String(v||"").replace(/[^A-Za-z0-9_:-]/g,"").toLowerCase()}
 function optionalToken(v){var t=cleanToken(v);return t==="default"||t==="none"||t==="-"?"":t}
@@ -322,7 +353,7 @@ function normalizeChoice(raw){
 function normalizeJson(raw){
   var src=raw&&typeof raw==="object"?raw:{},list=Array.isArray(src.choices)?src.choices:(Array.isArray(src.starters)?src.starters:(Array.isArray(src.pokemon)?src.pokemon:[])),out={choices:[]},i
   out.id=String(src.id||"starter_list")
-  out.title=String(src.title||"Starter Pokemon Selection")
+  out.title=String(src.title||tr("starter_editor.default_title","Choose Your Starter"))
   out.subtitle=String(src.subtitle||"")
   out.once=src.once===true
   out.claimKey=String(src.claimKey||src.id||"starter_list")
@@ -335,12 +366,26 @@ function normalizeJson(raw){
 function readInit(){
   var raw=window.cnpc&&window.cnpc.initData?window.cnpc.initData:{}
   try{if(raw&&raw.charAt)raw=JSON.parse(raw)}catch(e){raw={ok:false,error:String(e)}}
+  STATE.locale=normalizeLocale(raw.locale||(raw.i18n&&raw.i18n.locale)||"en_us")
+  STATE.i18n=(raw.i18n&&raw.i18n.messages)||{}
   STATE.jsonPath=String(raw.jsonPath||"")
   STATE.fileName=String(raw.fileName||STATE.jsonPath||"starter.json")
   STATE.json=normalizeJson(raw.json||{})
 }
 function sendEvt(name,data){
-  if(window.cnpc&&typeof window.cnpc.sendEvent==="function")window.cnpc.sendEvent(name,data||{})
+  try{
+    if(window.cnpc&&typeof window.cnpc.sendEvent==="function"){
+      window.cnpc.sendEvent(name,data||{})
+      return true
+    }
+  }catch(err){}
+  return false
+}
+function tryClientClose(){
+  try{if(window.cnpc&&typeof window.cnpc.closeHtmlGui==="function"){window.cnpc.closeHtmlGui();return true}}catch(err0){}
+  try{if(window.cnpc&&typeof window.cnpc.closeGui==="function"){window.cnpc.closeGui();return true}}catch(err1){}
+  try{if(window.close){window.close();return true}}catch(err2){}
+  return false
 }
 function setStatus(text,kind){
   var el=byId("status")
@@ -425,8 +470,8 @@ function renderChoice(){
 function renderList(){
   var box=byId("list"),list=choices(),i,c,row
   box.innerHTML=""
-  byId("count").textContent=list.length+" choices"
-  if(!list.length){box.innerHTML='<div class="empty">No Pokemon configured.</div>';return}
+  byId("count").textContent=tr("starter_editor.choices_count","{count} choices",{count:list.length})
+  if(!list.length){box.innerHTML='<div class="empty">'+esc(tr("starter_editor.no_pokemon","No Pokemon configured."))+'</div>';return}
   for(i=0;i<list.length;i++){
     c=list[i]
     row=document.createElement("div")
@@ -475,7 +520,7 @@ function allMoveValues(){
   return out
 }
 function optionLabel(v){
-  return String(v||"Default")
+  return String(v||tr("starter_editor.default","Default"))
 }
 function optionsForKind(kind,targetId){
   var list=[],current=currentValue(targetId),i
@@ -512,8 +557,8 @@ function assignPickerChoice(btn,value){
 function renderPicker(){
   var fly=byId("pickerFlyout"),listEl=byId("pickerList"),search=byId("pickerSearch"),q,i,v,btn,count,shown,max
   if(!fly||!listEl)return
-  byId("pickerTitle").textContent=PICKER.title||"Select"
-  byId("pickerMeta").textContent=currentValue(PICKER.targetId)?"Current: "+currentValue(PICKER.targetId):"Direct input is also available."
+  byId("pickerTitle").textContent=tr(PICKER.titleKey,PICKER.title||"Select")
+  byId("pickerMeta").textContent=currentValue(PICKER.targetId)?tr("starter_editor.picker_current","Current: {value}",{value:currentValue(PICKER.targetId)}):tr("starter_editor.picker_direct","Direct input is also available.")
   q=search?search.value:""
   listEl.innerHTML=""
   count=0
@@ -533,20 +578,21 @@ function renderPicker(){
     shown++
   }
   if(!count){
-    listEl.innerHTML='<div class="pick-empty">No matching option.</div>'
+    listEl.innerHTML='<div class="pick-empty">'+esc(tr("starter_editor.picker_no_match","No matching option."))+'</div>'
   }else if(count>max){
     btn=document.createElement("div")
     btn.className="pick-empty"
-    btn.textContent=String(count-max)+" more results. Type to narrow the list."
+    btn.textContent=tr("starter_editor.picker_more","{count} more results. Type to narrow the list.",{count:count-max})
     listEl.appendChild(btn)
   }
 }
-function openPicker(kind,targetId,title){
+function openPicker(kind,targetId,title,titleKey){
   var fly=byId("pickerFlyout"),search=byId("pickerSearch")
   PICKER.open=true
   PICKER.kind=kind
   PICKER.targetId=targetId
   PICKER.title=title
+  PICKER.titleKey=titleKey||""
   PICKER.items=optionsForKind(kind,targetId)
   if(search)search.value=""
   fly.className="picker-pop open"
@@ -559,6 +605,7 @@ function closePicker(){
   PICKER.kind=""
   PICKER.targetId=""
   PICKER.title=""
+  PICKER.titleKey=""
   PICKER.items=[]
   if(fly)fly.className="picker-pop"
 }
@@ -584,7 +631,7 @@ function bindPickers(){
     if(b.getAttribute("data-picker-button")!=="1")continue
     b.onclick=function(e){
       if(e&&e.stopPropagation)e.stopPropagation()
-      openPicker(this.getAttribute("data-kind"),this.getAttribute("data-target"),this.getAttribute("data-title"))
+      openPicker(this.getAttribute("data-kind"),this.getAttribute("data-target"),this.getAttribute("data-title"),this.getAttribute("data-title-key"))
     }
   }
   byId("pickerCloseBtn").onclick=function(e){
@@ -623,7 +670,7 @@ function addChoice(){
   choices().push(defaultChoice())
   STATE.index=choices().length-1
   renderAll()
-  setStatus("Added Pokemon.","ok")
+  setStatus(tr("starter_editor.added","Added Pokemon."),"ok")
 }
 function duplicateChoice(){
   gatherMeta();gatherChoice()
@@ -632,40 +679,63 @@ function duplicateChoice(){
   choices().splice(STATE.index+1,0,copy)
   STATE.index=STATE.index+1
   renderAll()
-  setStatus("Duplicated Pokemon.","ok")
+  setStatus(tr("starter_editor.duplicated","Duplicated Pokemon."),"ok")
 }
 function removeChoice(){
   var list=choices()
-  if(list.length<=1){setStatus("At least one Pokemon is required.","err");return}
+  if(list.length<=1){setStatus(tr("starter_editor.one_required","At least one Pokemon is required."),"err");return}
   list.splice(STATE.index,1)
   STATE.index=Math.max(0,Math.min(STATE.index,list.length-1))
   renderAll()
-  setStatus("Removed Pokemon.","ok")
+  setStatus(tr("starter_editor.removed","Removed Pokemon."),"ok")
 }
 function save(){
   gatherMeta();gatherChoice()
   STATE.json=normalizeJson(STATE.json)
-  sendEvt("starterEditorSave",{json:STATE.json})
-  setStatus("Saving...","")
+  if(STATE.saveTimer)window.clearTimeout(STATE.saveTimer)
+  if(!sendEvt("starterEditorSave",{json:STATE.json})){
+    setStatus(tr("starter_editor.save_failed","Save failed."),"err")
+    return
+  }
+  setStatus(tr("starter_editor.saving","Saving..."),"")
+  STATE.saveTimer=window.setTimeout(function(){
+    setStatus(tr("starter_editor.save_timeout","Save response timed out. Check player chat or script log."),"err")
+  },5000)
 }
-function back(){sendEvt("starterEditorBack",{})}
-function closeEditor(){sendEvt("starterEditorClose",{})}
+function back(){
+  setStatus(tr("starter_editor.closing","Closing..."),"")
+  sendEvt("starterEditorBack",{})
+}
+function closeEditor(){
+  setStatus(tr("starter_editor.closing","Closing..."),"")
+  sendEvt("starterEditorClose",{})
+  window.setTimeout(tryClientClose,250)
+}
 function receiveState(data){
+  data=parsePayload(data)
   if(data&&data.json){
+    STATE.locale=normalizeLocale(data.locale||(data.i18n&&data.i18n.locale)||STATE.locale)
+    STATE.i18n=(data.i18n&&data.i18n.messages)||STATE.i18n||{}
     STATE.jsonPath=String(data.jsonPath||STATE.jsonPath)
     STATE.fileName=String(data.fileName||STATE.fileName)
     STATE.json=normalizeJson(data.json)
     STATE.index=Math.min(STATE.index,choices().length-1)
+    applyI18n(document)
     renderAll()
   }
 }
 function receiveResult(data){
+  data=parsePayload(data)
   data=data||{}
-  if(data.ok)setStatus(data.message||"Saved.","ok")
-  else setStatus(data.error||"Save failed.","err")
+  if(STATE.saveTimer){window.clearTimeout(STATE.saveTimer);STATE.saveTimer=null}
+  if(data.ok){
+    if(data.action==="save"&&data.path)setStatus(tr("starter_editor.saved_path","Saved {path}",{path:data.path}),"ok")
+    else setStatus(data.message||tr("starter_editor.saved","Saved."),"ok")
+  }else setStatus(data.error||tr("starter_editor.save_failed","Save failed."),"err")
 }
 window.onload=function(){
   readInit()
+  applyI18n(document)
   renderAll()
   byId("addBtn").onclick=addChoice
   byId("dupBtn").onclick=duplicateChoice
@@ -687,96 +757,96 @@ window.onload=function(){
 <div class="shell">
   <div class="top">
     <div>
-      <div class="title">Starter Pokemon Editor</div>
+      <div class="title" data-i18n="starter_editor.title">Starter Pokemon Editor</div>
       <div class="sub" id="path"></div>
     </div>
-    <div class="status" id="status">Ready</div>
+    <div class="status" id="status" data-i18n="starter_editor.ready">Ready</div>
   </div>
   <div class="content">
     <aside class="side">
       <div class="side-head">
-        <div class="title" style="font-size:15px">Pokemon</div>
-        <div class="count" id="count">0 choices</div>
+        <div class="title" style="font-size:15px" data-i18n="starter_editor.pokemon">Pokemon</div>
+        <div class="count" id="count"></div>
       </div>
       <div class="list" id="list"></div>
       <div class="side-actions">
-        <button id="addBtn" class="good">Add</button>
-        <button id="dupBtn">Duplicate</button>
-        <button id="removeBtn" class="danger">Remove</button>
+        <button id="addBtn" class="good" data-i18n="starter_editor.add">Add</button>
+        <button id="dupBtn" data-i18n="starter_editor.duplicate">Duplicate</button>
+        <button id="removeBtn" class="danger" data-i18n="starter_editor.remove">Remove</button>
       </div>
     </aside>
     <main class="editor">
       <section class="section">
-        <div class="section-title">List Settings</div>
+        <div class="section-title" data-i18n="starter_editor.list_settings">List Settings</div>
         <div class="grid">
-          <div class="field w-title"><label>Title</label><input id="cfgTitle"></div>
-          <div class="field w-subtitle"><label>Subtitle</label><input id="cfgSubtitle"></div>
-          <div class="field w-small"><label>Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span>Enable one-time claim</span></div></div>
-          <div class="field w-claimed" style="grid-column:1/-1"><label>Already Claimed Message</label><input id="cfgClaimed"></div>
+          <div class="field w-title"><label data-i18n="starter_editor.title_field">Title</label><input id="cfgTitle"></div>
+          <div class="field w-subtitle"><label data-i18n="starter_editor.subtitle">Subtitle</label><input id="cfgSubtitle"></div>
+          <div class="field w-small"><label data-i18n="starter_editor.once_per_player">Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span data-i18n="starter_editor.enable_once">Enable one-time claim</span></div></div>
+          <div class="field w-claimed" style="grid-column:1/-1"><label data-i18n="starter_editor.already_claimed">Already Claimed Message</label><input id="cfgClaimed"></div>
         </div>
       </section>
       <section class="section">
-        <div class="section-title">Selected Pokemon</div>
+        <div class="section-title" data-i18n="starter_editor.selected_pokemon">Selected Pokemon</div>
         <div class="grid three">
-          <div class="field w-species"><label>Species</label><div class="input-pick"><input id="species" placeholder="bulbasaur"><button type="button" class="pick-btn" data-picker-button="1" data-kind="species" data-target="species" data-title="Species" title="Search species"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-level"><label>Level</label><input id="level" type="number" min="1" max="100"></div>
-          <div class="field w-small"><label>Gender</label><div class="input-pick"><input id="gender" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="gender" data-target="gender" data-title="Gender" title="Search gender"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-small"><label>Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span>Shiny Pokemon</span></div></div>
-          <div class="field w-small"><label>Nature</label><div class="input-pick"><input id="nature" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="nature" data-target="nature" data-title="Nature" title="Search nature"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-mid"><label>Ability</label><div class="input-pick"><input id="ability" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="ability" data-target="ability" data-title="Ability" title="Search ability"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-small"><label>Form</label><div class="input-pick"><input id="form" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="form" data-target="form" data-title="Form" title="Search form"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-species"><label data-i18n="starter_editor.species">Species</label><div class="input-pick"><input id="species" placeholder="bulbasaur"><button type="button" class="pick-btn" data-picker-button="1" data-kind="species" data-target="species" data-title="Species" data-title-key="starter_editor.species" title="Search species" data-i18n-title="starter_editor.search_species"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-level"><label data-i18n="starter_editor.level">Level</label><input id="level" type="number" min="1" max="100"></div>
+          <div class="field w-small"><label data-i18n="starter_editor.gender">Gender</label><div class="input-pick"><input id="gender" placeholder="Default" data-i18n-placeholder="starter_editor.default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="gender" data-target="gender" data-title="Gender" data-title-key="starter_editor.gender" title="Search gender" data-i18n-title="starter_editor.search_gender"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-small"><label data-i18n="starter_editor.shiny">Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span data-i18n="starter_editor.shiny_pokemon">Shiny Pokemon</span></div></div>
+          <div class="field w-small"><label data-i18n="starter_editor.nature">Nature</label><div class="input-pick"><input id="nature" placeholder="Default" data-i18n-placeholder="starter_editor.default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="nature" data-target="nature" data-title="Nature" data-title-key="starter_editor.nature" title="Search nature" data-i18n-title="starter_editor.search_nature"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-mid"><label data-i18n="starter_editor.ability">Ability</label><div class="input-pick"><input id="ability" placeholder="Default" data-i18n-placeholder="starter_editor.default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="ability" data-target="ability" data-title="Ability" data-title-key="starter_editor.ability" title="Search ability" data-i18n-title="starter_editor.search_ability"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-small"><label data-i18n="starter_editor.form">Form</label><div class="input-pick"><input id="form" placeholder="Default" data-i18n-placeholder="starter_editor.default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="form" data-target="form" data-title="Form" data-title-key="starter_editor.form" title="Search form" data-i18n-title="starter_editor.search_form"><span class="mag-icon"></span></button></div></div>
         </div>
       </section>
       <section class="section">
-        <div class="section-title">Moves</div>
+        <div class="section-title" data-i18n="starter_editor.moves">Moves</div>
         <div class="grid">
-          <div class="field w-wide"><label>Move 1</label><div class="input-pick"><input id="move1"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move1" data-title="Move 1" title="Search move"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-wide"><label>Move 2</label><div class="input-pick"><input id="move2"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move2" data-title="Move 2" title="Search move"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-wide"><label>Move 3</label><div class="input-pick"><input id="move3"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move3" data-title="Move 3" title="Search move"><span class="mag-icon"></span></button></div></div>
-          <div class="field w-wide"><label>Move 4</label><div class="input-pick"><input id="move4"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move4" data-title="Move 4" title="Search move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label data-i18n="starter_editor.move_1">Move 1</label><div class="input-pick"><input id="move1"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move1" data-title="Move 1" data-title-key="starter_editor.move_1" title="Search move" data-i18n-title="starter_editor.search_move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label data-i18n="starter_editor.move_2">Move 2</label><div class="input-pick"><input id="move2"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move2" data-title="Move 2" data-title-key="starter_editor.move_2" title="Search move" data-i18n-title="starter_editor.search_move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label data-i18n="starter_editor.move_3">Move 3</label><div class="input-pick"><input id="move3"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move3" data-title="Move 3" data-title-key="starter_editor.move_3" title="Search move" data-i18n-title="starter_editor.search_move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label data-i18n="starter_editor.move_4">Move 4</label><div class="input-pick"><input id="move4"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move4" data-title="Move 4" data-title-key="starter_editor.move_4" title="Search move" data-i18n-title="starter_editor.search_move"><span class="mag-icon"></span></button></div></div>
         </div>
       </section>
       <section class="section">
-        <div class="section-title">IVs</div>
+        <div class="section-title" data-i18n="starter_editor.ivs">IVs</div>
         <div class="grid six">
-          <div class="field"><label>HP</label><input id="ivHp" type="number" min="0" max="31"></div>
-          <div class="field"><label>Atk</label><input id="ivAtk" type="number" min="0" max="31"></div>
-          <div class="field"><label>Def</label><input id="ivDef" type="number" min="0" max="31"></div>
-          <div class="field"><label>Sp.Atk</label><input id="ivSpatk" type="number" min="0" max="31"></div>
-          <div class="field"><label>Sp.Def</label><input id="ivSpdef" type="number" min="0" max="31"></div>
-          <div class="field"><label>Speed</label><input id="ivSpeed" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.hp">HP</label><input id="ivHp" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.atk">Atk</label><input id="ivAtk" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.def">Def</label><input id="ivDef" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.spatk">Sp.Atk</label><input id="ivSpatk" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.spdef">Sp.Def</label><input id="ivSpdef" type="number" min="0" max="31"></div>
+          <div class="field"><label data-i18n="starter_editor.speed">Speed</label><input id="ivSpeed" type="number" min="0" max="31"></div>
         </div>
       </section>
       <section class="section">
-        <div class="section-title">EVs</div>
+        <div class="section-title" data-i18n="starter_editor.evs">EVs</div>
         <div class="grid six">
-          <div class="field"><label>HP</label><input id="evHp" type="number" min="0" max="252"></div>
-          <div class="field"><label>Atk</label><input id="evAtk" type="number" min="0" max="252"></div>
-          <div class="field"><label>Def</label><input id="evDef" type="number" min="0" max="252"></div>
-          <div class="field"><label>Sp.Atk</label><input id="evSpatk" type="number" min="0" max="252"></div>
-          <div class="field"><label>Sp.Def</label><input id="evSpdef" type="number" min="0" max="252"></div>
-          <div class="field"><label>Speed</label><input id="evSpeed" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.hp">HP</label><input id="evHp" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.atk">Atk</label><input id="evAtk" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.def">Def</label><input id="evDef" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.spatk">Sp.Atk</label><input id="evSpatk" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.spdef">Sp.Def</label><input id="evSpdef" type="number" min="0" max="252"></div>
+          <div class="field"><label data-i18n="starter_editor.speed">Speed</label><input id="evSpeed" type="number" min="0" max="252"></div>
         </div>
       </section>
     </main>
   </div>
   <div class="bottom">
-    <button id="closeBtn" class="ghost">Close</button>
+    <button id="closeBtn" class="ghost" data-i18n="starter_editor.close">Close</button>
     <div>
-      <button id="backBtn">NPC Editor</button>
-      <button id="saveBtn" class="primary">Save</button>
+      <button id="backBtn" data-i18n="starter_editor.npc_editor">NPC Editor</button>
+      <button id="saveBtn" class="primary" data-i18n="starter_editor.save">Save</button>
     </div>
   </div>
 </div>
 <div class="picker-pop" id="pickerFlyout">
   <div class="picker-head">
     <div>
-      <div class="picker-title" id="pickerTitle">Select</div>
+      <div class="picker-title" id="pickerTitle" data-i18n="starter_editor.select">Select</div>
       <span class="picker-meta" id="pickerMeta"></span>
     </div>
-    <button type="button" class="ghost" id="pickerCloseBtn">Close</button>
+    <button type="button" class="ghost" id="pickerCloseBtn" data-i18n="starter_editor.close">Close</button>
   </div>
-  <input class="picker-search" id="pickerSearch" placeholder="Search or type directly in the field">
+  <input class="picker-search" id="pickerSearch" placeholder="Search or type directly in the field" data-i18n-placeholder="starter_editor.picker_search_placeholder">
   <div class="picker-list" id="pickerList"></div>
 </div>
 </body>
