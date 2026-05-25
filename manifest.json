@@ -9,7 +9,7 @@
       "package": "addon_battle_intro",
       "editor": "dialogue_addon",
       "mc_version": "common",
-      "sub_path": "addon_battle_intro",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_battle_intro/common/1.0.0/manifest.json"
@@ -19,7 +19,7 @@
       "package": "addon_select_starting",
       "editor": "dialogue_addon",
       "mc_version": "common",
-      "sub_path": "addon_select_starting",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
@@ -109,7 +109,7 @@
       "package": "addon_npc_starter_select_editor",
       "editor": "npc_editor_addon",
       "mc_version": "common",
-      "sub_path": "addon_npc_starter_select_editor",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_npc_starter_select_editor/common/1.0.0/manifest.json"
@@ -121,7 +121,7 @@
       "package": "addon_battle_intro",
       "editor": "dialogue_addon",
       "mc_version": "common",
-      "sub_path": "addon_battle_intro",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_battle_intro/common/1.0.0/manifest.json"
@@ -131,7 +131,7 @@
       "package": "addon_select_starting",
       "editor": "dialogue_addon",
       "mc_version": "common",
-      "sub_path": "addon_select_starting",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
@@ -141,7 +141,7 @@
       "package": "addon_npc_starter_select_editor",
       "editor": "npc_editor_addon",
       "mc_version": "common",
-      "sub_path": "addon_npc_starter_select_editor",
+      "sub_path": "",
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_npc_starter_select_editor/common/1.0.0/manifest.json"

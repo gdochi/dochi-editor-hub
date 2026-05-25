@@ -1,13 +1,13 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-25T03:13:01.932Z",
+  "generated_at": "2026-05-25T06:10:40.485Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
     {
       "id": "addon_battle_intro",
       "package": "addon_battle_intro",
-      "script": "battle_intro_view_party.js",
+      "script": "addon/battle_intro_view_party.js",
       "versions": [
         {
           "mc_version": "common",
@@ -35,7 +35,7 @@
     {
       "id": "addon_npc_shop_item_editor",
       "package": "addon_npc_shop_item_editor",
-      "script": "shop_item_editor.js",
+      "script": "addon/shop_item_editor.js",
       "versions": [
         {
           "mc_version": "common",
@@ -57,7 +57,7 @@
     {
       "id": "addon_npc_starter_select_editor",
       "package": "addon_npc_starter_select_editor",
-      "script": "starter_select_editor.js",
+      "script": "addon/starter_select_editor.js",
       "versions": [
         {
           "mc_version": "common",
@@ -79,7 +79,7 @@
     {
       "id": "addon_select_starting",
       "package": "addon_select_starting",
-      "script": "select_starting.js",
+      "script": "addon/select_starting.js",
       "versions": [
         {
           "mc_version": "common",
