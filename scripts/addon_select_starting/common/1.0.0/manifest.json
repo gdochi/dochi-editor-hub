@@ -6,7 +6,6 @@
   "mc_version": "common",
   "description": "NPC and dialogue starter Pokemon selection add-on",
   "entry": "select_starting.js",
-  "install_dir": "dc_lib/addon_select_starting",
   "files": [
     {
       "source": "select_starting.js",

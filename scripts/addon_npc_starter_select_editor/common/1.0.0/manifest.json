@@ -6,7 +6,6 @@
   "mc_version": "common",
   "description": "NPC Editor add-on for editing Starter Pokemon Selector JSON lists.",
   "entry": "starter_select_editor.js",
-  "install_dir": "dc_lib/addon_npc_starter_select_editor",
   "player_scripts": [
     {
       "path": "starter_select_editor.js"

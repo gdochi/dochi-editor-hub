@@ -6,7 +6,6 @@
   "mc_version": "common",
   "description": "NPC Editor add-on for in-game NPC Shop item, price, currency, stock, and restock data editing.",
   "entry": "shop_item_editor.js",
-  "install_dir": "dc_lib/addon_npc_shop_item_editor",
   "player_scripts": [
     {
       "path": "shop_item_editor.js"

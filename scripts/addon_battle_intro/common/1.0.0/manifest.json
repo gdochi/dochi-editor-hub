@@ -6,7 +6,6 @@
   "mc_version": "common",
   "description": "Dialogue JS action add-on for Cobblemon battle intro party view",
   "entry": "battle_intro_view_party.js",
-  "install_dir": "dc_lib/addon_battle_intro",
   "files": [
     {
       "source": "battle_intro_view_party.js",
