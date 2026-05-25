@@ -104,6 +104,16 @@
       "versions": [
         "scripts/npc_shop/common/1.0.0/manifest.json"
       ]
+    },
+    "addon_npc_starter_select_editor:common": {
+      "package": "addon_npc_starter_select_editor",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "addon_npc_starter_select_editor",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_npc_starter_select_editor/common/1.0.0/manifest.json"
+      ]
     }
   },
   "packages": [
@@ -125,6 +135,16 @@
       "latest": "1.0.0",
       "versions": [
         "scripts/addon_select_starting/common/1.0.0/manifest.json"
+      ]
+    },
+    {
+      "package": "addon_npc_starter_select_editor",
+      "editor": "npc_editor_addon",
+      "mc_version": "common",
+      "sub_path": "addon_npc_starter_select_editor",
+      "latest": "1.0.0",
+      "versions": [
+        "scripts/addon_npc_starter_select_editor/common/1.0.0/manifest.json"
       ]
     },
     {

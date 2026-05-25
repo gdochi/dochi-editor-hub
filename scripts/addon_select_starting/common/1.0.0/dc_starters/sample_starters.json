@@ -1,0 +1,52 @@
+{
+  "id": "sample_starters",
+  "title": "Choose Your Starter",
+  "subtitle": "A first partner for the road ahead.",
+  "once": true,
+  "claimKey": "sample_starters",
+  "commandName": "pokegiveother",
+  "choices": [
+    {
+      "id": "bulbasaur",
+      "label": "Bulbasaur",
+      "species": "bulbasaur",
+      "level": 5,
+      "gender": "random",
+      "nature": "",
+      "ability": "",
+      "form": "",
+      "shiny": false,
+      "moveset": ["", "", "", ""],
+      "ivs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 },
+      "evs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 }
+    },
+    {
+      "id": "charmander",
+      "label": "Charmander",
+      "species": "charmander",
+      "level": 5,
+      "gender": "random",
+      "nature": "",
+      "ability": "",
+      "form": "",
+      "shiny": false,
+      "moveset": ["", "", "", ""],
+      "ivs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 },
+      "evs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 }
+    },
+    {
+      "id": "squirtle",
+      "label": "Squirtle",
+      "species": "squirtle",
+      "level": 5,
+      "gender": "random",
+      "nature": "",
+      "ability": "",
+      "form": "",
+      "shiny": false,
+      "moveset": ["", "", "", ""],
+      "ivs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 },
+      "evs": { "hp": 0, "atk": 0, "def": 0, "spatk": 0, "spdef": 0, "speed": 0 }
+    }
+  ]
+}

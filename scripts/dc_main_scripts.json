@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-20T12:45:42.341Z",
+  "generated_at": "2026-05-25T02:17:32.188Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -55,6 +55,28 @@
       "html_dependencies": []
     },
     {
+      "id": "addon_npc_starter_select_editor",
+      "package": "addon_npc_starter_select_editor",
+      "script": "starter_select_editor.js",
+      "versions": [
+        {
+          "mc_version": "common",
+          "version": "1.0.0",
+          "manifest": "addon_npc_starter_select_editor/common/1.0.0/manifest.json",
+          "source_path": "addon_npc_starter_select_editor/common/1.0.0/starter_select_editor.js"
+        }
+      ],
+      "script_dependencies": [
+        {
+          "script": "dc_cfg_checker.js",
+          "path": "npc_util/common/1.0.0/dc_cfg_checker.js",
+          "required": false,
+          "load_order": 2
+        }
+      ],
+      "html_dependencies": []
+    },
+    {
       "id": "addon_select_starting",
       "package": "addon_select_starting",
       "script": "select_starting.js",
@@ -72,6 +94,12 @@
           "path": "npc_util/common/1.0.0/dc_npc_core_module.js",
           "required": true,
           "load_order": 1
+        },
+        {
+          "script": "dc_cfg_checker.js",
+          "path": "npc_util/common/1.0.0/dc_cfg_checker.js",
+          "required": true,
+          "load_order": 2
         }
       ],
       "html_dependencies": []

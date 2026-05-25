@@ -3,314 +3,240 @@
 <head>
 <meta charset="UTF-8">
 <style>
-body{margin:0;overflow:hidden;font-family:Segoe UI;background:transparent}
-
+*{box-sizing:border-box}
+:root{--mainColor:#ff6a00}
+body{margin:0;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:transparent;color:#fff}
 #frame{
 position:absolute;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
-width:55vw;
-height:70vh;
-border-radius:32px;
-padding:10px;
+width:min(980px,82vw);
+height:min(680px,78vh);
+border-radius:24px;
 overflow:hidden;
-}
-
-/* 🔥 외곽선 전용 레이어 (핵심) */
-#frame .borderGlow{
-position:absolute;
-inset:0;
-border-radius:32px;
-pointer-events:none;
-z-index:50;
-
-/* 🔥 여기 수정 */
-border:4px solid var(--mainColor);
-
-box-shadow:
-0 0 15px var(--mainColor),
-0 0 30px var(--mainColor),
-0 0 60px var(--mainColor);
-
-animation:softFlow 3s ease-in-out infinite;
-}
-
-/* 🔥 살짝 흐르는 느낌 */
-@keyframes softFlow{
-0%,100%{
-box-shadow:
-0 0 8px var(--mainColor),
-0 0 16px var(--mainColor);
-transform:translate(0,0);
-opacity:.9;
-}
-50%{
-box-shadow:
-0 0 20px var(--mainColor),
-0 0 40px var(--mainColor),
-0 0 80px var(--mainColor);
-transform:translate(0.5px,-0.5px);
-opacity:1;
-}
-}
-
-/* 몬스터볼 배경 */
-#frame::before{
-content:"";
-position:absolute;
-inset:0;
 background:
-linear-gradient(to bottom,#e53935 50%,#fff 50%),
-linear-gradient(#222,#222);
-background-size:100% 100%,100% 12px;
-background-position:center,center;
-background-repeat:no-repeat;
-filter:blur(10px) brightness(.7);
-z-index:0;
+linear-gradient(to bottom,rgba(229,57,53,.84) 0 48%,rgba(32,34,38,.92) 48% 52%,rgba(255,255,255,.88) 52% 100%);
+box-shadow:0 20px 80px rgba(0,0,0,.45),0 0 40px var(--mainColor);
 }
-
-/* 중앙 버튼 */
-#frame::after{
+#frame:before{
 content:"";
 position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-width:140px;
-height:140px;
-border-radius:50%;
-background:#fff;
-border:16px solid #222;
-z-index:1;
-box-shadow:0 0 40px rgba(0,0,0,.6);
+inset:0;
+background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.88) 0 58px,#202226 59px 75px,transparent 76px);
+opacity:.88;
+pointer-events:none;
 }
-
 #card{
 position:relative;
-width:100%;
+z-index:2;
 height:100%;
-background:rgba(255,255,255,.08);
-backdrop-filter:blur(12px);
-border-radius:28px;
+padding:26px;
+display:flex;
+flex-direction:column;
+gap:18px;
+background:rgba(10,13,18,.22);
+backdrop-filter:blur(8px);
+}
+#head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+#title{font-size:34px;font-weight:900;letter-spacing:0;text-shadow:0 0 18px var(--mainColor)}
+#subtitle{font-size:14px;color:rgba(255,255,255,.82);margin-top:6px}
+#claimHint{font-size:12px;color:rgba(255,255,255,.72);text-align:right}
+#choices{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+gap:14px;
+overflow:auto;
+padding:4px 4px 10px;
+}
+.choice{
+min-height:258px;
+border:1px solid rgba(255,255,255,.24);
+border-radius:18px;
+background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(16,20,28,.72));
+box-shadow:0 12px 34px rgba(0,0,0,.28);
 display:flex;
 flex-direction:column;
 align-items:center;
-justify-content:center;
-z-index:2;
-}
-
-.icon{
-position:relative;
-width:420px;
-height:420px;
-display:flex;
-justify-content:center;
-align-items:center;
-border-radius:28px;
-background:rgba(241,237,237,.15);
-backdrop-filter:blur(12px);
-border:1px solid rgba(255,255,255,.4);
-box-shadow:
-0 10px 40px rgba(0,0,0,.2),
-inset 0 0 20px rgba(255,255,255,.6),
-0 0 40px var(--mainColor);
-overflow:hidden;
-transform:scale(0);
-}
-
-.icon.spawn{
-animation:pokemonPop .5s cubic-bezier(.2,1.6,.4,1) forwards;
-}
-
-@keyframes pokemonPop{
-0%{transform:scale(0) translateY(60px)}
-60%{transform:scale(1.2) translateY(-20px)}
-100%{transform:scale(1) translateY(0)}
-}
-
-.shine{
-position:absolute;
-top:-50%;
-left:-50%;
-width:200%;
-height:200%;
-background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.6),transparent 70%);
-transform:rotate(25deg);
-animation:shineMove 3s linear infinite;
-}
-
-@keyframes shineMove{
-0%{transform:translateX(-100%) rotate(25deg)}
-100%{transform:translateX(100%) rotate(25deg)}
-}
-
-#name{
-margin-top:24px;
-font-size:42px;
-font-weight:900;
-letter-spacing:5px;
+justify-content:flex-start;
+padding:14px;
 cursor:pointer;
-color:#fff;
-text-shadow:
-0 0 10px var(--mainColor),
-0 0 25px var(--mainColor);
-
-opacity:0;
-transform:translateY(20px);
+transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
 }
-
-#name.show{
-animation:namePop .5s ease forwards;
+.choice:hover,.choice.active{
+transform:translateY(-4px);
+border-color:var(--mainColor);
+box-shadow:0 16px 42px rgba(0,0,0,.36),0 0 26px var(--mainColor);
 }
-
-@keyframes namePop{
-0%{opacity:0;transform:translateY(20px)}
-100%{opacity:1;transform:translateY(0)}
+.model{
+position:relative;
+width:148px;
+height:148px;
+border-radius:22px;
+background:radial-gradient(circle,rgba(255,255,255,.32),rgba(255,255,255,.1) 48%,rgba(0,0,0,.2));
+border:1px solid rgba(255,255,255,.25);
+overflow:hidden;
 }
-
+.model:after{
+content:"";
+position:absolute;
+inset:-60%;
+background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.38),transparent 65%);
+animation:shine 3.2s linear infinite;
+}
+@keyframes shine{0%{transform:translateX(-60%) rotate(20deg)}100%{transform:translateX(60%) rotate(20deg)}}
+.name{margin-top:12px;font-size:20px;font-weight:900;text-align:center;text-transform:uppercase;word-break:break-word}
+.meta{margin-top:4px;font-size:13px;color:rgba(255,255,255,.82)}
+.types{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.type{
+padding:4px 8px;
+border-radius:999px;
+font-size:11px;
+font-weight:800;
+text-transform:uppercase;
+background:rgba(255,255,255,.18);
+border:1px solid rgba(255,255,255,.2);
+}
+.details{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;color:rgba(255,255,255,.74);font-size:11px}
+.empty{margin:auto;color:rgba(255,255,255,.8);font-weight:700}
 #confirmBox{
 position:absolute;
-top:78%;
 left:50%;
-transform:translate(-50%,0) scale(.9);
-width:380px;
-padding:20px;
-border-radius:16px;
-background:rgba(255,255,255,.15);
-backdrop-filter:blur(10px);
-border:1px solid rgba(255,255,255,.3);
-color:#fff;
-text-align:center;
+bottom:24px;
+transform:translate(-50%,20px) scale(.96);
+width:min(480px,calc(100% - 42px));
+padding:18px;
+border-radius:18px;
+background:rgba(18,22,30,.92);
+border:1px solid rgba(255,255,255,.22);
+box-shadow:0 16px 46px rgba(0,0,0,.4);
 opacity:0;
 pointer-events:none;
-transition:.25s;
-z-index:9999;
+transition:.18s ease;
+z-index:20;
+text-align:center;
 }
-
-#confirmBox.active{
-opacity:1;
-transform:translate(-50%,0) scale(1);
-pointer-events:auto;
-}
-
+#confirmBox.active{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+#confirmText{font-size:16px;font-weight:800}
+.btnrow{margin-top:14px;display:flex;gap:10px;justify-content:center}
 .confirmBtn{
-margin-top:14px;
-padding:10px 18px;
-border:none;
-border-radius:10px;
+min-width:96px;
+height:38px;
+border:1px solid rgba(255,255,255,.22);
+border-radius:12px;
 background:var(--mainColor);
 color:#fff;
+font-weight:900;
 cursor:pointer;
-margin-right:8px;
 }
-
-.fire{
+.confirmBtn.secondary{background:#2c323d}
+.spark{
 position:absolute;
-width:12px;
-height:12px;
+width:10px;
+height:10px;
+border-radius:50%;
 background:var(--mainColor);
-border-radius:50%;
-opacity:.8;
+opacity:.75;
 animation:rise 1s linear forwards;
+pointer-events:none;
 }
-
-@keyframes rise{
-0%{opacity:.8;transform:translateY(0)}
-100%{opacity:0;transform:translateY(-180px)}
-}
-
-#ball{
-position:absolute;
-width:140px;
-height:140px;
-border-radius:50%;
-overflow:hidden;
-z-index:5;
-animation:ballDrop .6s ease-out forwards;
-}
-
-.ballTop{
-position:absolute;
-width:100%;
-height:50%;
-background:#e53935;
-top:0;
-}
-
-.ballBottom{
-position:absolute;
-width:100%;
-height:50%;
-background:#fff;
-bottom:0;
-}
-
-@keyframes ballDrop{
-0%{transform:translateY(-200px) scale(.6)}
-60%{transform:translateY(20px) scale(1)}
-100%{transform:translateY(0)}
-}
-
-.open .ballTop{animation:openTop .4s forwards}
-.open .ballBottom{animation:openBottom .4s forwards}
-
-@keyframes openTop{
-to{transform:translateY(-70px);opacity:0}
-}
-
-@keyframes openBottom{
-to{transform:translateY(70px);opacity:0}
-}
-
-.flash{
-position:absolute;
-width:200px;
-height:200px;
-border-radius:50%;
-background:#fff;
-opacity:0;
-z-index:4;
-}
-
-.flash.active{
-animation:flashBoom .3s forwards;
-}
-
-@keyframes flashBoom{
-0%{opacity:1;transform:scale(0)}
-100%{opacity:0;transform:scale(2)}
-}
+@keyframes rise{0%{opacity:.75;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.2)}}
 </style>
 
 <script>
 var TYPE_COLOR={
-  normal:"#A8A77A",
-  fire:"#EE8130",
-  water:"#6390F0",
-  electric:"#F7D02C",
-  grass:"#7AC74C",
-  ice:"#96D9D6",
-  fighting:"#C22E28",
-  poison:"#A33EA1",
-  ground:"#E2BF65",
-  flying:"#A98FF3",
-  psychic:"#F95587",
-  bug:"#A6B91A",
-  rock:"#B6A136",
-  ghost:"#735797",
-  dragon:"#6F35FC",
-  dark:"#705746",
-  steel:"#B7B7CE",
-  fairy:"#D685AD"
+normal:"#A8A77A",fire:"#EE8130",water:"#6390F0",electric:"#F7D02C",grass:"#7AC74C",ice:"#96D9D6",
+fighting:"#C22E28",poison:"#A33EA1",ground:"#E2BF65",flying:"#A98FF3",psychic:"#F95587",bug:"#A6B91A",
+rock:"#B6A136",ghost:"#735797",dragon:"#6F35FC",dark:"#705746",steel:"#B7B7CE",fairy:"#D685AD"
 }
-var POKE_NAME="Charmander",TYPE_NAME="Fire-type Pokemon",MAIN_COLOR="#ff6a00"
+var OVERLAY_NAME="starter_selection"
+var TITLE="Choose Your Starter"
+var SUBTITLE=""
+var CHOICES=[]
+var SELECTED=null
+var MAIN_COLOR="#ff6a00"
 
-var LEVEL=5,OVERLAY_NAME="starter_selection"
-TYPE_NAME="Fire-type Pokemon"
-
+function esc(v){
+return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]})
+}
+function cap(v){
+var s=String(v||"")
+return s?s.charAt(0).toUpperCase()+s.slice(1):""
+}
+function normalizeChoice(raw,idx){
+var c=raw&&typeof raw==="object"?raw:{species:raw}
+var species=String(c.species||c.pokemon||c.id||"sylveon").toLowerCase()
+return {
+id:String(c.id||species||("starter_"+idx)),
+species:species,
+pokemon:species,
+label:String(c.label||c.name||species),
+level:Number(c.level||c.lvl||5)||5,
+gender:String(c.gender||""),
+nature:String(c.nature||""),
+ability:String(c.ability||""),
+shiny:c.shiny===true||String(c.shiny||"").toLowerCase()==="true",
+type1:String(c.type1||(c.types&&c.types[0])||""),
+type2:String(c.type2||(c.types&&c.types[1])||"")
+}
+}
+function readInitData(){
+var data={}
+if(window.cnpc&&window.cnpc.initData){
+data=window.cnpc.initData
+try{if(typeof data==="string")data=JSON.parse(data)}catch(e){data={}}
+}
+if(data.overlayName)OVERLAY_NAME=data.overlayName
+if(data.title)TITLE=String(data.title)
+if(data.subtitle)SUBTITLE=String(data.subtitle)
+var list=Array.isArray(data.choices)?data.choices:[]
+if(!list.length&&data.pokemon)list=[data]
+if(!list.length)list=[{species:"sylveon",level:5,type1:"fairy"}]
+CHOICES=[]
+for(var i=0;i<list.length;i++)CHOICES.push(normalizeChoice(list[i],i))
+}
+function choiceColor(choice){
+return TYPE_COLOR[String(choice.type1||"").toLowerCase()]||"#ff6a00"
+}
+function detailText(choice){
+var out=[]
+if(choice.gender)out.push("Gender "+choice.gender)
+if(choice.nature)out.push("Nature "+choice.nature)
+if(choice.ability)out.push("Ability "+choice.ability)
+if(choice.shiny)out.push("Shiny")
+return out
+}
+function renderChoices(){
+var box=document.getElementById("choices")
+box.innerHTML=""
+if(!CHOICES.length){
+box.innerHTML='<div class="empty">No starters configured.</div>'
+return
+}
+for(var i=0;i<CHOICES.length;i++){
+var c=CHOICES[i]
+var row=document.createElement("div")
+var details=detailText(c)
+row.className="choice"
+row.setAttribute("data-index",String(i))
+row.onclick=function(){
+selectChoice(Number(this.getAttribute("data-index")))
+}
+row.innerHTML=
+'<div class="model" data-mc-slot="'+i+'" data-mc-scale="4.8"></div>'+
+'<div class="name">'+esc(c.label)+'</div>'+
+'<div class="meta">Lv. '+esc(c.level)+'</div>'+
+'<div class="types">'+
+(c.type1?'<span class="type" style="background:'+esc(choiceColor(c))+'">'+esc(c.type1)+'</span>':"")+
+(c.type2?'<span class="type" style="background:'+esc(TYPE_COLOR[String(c.type2).toLowerCase()]||"#666")+'">'+esc(c.type2)+'</span>':"")+
+'</div>'+
+'<div class="details">'+details.map(function(v){return '<span>'+esc(v)+'</span>'}).join("")+'</div>'
+box.appendChild(row)
+}
+}
 function getPayload(){
-return {overlayName:OVERLAY_NAME,pokemon:String(POKE_NAME||"").toLowerCase(),level:LEVEL,lvl:LEVEL}
+var c=SELECTED||CHOICES[0]||normalizeChoice({},0)
+return {overlayName:OVERLAY_NAME,choiceId:c.id,pokemon:c.species,species:c.species,level:c.level,lvl:c.level,choice:c}
 }
 function sendCnpcEvent(name){
 if(window.cnpc&&typeof window.cnpc.sendEvent==="function")window.cnpc.sendEvent(name,getPayload())
@@ -318,13 +244,19 @@ if(window.cnpc&&typeof window.cnpc.sendEvent==="function")window.cnpc.sendEvent(
 function closeCnpc(){
 if(window.cnpc&&typeof window.cnpc.close==="function")window.cnpc.close()
 }
-
-function askConfirm(){
-document.getElementById("confirmText").innerText="Do you want to choose "+POKE_NAME+", the "+TYPE_NAME+"?"
-document.getElementById("confirmBox").classList.add("active")
-}
-function playCry(){
+function playCry(choice){
+SELECTED=choice||SELECTED||CHOICES[0]
 sendCnpcEvent("pokeCry")
+}
+function selectChoice(index){
+SELECTED=CHOICES[index]||CHOICES[0]
+MAIN_COLOR=choiceColor(SELECTED)
+document.documentElement.style.setProperty("--mainColor",MAIN_COLOR)
+var cards=document.querySelectorAll(".choice")
+for(var i=0;i<cards.length;i++)cards[i].classList.toggle("active",i===index)
+playCry(SELECTED)
+document.getElementById("confirmText").innerText="Choose "+cap(SELECTED.label)+" as your starter?"
+document.getElementById("confirmBox").classList.add("active")
 }
 function confirmYes(){
 sendCnpcEvent("select")
@@ -332,74 +264,49 @@ closeCnpc()
 }
 function confirmNo(){
 document.getElementById("confirmBox").classList.remove("active")
-closeCnpc()
+sendCnpcEvent("cancel")
 }
-
-function spawnFire(){
+function spawnSpark(){
 var f=document.createElement("div")
-f.className="fire"
-var cx=window.innerWidth/2
-var cy=window.innerHeight/2
-f.style.left=(cx+(Math.random()*220-110))+"px"
-f.style.top=(cy+160)+"px"
+f.className="spark"
+f.style.left=(window.innerWidth/2+(Math.random()*500-250))+"px"
+f.style.top=(window.innerHeight/2+220)+"px"
 document.body.appendChild(f)
-setTimeout(function(){
-if(f&&f.parentNode)f.parentNode.removeChild(f)
-},1000)
+setTimeout(function(){if(f&&f.parentNode)f.parentNode.removeChild(f)},1000)
 }
-setInterval(spawnFire,80)
-
 window.onload=function(){
-if(window.cnpc&&window.cnpc.initData){
-var data=window.cnpc.initData
-try{if(typeof data==="string")data=JSON.parse(data)}catch(e){}
-if(data.overlayName)OVERLAY_NAME=data.overlayName
-if(data.pokemon)POKE_NAME=data.pokemon
-if(data.level!=null)LEVEL=Number(data.level)||LEVEL
-else if(data.lvl!=null)LEVEL=Number(data.lvl)||LEVEL
-if(data.type1){TYPE_NAME=data.type1+"-type Pokemon";MAIN_COLOR=TYPE_COLOR[data.type1]||"#ff6a00"}
-document.documentElement.style.setProperty('--mainColor',MAIN_COLOR)
-document.getElementById("name").innerText=POKE_NAME.toUpperCase()
+readInitData()
+document.getElementById("title").innerText=TITLE
+document.getElementById("subtitle").innerText=SUBTITLE
+renderChoices()
+if(CHOICES.length){
+MAIN_COLOR=choiceColor(CHOICES[0])
+document.documentElement.style.setProperty("--mainColor",MAIN_COLOR)
 }
-
-setTimeout(function(){
-  document.getElementById("ball").classList.add("open")
-  document.getElementById("flash").classList.add("active")
-  setTimeout(function(){
-    document.querySelector(".icon").classList.add("spawn")
-    document.getElementById("name").classList.add("show")
-    askConfirm()
-  },80)
-
-},250)
+setInterval(spawnSpark,120)
 }
 </script>
 </head>
 
 <body>
 <div id="frame">
-
-<div class="borderGlow"></div>
-
 <div id="card">
-<div class="icon" data-mc-slot="0" data-mc-scale="6.2">
-<div id="flash" class="flash"></div>
-<div id="ball">
-<div class="ballTop"></div>
-<div class="ballBottom"></div>
+<div id="head">
+<div>
+<div id="title">Choose Your Starter</div>
+<div id="subtitle"></div>
 </div>
-<div class="shine"></div>
+<div id="claimHint">Starter selection</div>
 </div>
-<div id="name" onclick="playCry()">CHARMANDER</div>
+<div id="choices"></div>
 </div>
 <div id="confirmBox">
-<div id="confirmText">Do you want to choose Charmander?</div>
-<div>
-<button class="confirmBtn" onclick="confirmYes()">Yes</button>
-<button class="confirmBtn" onclick="confirmNo()">No</button>
+<div id="confirmText">Choose this Pokemon?</div>
+<div class="btnrow">
+<button class="confirmBtn" onclick="confirmYes()">Choose</button>
+<button class="confirmBtn secondary" onclick="confirmNo()">Cancel</button>
 </div>
 </div>
-
 </div>
 </body>
 </html>

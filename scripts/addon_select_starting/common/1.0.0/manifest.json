@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "editor": "dialogue_addon",
   "mc_version": "common",
-  "description": "Dialogue JS action add-on for starter Pokemon selection",
+  "description": "NPC and dialogue starter Pokemon selection add-on",
   "entry": "select_starting.js",
   "install_dir": "dc_lib/addon_select_starting",
   "files": [
@@ -15,15 +15,27 @@
       "dependencies": [
         {
           "type": "package",
-          "id": "npc_dialogue/common/1.0.0",
+          "id": "npc_util/common/1.0.0",
           "required": true,
-          "note": "Requires the NPC Dialogue package and its JS action loader. Install dialogue separately; this add-on does not install dialogue files automatically."
+          "note": "Requires dc_npc_core_module.js and dc_cfg_checker.js for dcE trigger/runtime loading."
         },
         {
           "type": "mod",
           "id": "cnpcextended",
           "required": true,
           "note": "Required for openHtmlGui and browser event callbacks."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_starters/",
+          "required": true,
+          "note": "Starter selection JSON files live here."
+        },
+        {
+          "type": "json_dir",
+          "path": "customnpcs/dc_data/dc_installable_scripts/",
+          "required": true,
+          "note": "NPC Editor reads the starter selector dcE descriptor from here."
         }
       ]
     },
@@ -31,6 +43,18 @@
       "source": "html/select_starting.html",
       "install_as": "addon_select_starting/select_starting.html",
       "type": "html",
+      "dependencies": []
+    },
+    {
+      "source": "dc_installable_scripts/dc_starter_select.json",
+      "install_as": "dc_data/dc_installable_scripts/dc_starter_select.json",
+      "type": "json",
+      "dependencies": []
+    },
+    {
+      "source": "dc_starters/sample_starters.json",
+      "install_as": "dc_data/dc_starters/sample_starters.json",
+      "type": "json",
       "dependencies": []
     }
   ]

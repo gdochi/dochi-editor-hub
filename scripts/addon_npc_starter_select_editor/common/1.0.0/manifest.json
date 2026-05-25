@@ -1,0 +1,42 @@
+{
+  "id": "addon_npc_starter_select_editor/common/1.0.0",
+  "package": "addon_npc_starter_select_editor",
+  "version": "1.0.0",
+  "editor": "npc_editor_addon",
+  "mc_version": "common",
+  "description": "NPC Editor add-on for editing Starter Pokemon Selector JSON lists.",
+  "entry": "starter_select_editor.js",
+  "install_dir": "dc_lib/addon_npc_starter_select_editor",
+  "player_scripts": [
+    {
+      "path": "starter_select_editor.js"
+    }
+  ],
+  "files": [
+    {
+      "source": "starter_select_editor.js",
+      "install_as": "starter_select_editor.js",
+      "type": "script",
+      "dependencies": [
+        {
+          "type": "package",
+          "id": "npc_editor/common/1.0.0",
+          "required": true,
+          "note": "Requires NPC Editor. Install the editor separately; this add-on registers into it when both player scripts are loaded."
+        },
+        {
+          "type": "package",
+          "id": "addon_select_starting/common/1.0.0",
+          "required": true,
+          "note": "Edits dc_starter JSON files used by the Starter Pokemon Selector runtime."
+        },
+        {
+          "type": "script",
+          "path": "dc_lib/dc_npc_util/dc_cfg_checker.js",
+          "required": false,
+          "load_order": 2
+        }
+      ]
+    }
+  ]
+}

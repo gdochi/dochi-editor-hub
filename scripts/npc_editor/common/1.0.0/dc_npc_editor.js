@@ -12,6 +12,7 @@ DC_SELECTION_KEY:"npc_browser_dc_selection",
 DOCHI_LOCK_KEY:"npc_browser_dochi_lock",
 DIALOGUE_JSON_PATH_KEY:"dc_dialogue_json_path",
 SHOP_JSON_PATH_KEY:"dc_shop_json_path",
+STARTER_JSON_PATH_KEY:"dc_starter_json_path",
 CACHE_MAP_KEY:"npc_browser_cache_map",
 CACHE_LIST_KEY:"npc_browser_cache_list",
 CACHE_RANGE_KEY:"npc_browser_scan_range",
@@ -1075,35 +1076,38 @@ return;
 out.push({scriptPath:scriptPath,jsonPath:jsonPath,prefix:prefix});
 }
 function isAllowedDcSelectionCombo(entries){
-var i,prefix,hasDialogue=false,hasShop=false,count=0,seen={};
+var i,prefix,hasDialogue=false,count=0,seen={},allowed;
 if(!entries||entries.length<=1)return true;
+allowed={dc_dialogue:true,dc_shop:true,dc_starter:true};
 for(i=0;i<entries.length;i++){
 prefix=String(entries[i].prefix||"");
 if(!prefix||seen[prefix])continue;
 seen[prefix]=true;
 count++;
 if(prefix==="dc_dialogue")hasDialogue=true;
-if(prefix==="dc_shop")hasShop=true;
+if(!allowed[prefix])return false;
 }
 if(count<=1)return true;
-return count===2&&hasDialogue&&hasShop;
+return hasDialogue===true;
 }
-function isDialogueShopSelectionCombo(entries){
-var i,prefix,hasDialogue=false,hasShop=false,count=0,seen={};
+function isDialogueRuntimeSelectionCombo(entries){
+var i,prefix,hasDialogue=false,count=0,seen={},allowed;
 entries=entries||[];
+allowed={dc_dialogue:true,dc_shop:true,dc_starter:true};
 for(i=0;i<entries.length;i++){
 prefix=String(entries[i].prefix||"");
 if(!prefix||seen[prefix])continue;
 seen[prefix]=true;
 count++;
 if(prefix==="dc_dialogue")hasDialogue=true;
-if(prefix==="dc_shop")hasShop=true;
+if(!allowed[prefix])return false;
 }
-return count===2&&hasDialogue&&hasShop;
+return count>1&&hasDialogue===true;
 }
 function shouldSkipDcApplyScript(entries,entry,candidate,path){
-if(!isDialogueShopSelectionCombo(entries))return false;
-if(String(entry&&entry.prefix||"")!=="dc_shop")return false;
+var prefix=String(entry&&entry.prefix||"");
+if(!isDialogueRuntimeSelectionCombo(entries))return false;
+if(prefix!=="dc_shop"&&prefix!=="dc_starter")return false;
 if(!candidate)return false;
 return normalizeRelPath(path).toLowerCase()===normalizeRelPath(candidate.path).toLowerCase();
 }
@@ -1112,6 +1116,7 @@ var name=fileNameOnly(path).replace(/\.js$/i,"").toLowerCase();
 if(!name)return "";
 if(name==="dc_dialogue_trigger"||name.indexOf("dialogue")>=0)return "dc_dialogue";
 if(name==="dc_shop_trigger"||name.indexOf("shop")>=0)return "dc_shop";
+if(name==="select_starting"||name.indexOf("starter")>=0||name.indexOf("starting")>=0)return "dc_starter";
 if(name.indexOf("dc_trainer")===0||name.indexOf("trainer")>=0)return "dc_trainer";
 if(name.indexOf("dc_soulmob")===0||name.indexOf("soulmob")>=0)return "dc_soulMob";
 if(name.indexOf("dc_taczmob")===0||name.indexOf("taczmob")>=0)return "dc_taczMob";
@@ -1295,7 +1300,7 @@ if(entry.prefix&&entry.prefix!==candidate.prefix)return {ok:false,error:"Selecte
 entry.prefix=candidate.prefix;
 entries[i]=entry;
 }
-if(!isAllowedDcSelectionCombo(entries))return {ok:false,error:"dcE mode can combine only Dialogue Trigger and NPC Shop Trigger. Other scripts stay single-select."};
+if(!isAllowedDcSelectionCombo(entries))return {ok:false,error:"dcE mode can combine Dialogue Trigger with NPC Shop Trigger or Starter Pokemon Selector. Other scripts stay single-select."};
 for(i=0;i<entries.length;i++){
 entry=entries[i];
 candidate=findDcInstallableCandidate(entry.scriptPath);
@@ -2041,11 +2046,12 @@ return normalizeDcSelection(JSON.parse(raw));
 }
 function setNpcDcSelection(npc,selection){
 var store=npc.getStoreddata();
-var sel=normalizeDcSelection(selection||{}),entries=sel.entries||[],dialoguePath="",shopPath="",i,entry;
+var sel=normalizeDcSelection(selection||{}),entries=sel.entries||[],dialoguePath="",shopPath="",starterPath="",i,entry;
 if(!sel.scriptPath&&!sel.jsonPath&&!sel.prefix&&!sel.scriptPaths.length&&!entries.length){
 clearStoredDataKey(store,CFG.DC_SELECTION_KEY);
 clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
 clearStoredDataKey(store,CFG.SHOP_JSON_PATH_KEY);
+clearStoredDataKey(store,CFG.STARTER_JSON_PATH_KEY);
 return;
 }
 store.put(CFG.DC_SELECTION_KEY,JSON.stringify({scriptPath:String(sel.scriptPath||""),scriptPaths:sel.scriptPaths,jsonPath:String(sel.jsonPath||""),prefix:String(sel.prefix||""),entries:entries}));
@@ -2053,11 +2059,14 @@ for(i=0;i<entries.length;i++){
 entry=entries[i]||{};
 if(entry.prefix==="dc_dialogue"&&entry.jsonPath)dialoguePath=String(entry.jsonPath||"");
 if(entry.prefix==="dc_shop"&&entry.jsonPath)shopPath=String(entry.jsonPath||"");
+if(entry.prefix==="dc_starter"&&entry.jsonPath)starterPath=String(entry.jsonPath||"");
 }
 if(dialoguePath)store.put(CFG.DIALOGUE_JSON_PATH_KEY,dialoguePath);
 else clearStoredDataKey(store,CFG.DIALOGUE_JSON_PATH_KEY);
 if(shopPath)store.put(CFG.SHOP_JSON_PATH_KEY,shopPath);
 else clearStoredDataKey(store,CFG.SHOP_JSON_PATH_KEY);
+if(starterPath)store.put(CFG.STARTER_JSON_PATH_KEY,starterPath);
+else clearStoredDataKey(store,CFG.STARTER_JSON_PATH_KEY);
 }
 function onNpcDcJsonFileList(e,data){
 var prefix=String(data.prefix||"");
@@ -2132,6 +2141,7 @@ if(segments&&segments.length)return segments;
 }
 if(prefix==="dc_dialogue")return ["dc_data","dc_dialogues"];
 if(prefix==="dc_shop")return ["dc_data","dc_shops"];
+if(prefix==="dc_starter")return ["dc_data","dc_starters"];
 if(prefix==="dc_trainer")return ["dc_data","dc_trainers","spec"];
 if(prefix==="dc_soulMob")return ["dc_mob","soulmob"];
 if(prefix==="dc_taczMob")return ["dc_mob","taczmob"];
@@ -2142,6 +2152,7 @@ var spec=getDcEntrySpecForPrefix(prefix);
 if(spec&&spec.jsonRoot)return spec.jsonRoot;
 if(prefix==="dc_dialogue")return "dc_data/dc_dialogues";
 if(prefix==="dc_shop")return "dc_data/dc_shops";
+if(prefix==="dc_starter")return "dc_data/dc_starters";
 if(prefix==="dc_trainer")return "dc_data/dc_trainers/spec";
 if(prefix==="dc_soulMob")return "dc_mob/soulmob";
 if(prefix==="dc_taczMob")return "dc_mob/taczmob";
