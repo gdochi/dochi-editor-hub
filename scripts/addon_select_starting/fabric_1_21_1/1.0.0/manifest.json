@@ -1,10 +1,10 @@
 {
-  "id": "addon_select_starting/common/1.0.0",
+  "id": "addon_select_starting/fabric_1_21_1/1.0.0",
   "package": "addon_select_starting",
   "version": "1.0.0",
   "editor": "dialogue_addon",
-  "mc_version": "common",
-  "description": "NPC and dialogue starter Pokemon selection add-on",
+  "mc_version": "fabric_1_21_1",
+  "description": "NPC and dialogue starter Pokemon selection add-on for Fabric 1.21.1",
   "entry": "select_starting.js",
   "files": [
     {

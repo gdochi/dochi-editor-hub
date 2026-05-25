@@ -1,10 +1,10 @@
 {
-  "id": "addon_battle_intro/common/1.0.0",
+  "id": "addon_battle_intro/fabric_1_21_1/1.0.0",
   "package": "addon_battle_intro",
   "version": "1.0.0",
   "editor": "dialogue_addon",
-  "mc_version": "common",
-  "description": "Dialogue JS action add-on for Cobblemon battle intro party view",
+  "mc_version": "fabric_1_21_1",
+  "description": "Dialogue JS action add-on for Cobblemon battle intro party view on Fabric 1.21.1",
   "entry": "battle_intro_view_party.js",
   "files": [
     {

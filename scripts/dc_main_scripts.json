@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-25T06:49:20.781Z",
+  "generated_at": "2026-05-25T08:37:16.260Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
@@ -10,10 +10,10 @@
       "script": "addon/battle_intro_view_party.js",
       "versions": [
         {
-          "mc_version": "common",
+          "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
-          "manifest": "addon_battle_intro/common/1.0.0/manifest.json",
-          "source_path": "addon_battle_intro/common/1.0.0/battle_intro_view_party.js"
+          "manifest": "addon_battle_intro/fabric_1_21_1/1.0.0/manifest.json",
+          "source_path": "addon_battle_intro/fabric_1_21_1/1.0.0/battle_intro_view_party.js"
         }
       ],
       "script_dependencies": [
@@ -60,10 +60,10 @@
       "script": "addon/starter_select_editor.js",
       "versions": [
         {
-          "mc_version": "common",
+          "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
-          "manifest": "addon_npc_starter_select_editor/common/1.0.0/manifest.json",
-          "source_path": "addon_npc_starter_select_editor/common/1.0.0/starter_select_editor.js"
+          "manifest": "addon_npc_starter_select_editor/fabric_1_21_1/1.0.0/manifest.json",
+          "source_path": "addon_npc_starter_select_editor/fabric_1_21_1/1.0.0/starter_select_editor.js"
         }
       ],
       "script_dependencies": [
@@ -82,10 +82,10 @@
       "script": "addon/select_starting.js",
       "versions": [
         {
-          "mc_version": "common",
+          "mc_version": "fabric_1_21_1",
           "version": "1.0.0",
-          "manifest": "addon_select_starting/common/1.0.0/manifest.json",
-          "source_path": "addon_select_starting/common/1.0.0/select_starting.js"
+          "manifest": "addon_select_starting/fabric_1_21_1/1.0.0/manifest.json",
+          "source_path": "addon_select_starting/fabric_1_21_1/1.0.0/select_starting.js"
         }
       ],
       "script_dependencies": [
