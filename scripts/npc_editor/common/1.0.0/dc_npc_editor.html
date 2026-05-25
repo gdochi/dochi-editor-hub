@@ -223,7 +223,7 @@ function startI18nObserver(){if(I18N_OBSERVER||!window.MutationObserver)return;I
 function maybeReloadI18n(locale){locale=normalizeLocale(locale);if(locale===I18N_LOCALE)return;I18N_LOCALE=locale;I18N={};I18N_READY=false;loadI18n(function(){renderAdminState();rebuildFactionSelect();applyFilter();renderScriptState("");renderKeyboardPicker();applyI18n(document.body);if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");});}
 var KEY_OPTIONS=[{value:"",label:"Disabled",className:"disabled-key w2_25"},{value:"290",label:"F1",className:"w1"},{value:"291",label:"F2",className:"w1"},{value:"292",label:"F3",className:"w1"},{value:"293",label:"F4",className:"w1"},{value:"294",label:"F5",className:"w1"},{value:"295",label:"F6",className:"w1"},{value:"296",label:"F7",className:"w1"},{value:"297",label:"F8",className:"w1"},{value:"298",label:"F9",className:"w1"},{value:"299",label:"F10",className:"w1"},{value:"300",label:"F11",className:"w1"},{value:"301",label:"F12",className:"w1"},{value:"81",label:"Q",className:"w1"},{value:"87",label:"W",className:"w1"},{value:"69",label:"E",className:"w1"},{value:"82",label:"R",className:"w1"},{value:"84",label:"T",className:"w1"},{value:"89",label:"Y",className:"w1"},{value:"85",label:"U",className:"w1"},{value:"73",label:"I",className:"w1"},{value:"79",label:"O",className:"w1"},{value:"80",label:"P",className:"w1"},{value:"91",label:"[",className:"w1"},{value:"93",label:"]",className:"w1"},{value:"65",label:"A",className:"w1"},{value:"83",label:"S",className:"w1"},{value:"68",label:"D",className:"w1"},{value:"70",label:"F",className:"w1"},{value:"71",label:"G",className:"w1"},{value:"72",label:"H",className:"w1"},{value:"74",label:"J",className:"w1"},{value:"75",label:"K",className:"w1"},{value:"76",label:"L",className:"w1"},{value:"59",label:";",className:"w1"},{value:"39",label:"'",className:"w1"},{value:"90",label:"Z",className:"w1"},{value:"88",label:"X",className:"w1"},{value:"67",label:"C",className:"w1"},{value:"86",label:"V",className:"w1"},{value:"66",label:"B",className:"w1"},{value:"78",label:"N",className:"w1"},{value:"77",label:"M",className:"w1"},{value:"44",label:",",className:"w1"},{value:"46",label:".",className:"w1"},];
 var KEY_LAYOUT=[{className:"keyboard-row",keys:[{value:"",label:"Disabled",className:"disabled-key w2_25"},"290","291","292","293","294","295","296","297","298","299","300","301"]},{className:"keyboard-row offset-1",keys:["81","87","69","82","84","89","85","73","79","80","91","93"]},{className:"keyboard-row offset-2",keys:["65","83","68","70","71","72","74","75","76","59","39"]},{className:"keyboard-row offset-3",keys:["90","88","67","86","66","78","77","44","46"]}];
-var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:"",scanRange:Number(RAW.scanRange||48),previewEnabled:RAW.previewEnabled===true,previewRuntimeEnabled:RAW.previewEnabled===true,admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]},dcClearPending:false,generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:"",activePrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
+var APP_STATE={npcs:Array.isArray(RAW.npcs)?RAW.npcs:[],factions:Array.isArray(RAW.factions)?RAW.factions:[],filtered:[],activeView:"detail",selectedUuid:String(RAW.selectedUuid||""),scanRange:Number(RAW.scanRange||48),previewEnabled:RAW.previewEnabled===true,previewRuntimeEnabled:RAW.previewEnabled===true,admin:normalizeAdminState(RAW.admin),script:{data:{scriptEnabled:true,tabs:[],flatFiles:[],flatInline:[],scriptStyle:"general",dochiLock:defaultDochiLock()},selectedTab:1,pendingStyle:"general",pendingUuid:"",dcSelection:{scriptPath:"",scriptPaths:[],jsonPath:"",prefix:"",entries:[]},dcClearPending:false,generalConvertConfirmed:false,dcBrowser:{scripts:[],jsons:[],scriptsLoaded:false,jsonLoaded:false,jsonPrefix:"",activePrefix:""}},picker:{root:"",rootLabel:"ecmascript",current:"/",allFiles:[],tree:null,expanded:{"/":true},selectedFile:"",mode:"general"}};
 var LOCALE_OPTIONS=Array.isArray(RAW.localeOptions)?RAW.localeOptions:[];
 APP_STATE.addons=normalizeAddonList(RAW.addons);
 function byId(id){return document.getElementById(id);}
@@ -300,6 +300,7 @@ sendNpcModeChange("dcE");
 }
 function normalizeDochiLock(lock){var paths=[],entries=[],raw;lock=lock||{};raw=Array.isArray(lock.scriptPaths)?lock.scriptPaths:[];raw.forEach(function(v){v=String(v||"");if(v)paths.push(v);});if(!paths.length&&lock.scriptPath)paths.push(String(lock.scriptPath));raw=Array.isArray(lock.entries)?lock.entries:[];raw.forEach(function(v){if(!v)return;entries.push({scriptPath:String(v.scriptPath||v.path||""),jsonPath:String(v.jsonPath||""),prefix:String(v.prefix||"")});});return {locked:lock.locked===true,mode:String(lock.mode||"general"),scriptPath:String(lock.scriptPath||""),scriptPaths:paths,jsonPath:String(lock.jsonPath||""),prefix:String(lock.prefix||""),entries:entries};}
 function init(){
+var initialLoaded=false;
 debugStep("init","begin npcs="+APP_STATE.npcs.length+" admin="+APP_STATE.admin.initialized);
 ensureDcEditorPanel();
 ensureDcListBackButton();
@@ -317,15 +318,28 @@ if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
 APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
 }
 if(APP_STATE.selectedUuid)syncScriptShellToNpc(getSelectedNpc());
+initialLoaded=hydrateInitialOpenData();
 applyFilter();
 if(!APP_STATE.selectedUuid)clearScriptState("");
-else renderScriptState("");
+else if(!initialLoaded)renderScriptState("");
 updateStyleUi();
 renderKeyboardPicker();
 applyI18n(document.body);
 startI18nObserver();
 if(I18N_LOAD_ERROR)setStatus(tr("npc_editor.translation_load_failed","Translation load failed: {error}",{error:I18N_LOAD_ERROR}),"status-warn");
 debugStep("init","done");
+}
+function hydrateInitialOpenData(){
+var d=RAW.selectedScriptData||null,uuid="";
+if(RAW.initialDcScriptFileList)applyScriptFileListPayload(RAW.initialDcScriptFileList,false);
+if(RAW.initialDcJsonFileList)applyDcJsonFileListPayload(RAW.initialDcJsonFileList,false);
+if(!d)return false;
+d=parsePayload(d)||d;
+uuid=String(d.uuid||"");
+if(uuid&&!APP_STATE.selectedUuid)APP_STATE.selectedUuid=uuid;
+if(APP_STATE.selectedUuid&&uuid&&String(APP_STATE.selectedUuid)!==uuid)return false;
+renderScriptData(d);
+return true;
 }
 function bind(){
 byId("nameInput").addEventListener("input",applyFilter);
@@ -527,6 +541,49 @@ var btn=byId("dcListBackBtn");
 if(btn&&btn.parentNode)btn.parentNode.removeChild(btn);
 }
 function positionDcEditorPanel(){}
+function applyScriptFileListPayload(d,updatePicker){
+d=parsePayload(d);
+if(!d)return;
+debugStep("files","script list mode="+d.mode+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
+var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
+var warnings=Array.isArray(d.warnings)?d.warnings:[];
+if(updatePicker!==false){
+APP_STATE.picker.root=String(d.root||"");
+APP_STATE.picker.rootLabel=String(d.label||APP_STATE.picker.rootLabel||"ecmascript");
+APP_STATE.picker.mode=String(d.mode||APP_STATE.picker.mode||"general");
+APP_STATE.picker.allFiles=files;
+APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
+}
+if(String(d.mode||"")==="dcE"){
+APP_STATE.script.dcBrowser.scripts=files;
+APP_STATE.script.dcBrowser.scriptsLoaded=true;
+APP_STATE.script.dcBrowser.warnings=warnings;
+renderDcInstalledScripts();
+renderDcEditorState();
+if(warnings.length)setStatus("Installable descriptor warning: "+warnings[0]+(warnings.length>1?" +"+(warnings.length-1):""),"status-warn");
+}
+if(d.ok===false&&d.error)setStatus("Script list failed: "+d.error,"status-err");
+if(updatePicker!==false)renderPickerState();
+}
+function applyDcJsonFileListPayload(d,updatePicker){
+d=parsePayload(d);
+if(!d)return;
+debugStep("files","json list prefix="+d.prefix+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
+var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
+if(updatePicker!==false){
+APP_STATE.picker.root=String(d.root||"");
+APP_STATE.picker.rootLabel=String(d.label||getDcJsonRootLabel(d.prefix||"dc"));
+APP_STATE.picker.mode="dcJson";
+APP_STATE.picker.allFiles=files;
+APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
+}
+APP_STATE.script.dcBrowser.jsons=files;
+APP_STATE.script.dcBrowser.jsonLoaded=true;
+APP_STATE.script.dcBrowser.jsonPrefix=String(d.prefix||"");
+renderDcMatchedJson();
+renderDcEditorState();
+if(updatePicker!==false)renderPickerState();
+}
 function listenServer(){
 window.cnpc.onEvent("npcI18nPack",function(d){receiveI18nPack(d);});
 window.cnpc.onEvent("npcListUpdate",function(d){
@@ -628,41 +685,10 @@ renderSelectedNpc();
 setStatus(d.ok?(APP_STATE.previewEnabled?tr("npc_editor.preview_enabled_saved","Preview enabled. Reopen the editor to apply rendering."):tr("npc_editor.preview_disabled_saved","Preview disabled.")):"Preview setting failed: "+(d.error||"unknown"),d.ok?"status-ok":"status-err");
 });
 window.cnpc.onEvent("npcScriptFileList",function(d){
-d=parsePayload(d);
-if(!d)return;
-debugStep("files","script list mode="+d.mode+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
-var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
-var warnings=Array.isArray(d.warnings)?d.warnings:[];
-APP_STATE.picker.root=String(d.root||"");
-APP_STATE.picker.rootLabel=String(d.label||APP_STATE.picker.rootLabel||"ecmascript");
-APP_STATE.picker.mode=String(d.mode||APP_STATE.picker.mode||"general");
-APP_STATE.picker.allFiles=files;
-APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
-if(String(d.mode||"")==="dcE"){
-APP_STATE.script.dcBrowser.scripts=files;
-APP_STATE.script.dcBrowser.scriptsLoaded=true;
-APP_STATE.script.dcBrowser.warnings=warnings;
-renderDcInstalledScripts();
-if(warnings.length)setStatus("Installable descriptor warning: "+warnings[0]+(warnings.length>1?" +"+(warnings.length-1):""),"status-warn");
-}
-if(d.ok===false&&d.error)setStatus("Script list failed: "+d.error,"status-err");
-renderPickerState();
+applyScriptFileListPayload(d,true);
 });
 window.cnpc.onEvent("npcDcJsonFileList",function(d){
-d=parsePayload(d);
-if(!d)return;
-debugStep("files","json list prefix="+d.prefix+" count="+(Array.isArray(d.files)?d.files.length:"not-array"));
-var files=Array.isArray(d.files)?d.files.map(normalizeFileItem):[];
-APP_STATE.picker.root=String(d.root||"");
-APP_STATE.picker.rootLabel=String(d.label||getDcJsonRootLabel(d.prefix||"dc"));
-APP_STATE.picker.mode="dcJson";
-APP_STATE.picker.allFiles=files;
-APP_STATE.picker.tree=buildFileTree(APP_STATE.picker.allFiles);
-APP_STATE.script.dcBrowser.jsons=files;
-APP_STATE.script.dcBrowser.jsonLoaded=true;
-APP_STATE.script.dcBrowser.jsonPrefix=String(d.prefix||"");
-renderDcMatchedJson();
-renderPickerState();
+applyDcJsonFileListPayload(d,true);
 });
 }
 function renderKeyboardPicker(){var box=byId("keybindKeyboard");box.innerHTML="";KEY_LAYOUT.forEach(function(row){var rowEl=document.createElement("div");rowEl.className=row.className||"keyboard-row";(row.keys||[]).forEach(function(item){var opt=(item&&item.value!=null)?item:findKeyOption(item),btn;if(item===null){var gap=document.createElement("div");gap.className="key-gap";rowEl.appendChild(gap);return;}btn=document.createElement("button");btn.type="button";btn.className="keycap "+(opt.className||"w1");btn.textContent=opt.label;if(opt.value!=null){btn.dataset.value=opt.value;btn.onclick=function(){selectKeybindValue(opt.value);};}rowEl.appendChild(btn);});box.appendChild(rowEl);});}
@@ -1248,7 +1274,7 @@ state=removeAllPending?tr("npc_editor.dce_remove_all_pending","Ready to remove a
 flyout=byId("dcDetailFlyout");
 if(flyout)flyout.classList.toggle("show",!!sel.entries.length||removeAllPending);
 title=byId("dcFlyoutTitle");
-if(title)title.textContent=removeAllPending?tr("npc_editor.dce_remove_title","Remove dcE scripts"):(candidate?String(candidate.name||activeEntry.scriptPath):tr("npc_editor.no_selection","No selection"));
+if(title)title.textContent=removeAllPending?tr("npc_editor.dce_remove_title","Remove dcE scripts"):(candidate?String(candidate.name||activeEntry.scriptPath):(activeEntry&&activeEntry.scriptPath?activeEntry.scriptPath:tr("npc_editor.no_selection","No selection")));
 meta=byId("dcMetaLine");
 if(meta)meta.textContent=removeAllPending?tr("npc_editor.dce_remove_ready","Apply will clear this NPC's dcE ScriptList."):sel.entries.length?(state+" / "+activeEntry.scriptPath):tr("npc_editor.dc_pick_entry","Pick an entry from the list. Details open in a side panel.");
 if(byId("dcScriptPathInput"))byId("dcScriptPathInput").value=activeEntry.scriptPath||"";

@@ -109,10 +109,32 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
  initData.localeOptions=listNpcEditorLocales();
  initData.i18nError=i18n.error;
  initData.debug=CFG.DEBUG;
+ enrichNpcEditorOpenPayload(player,initData);
  payload=stringifyBrowserPayload(initData)
  debugMsg(player,"openHtmlGui normal payload="+payload.length+" html="+CFG.HTML);
  cnpcext.openHtmlGui(player,CFG.HTML,0,0,payload);
  debugMsg(player,"openHtmlGui normal returned");
+}
+
+function enrichNpcEditorOpenPayload(player,initData){
+var uuid="",npc=null,scriptData=null,found=null;
+if(!initData||!initData.npcs||!initData.npcs.length)return initData;
+uuid=String(initData.npcs[0].uuid||"");
+if(!uuid)return initData;
+try{npc=getCachedNpcByUuid(player,uuid);}catch(err0){npc=null;}
+if(!npc)return initData;
+try{
+scriptData=buildNpcScriptDataPayload(npc);
+initData.selectedUuid=String(scriptData.uuid||uuid);
+initData.selectedScriptData=scriptData;
+if(String(scriptData.scriptStyle||"general")==="dcE"){
+found=listDcInstallableScripts(false);
+initData.initialDcScriptFileList={ok:!found.error,root:found.root||"",label:found.label||"dc_lib",mode:"dcE",files:found.files||[],warnings:found.warnings||[],error:found.error||""};
+}
+}catch(err1){
+initData.selectedScriptDataError=String(err1);
+}
+return initData;
 }
 
 function getPlayerLocale(player){
@@ -584,13 +606,16 @@ try{v=gui.id;}catch(err2){v=null;}
 return npcEditorInt(v,-1);
 }
 function dispatchNpcEditorAddonEvent(name,e){
-var i,a,fn,eventGuiId,customGuiEvent;
+var i,a,fn,eventGuiId,customGuiEvent,addonGuiId;
 flushNpcEditorPendingAddons();
 customGuiEvent=String(name||"").indexOf("customGui")===0;
 eventGuiId=customGuiEvent?getCustomGuiEventId(e):-1;
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
 a=DC_NPC_EDITOR_ADDONS[i];
-if(customGuiEvent&&a&&a.customGuiId!=null&&npcEditorInt(a.customGuiId,-1)>=0&&eventGuiId!==npcEditorInt(a.customGuiId,-1))continue;
+if(customGuiEvent&&a&&a.customGuiId!=null){
+addonGuiId=npcEditorInt(a.customGuiId,-1);
+if(addonGuiId>=0&&eventGuiId>=0&&eventGuiId!==addonGuiId)continue;
+}
 fn=a&&a[name];
 if(typeof fn==="function"){
 try{if(fn(e)===true)return true;}catch(err){try{if(e&&e.player)e.player.message("NPC editor addon error: "+String(err));}catch(ignore){}}
