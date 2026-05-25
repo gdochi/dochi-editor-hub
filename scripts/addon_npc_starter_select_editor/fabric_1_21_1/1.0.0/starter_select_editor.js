@@ -80,18 +80,19 @@ var StarterSelectEditorModule = (function(){
     TXT_EV_SPATK:243,
     TXT_EV_SPDEF:244,
     TXT_EV_SPEED:245,
-    BTN_MODAL_BLOCKER:5000,
-    FLYOUT_BG_BASE:5001,
-    TXT_PICK_SEARCH:6000,
-    BTN_PICK_APPLY_SEARCH:6001,
-    BTN_PICK_PREV:6002,
-    BTN_PICK_NEXT:6003,
-    BTN_PICK_CANCEL:6004,
-    BTN_PICK_ROW_START:6100,
+    BTN_MODAL_BLOCKER:3000,
+    FLYOUT_BG_BASE:3010,
+    TXT_PICK_SEARCH:3040,
+    BTN_PICK_APPLY_SEARCH:3041,
+    BTN_PICK_PREV:3042,
+    BTN_PICK_NEXT:3043,
+    BTN_PICK_CANCEL:3044,
+    BTN_PICK_ROW_START:3060,
     BG_BASE:1,
     LINE_BASE:700,
     LABEL_ROW_BASE:2000,
-    LABEL_PICK_ROW_BASE:6600,
+    LABEL_PICK_ROW_BASE:3100,
+    LABEL_FLYOUT_BASE:3150,
     LABEL_BASE:1000
   }
 
@@ -117,6 +118,17 @@ var StarterSelectEditorModule = (function(){
     try{ if(typeof gui.getID === "function") return toInt(gui.getID(), -1) }catch(err0){}
     try{ if(typeof gui.getId === "function") return toInt(gui.getId(), -1) }catch(err1){}
     try{ v = gui.id }catch(err2){ v = null }
+    return toInt(v, -1)
+  }
+
+  function buttonId(e){
+    var v = null
+    if(!e) return -1
+    try{ if(e.buttonId != null) return toInt(e.buttonId, -1) }catch(err0){}
+    try{ if(e.id != null) return toInt(e.id, -1) }catch(err1){}
+    try{ if(typeof e.getButtonID === "function") return toInt(e.getButtonID(), -1) }catch(err2){}
+    try{ if(typeof e.getButtonId === "function") return toInt(e.getButtonId(), -1) }catch(err3){}
+    try{ v = e.getId && e.getId() }catch(err4){ v = null }
     return toInt(v, -1)
   }
 
@@ -607,7 +619,9 @@ var StarterSelectEditorModule = (function(){
     removeComponentRange(g, ID.TXT_PICK_SEARCH, ID.TXT_PICK_SEARCH + 10)
     removeComponentRange(g, ID.BTN_PICK_ROW_START, ID.BTN_PICK_ROW_START + PICK_SIZE + 4)
     removeComponentRange(g, ID.LABEL_PICK_ROW_BASE, ID.LABEL_PICK_ROW_BASE + PICK_SIZE + 4)
-    removeComponentRange(g, ID.LABEL_BASE + 6000, ID.LABEL_BASE + 6040)
+    removeComponentRange(g, ID.LABEL_FLYOUT_BASE, ID.LABEL_FLYOUT_BASE + 40)
+    removeComponentRange(g, 5000, 6120)
+    removeComponentRange(g, 6600, 6650)
   }
 
   function removeTracked(session){
@@ -1023,7 +1037,7 @@ var StarterSelectEditorModule = (function(){
     if(session.pickerPage * PICK_SIZE >= items.length) session.pickerPage = Math.max(0, Math.floor((items.length - 1) / PICK_SIZE))
     start = session.pickerPage * PICK_SIZE
     current = currentPickerValue(session)
-    lid = { id:ID.LABEL_BASE + 6000 }
+    lid = { id:ID.LABEL_FLYOUT_BASE }
     x = FLYOUT_X + 16
     y = FLYOUT_Y + 14
     addFlatButton(session, ID.BTN_MODAL_BLOCKER, "", 0, 0, GUI_W, GUI_H)
@@ -1136,37 +1150,37 @@ var StarterSelectEditorModule = (function(){
     return true
   }
 
-  function handleFlyoutButton(e, session){
+  function handleFlyoutButton(e, session, id){
     var items, idx
     if(!session.flyoutOpen) return false
-    if(e.buttonId === ID.BTN_MODAL_BLOCKER) return true
-    if(e.buttonId === ID.BTN_PICK_CANCEL){
+    if(id === ID.BTN_MODAL_BLOCKER) return true
+    if(id === ID.BTN_PICK_CANCEL){
       session.flyoutOpen = false
       redraw(e.player, session, false)
       return true
     }
-    if(e.buttonId === ID.BTN_PICK_APPLY_SEARCH){
+    if(id === ID.BTN_PICK_APPLY_SEARCH){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, "")
       session.pickerPage = 0
       redraw(e.player, session, false)
       return true
     }
-    if(e.buttonId === ID.BTN_PICK_PREV){
+    if(id === ID.BTN_PICK_PREV){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, session.pickerSearch)
       session.pickerPage = Math.max(0, session.pickerPage - 1)
       redraw(e.player, session, false)
       return true
     }
-    if(e.buttonId === ID.BTN_PICK_NEXT){
+    if(id === ID.BTN_PICK_NEXT){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, session.pickerSearch)
       session.pickerPage++
       redraw(e.player, session, false)
       return true
     }
-    if(e.buttonId >= ID.BTN_PICK_ROW_START && e.buttonId < ID.BTN_PICK_ROW_START + PICK_SIZE){
+    if(id >= ID.BTN_PICK_ROW_START && id < ID.BTN_PICK_ROW_START + PICK_SIZE){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, session.pickerSearch)
       items = pickerItems(session)
-      idx = session.pickerPage * PICK_SIZE + (e.buttonId - ID.BTN_PICK_ROW_START)
+      idx = session.pickerPage * PICK_SIZE + (id - ID.BTN_PICK_ROW_START)
       if(idx >= 0 && idx < items.length) applyPickerValue(session, items[idx])
       session.flyoutOpen = false
       redraw(e.player, session, false)
@@ -1177,42 +1191,43 @@ var StarterSelectEditorModule = (function(){
 
   function handleButton(e){
     var session = getStoredSession(e.player, e.gui)
-    var list, idx, copy, c, i
+    var list, idx, copy, c, i, id
     if(!session || !isStarterGuiEvent(e)) return
-    if(e.buttonId === ID.BTN_MODAL_BLOCKER && !session.flyoutOpen){
+    id = buttonId(e)
+    if(id === ID.BTN_MODAL_BLOCKER && !session.flyoutOpen){
       redraw(e.player, session, false)
       return true
     }
-    if(handleFlyoutButton(e, session)) return
-    if(session.flyoutOpen) return
+    if(handleFlyoutButton(e, session, id)) return true
+    if(session.flyoutOpen) return true
     gatherEditorFields(e, session)
     list = choices(session)
     for(i = 0; i < CATEGORIES.length; i++){
-      if(e.buttonId === ID.BTN_CAT_BASE + i){
+      if(id === ID.BTN_CAT_BASE + i){
         session.category = CATEGORIES[i].id
         session.flyoutOpen = false
         redraw(e.player, session, false)
-        return
+        return true
       }
     }
-    if(e.buttonId >= ID.BTN_ROW_START && e.buttonId < ID.BTN_ROW_START + LIST_SIZE){
-      idx = session.page * LIST_SIZE + (e.buttonId - ID.BTN_ROW_START)
+    if(id >= ID.BTN_ROW_START && id < ID.BTN_ROW_START + LIST_SIZE){
+      idx = session.page * LIST_SIZE + (id - ID.BTN_ROW_START)
       if(idx >= 0 && idx < list.length) session.index = idx
       session.flyoutOpen = false
       redraw(e.player, session, false)
-      return
+      return true
     }
-    if(e.buttonId === ID.BTN_PREV){ session.page = Math.max(0, session.page - 1); redraw(e.player, session, false); return }
-    if(e.buttonId === ID.BTN_NEXT){ if((session.page + 1) * LIST_SIZE < list.length) session.page++; redraw(e.player, session, false); return }
-    if(e.buttonId === ID.BTN_ADD){
+    if(id === ID.BTN_PREV){ session.page = Math.max(0, session.page - 1); redraw(e.player, session, false); return true }
+    if(id === ID.BTN_NEXT){ if((session.page + 1) * LIST_SIZE < list.length) session.page++; redraw(e.player, session, false); return true }
+    if(id === ID.BTN_ADD){
       list.push(defaultChoice())
       session.json.choices = list
       session.index = list.length - 1
       session.page = Math.floor(session.index / LIST_SIZE)
       redraw(e.player, session, false)
-      return
+      return true
     }
-    if(e.buttonId === ID.BTN_DUP){
+    if(id === ID.BTN_DUP){
       copy = JSON.parse(JSON.stringify(activeChoice(session)))
       copy.id = cleanToken(copy.id + "_copy")
       list.splice(session.index + 1, 0, copy)
@@ -1220,41 +1235,41 @@ var StarterSelectEditorModule = (function(){
       session.index++
       session.page = Math.floor(session.index / LIST_SIZE)
       redraw(e.player, session, false)
-      return
+      return true
     }
-    if(e.buttonId === ID.BTN_REMOVE){
+    if(id === ID.BTN_REMOVE){
       if(list.length <= 1){
         e.player.message(tr(session, "starter_editor.one_required", "At least one Pokemon is required."))
         redraw(e.player, session, false)
-        return
+        return true
       }
       list.splice(session.index, 1)
       session.json.choices = list
       session.index = Math.max(0, Math.min(session.index, list.length - 1))
       session.page = Math.floor(session.index / LIST_SIZE)
       redraw(e.player, session, false)
-      return
+      return true
     }
-    if(e.buttonId === ID.BTN_ONCE){ session.json.once = !session.json.once; redraw(e.player, session, false); return }
-    if(e.buttonId === ID.BTN_SHINY){ c = activeChoice(session); c.shiny = !c.shiny; redraw(e.player, session, false); return }
-    if(e.buttonId === ID.BTN_PICK_SPECIES){ openPicker(e.player, session, "species", "species"); return }
-    if(e.buttonId === ID.BTN_PICK_GENDER){ openPicker(e.player, session, "gender", "gender"); return }
-    if(e.buttonId === ID.BTN_PICK_NATURE){ openPicker(e.player, session, "nature", "nature"); return }
-    if(e.buttonId === ID.BTN_PICK_ABILITY){ openPicker(e.player, session, "ability", "ability"); return }
-    if(e.buttonId === ID.BTN_PICK_FORM){ openPicker(e.player, session, "form", "form"); return }
-    if(e.buttonId === ID.BTN_PICK_MOVE1){ openPicker(e.player, session, "move", "move1"); return }
-    if(e.buttonId === ID.BTN_PICK_MOVE2){ openPicker(e.player, session, "move", "move2"); return }
-    if(e.buttonId === ID.BTN_PICK_MOVE3){ openPicker(e.player, session, "move", "move3"); return }
-    if(e.buttonId === ID.BTN_PICK_MOVE4){ openPicker(e.player, session, "move", "move4"); return }
-    if(e.buttonId === ID.BTN_SAVE){
+    if(id === ID.BTN_ONCE){ session.json.once = !session.json.once; redraw(e.player, session, false); return true }
+    if(id === ID.BTN_SHINY){ c = activeChoice(session); c.shiny = !c.shiny; redraw(e.player, session, false); return true }
+    if(id === ID.BTN_PICK_SPECIES){ openPicker(e.player, session, "species", "species"); return true }
+    if(id === ID.BTN_PICK_GENDER){ openPicker(e.player, session, "gender", "gender"); return true }
+    if(id === ID.BTN_PICK_NATURE){ openPicker(e.player, session, "nature", "nature"); return true }
+    if(id === ID.BTN_PICK_ABILITY){ openPicker(e.player, session, "ability", "ability"); return true }
+    if(id === ID.BTN_PICK_FORM){ openPicker(e.player, session, "form", "form"); return true }
+    if(id === ID.BTN_PICK_MOVE1){ openPicker(e.player, session, "move", "move1"); return true }
+    if(id === ID.BTN_PICK_MOVE2){ openPicker(e.player, session, "move", "move2"); return true }
+    if(id === ID.BTN_PICK_MOVE3){ openPicker(e.player, session, "move", "move3"); return true }
+    if(id === ID.BTN_PICK_MOVE4){ openPicker(e.player, session, "move", "move4"); return true }
+    if(id === ID.BTN_SAVE){
       session.json = normalizeStarterJson(session.json)
       saveStarter(session)
       e.player.message(tr(session, "starter_editor.saved_path", "Saved {path}", { path:session.jsonPath }))
       redraw(e.player, session, false)
-      return
+      return true
     }
-    if(e.buttonId === ID.BTN_BACK){ backToNpcEditor(e.player); return }
-    if(e.buttonId === ID.BTN_CLOSE){ clearSession(e.player); e.player.closeGui(); return }
+    if(id === ID.BTN_BACK){ backToNpcEditor(e.player); return true }
+    if(id === ID.BTN_CLOSE){ clearSession(e.player); e.player.closeGui(); return true }
   }
 
   function handleClosed(e){
@@ -1269,7 +1284,7 @@ var StarterSelectEditorModule = (function(){
       description:"Edit the selected starter Pokemon JSON list for dc_starter NPCs.",
       targetPrefix:"dc_starter",
       defaultEnabled:true,
-      customGuiId:GUI_ID,
+      customGuiId:-1,
       editLabel:"Edit Pokemon",
       open:open,
       customGuiButton:handleButton,
