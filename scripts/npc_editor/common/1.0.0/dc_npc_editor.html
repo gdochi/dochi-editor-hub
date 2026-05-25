@@ -834,6 +834,7 @@ APP_STATE.script.data.scriptStyle=mode;
 APP_STATE.script.data.dochiLock=mode==="dcE"?lock:defaultDochiLock();
 if(mode==="dcE"){
 APP_STATE.script.dcSelection=normalizeDcSelection(lock);
+APP_STATE.script.dcBrowser.activePrefix="";
 }else{
 APP_STATE.script.dcSelection=emptyDcSelection();
 APP_STATE.script.dcBrowser.activePrefix="";
@@ -851,6 +852,7 @@ APP_STATE.script.data.scriptStyle=mode;
 APP_STATE.script.data.dochiLock=lock;
 if(d.dcSelection){
 APP_STATE.script.dcSelection=normalizeDcSelection(d.dcSelection);
+APP_STATE.script.dcBrowser.activePrefix="";
 }else if(mode==="general"){
 APP_STATE.script.dcSelection=emptyDcSelection();
 APP_STATE.script.dcBrowser.activePrefix="";
@@ -1276,7 +1278,7 @@ if(needJson)requestDcJsonFileList(prefix,"");
 updateDcAddonEditButton();
 }
 function renderDcInstalledScripts(){
-var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],warnings=APP_STATE.script.dcBrowser.warnings||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),activePrefix=getActiveDcPrefix(sel),warn;
+var box=byId("dcInstalledScriptsBox"),list=APP_STATE.script.dcBrowser.scripts||[],warnings=APP_STATE.script.dcBrowser.warnings||[],sel=normalizeDcSelection(APP_STATE.script.dcSelection),focusPrefix=String(APP_STATE.script.dcBrowser.activePrefix||""),warn;
 if(!box)return;
 box.innerHTML="";
 if(warnings.length){
@@ -1293,8 +1295,8 @@ box.appendChild(warn);
 return;
 }
 list.forEach(function(item){
-var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div"),removeBtn,prefix=String(item.prefix||inferDcPrefix(p)||""),available=item.available===true,missing=Array.isArray(item.missing)?item.missing:[],selected=isDcScriptSelected(sel,p);
-row.className="dc-install-row"+(selected?" active":"")+(prefix===activePrefix?" focus":"")+(available?"":" disabled");
+var p=String(item.path||item||""),name=String(item.name||lastSeg(p)||p),row=document.createElement("div"),main=document.createElement("div"),badge=document.createElement("div"),removeBtn,prefix=String(item.prefix||inferDcPrefix(p)||""),available=item.available===true,missing=Array.isArray(item.missing)?item.missing:[],selected=isDcScriptSelected(sel,p),focused=!!focusPrefix&&prefix===focusPrefix;
+row.className="dc-install-row"+(selected?" active":"")+(focused?" focus":"")+(available?"":" disabled");
 main.className="dc-install-main";
 main.innerHTML='<div class="dc-install-title">'+esc(name)+'</div><div class="dc-install-meta">'+esc(p)+'</div>'+(missing.length?'<div class="dc-install-missing">'+esc(missing.join(", "))+'</div>':"");
 badge.className="dc-install-badge";
