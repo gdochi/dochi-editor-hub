@@ -12,8 +12,8 @@ var StarterSelectEditorModule = (function(){
   var TEXT_COLOR = 0xF2F6FF
   var FLYOUT_TEXT_COLOR = 0x20242A
   var JSON_TEXT_COLOR = 0x8FEAFF
-  var LINE_COLOR = 0x6F86A8
-  var CENTER_LINE_COLOR = 0x42D7C8
+  var LINE_COLOR = 0x26E6FF
+  var CENTER_LINE_COLOR = 0xFFD34D
   var FLYOUT_W = 286
   var FLYOUT_H = 310
   var FLYOUT_X = Math.floor((GUI_W - FLYOUT_W) / 2)
@@ -121,6 +121,19 @@ var StarterSelectEditorModule = (function(){
     return null
   }
 
+  function guiId(gui){
+    var v
+    if(!gui) return -1
+    try{ if(typeof gui.getID === "function") return toInt(gui.getID(), -1) }catch(err0){}
+    try{ if(typeof gui.getId === "function") return toInt(gui.getId(), -1) }catch(err1){}
+    try{ v = gui.id }catch(err2){ v = null }
+    return toInt(v, -1)
+  }
+
+  function isStarterGuiEvent(e){
+    return !!(e && e.gui && guiId(e.gui) === GUI_ID)
+  }
+
   function setSession(player, session){
     var td = playerTemp(player)
     var state
@@ -142,45 +155,32 @@ var StarterSelectEditorModule = (function(){
     try{ td.put(TEMP.SESSION, JSON.stringify(state)) }catch(err){}
   }
 
-  function getSession(player, gui){
+  function getStoredSession(player, gui){
     var td = playerTemp(player)
-    var raw, state
+    var raw, saved, session
     if(!td) return null
     try{ raw = td.get(TEMP.SESSION) }catch(err){}
     if(!raw) return null
-    try{ state = JSON.parse(String(raw)) }catch(err2){ return null }
-    state.player = player
-    state.gui = gui
-    state.componentIds = state.componentIds instanceof Array ? state.componentIds : []
-    state.file = resolveFile(state.jsonPath)
-    state.json = normalizeStarterJson(state.json)
-    state.i18n = buildEditorI18n(player)
-    return state
-  }
-
-  function currentSessionForRedraw(player, gui, session){
-    if(session){
-      session.player = player
-      session.gui = gui || session.gui
-      if(!session.componentIds) session.componentIds = []
-      if(!session.file) session.file = resolveFile(session.jsonPath)
-      if(!session.i18n) session.i18n = buildEditorI18n(player)
-      return session
+    try{ saved = JSON.parse(String(raw)) }catch(err2){ return null }
+    session = {
+      player:player,
+      gui:gui,
+      npcUuid:String(saved.npcUuid || ""),
+      jsonPath:String(saved.jsonPath || ""),
+      json:normalizeStarterJson(saved.json || {}),
+      index:toInt(saved.index, 0),
+      page:toInt(saved.page, 0),
+      category:String(saved.category || CAT.LIST),
+      flyoutOpen:saved.flyoutOpen === true,
+      pickerKind:String(saved.pickerKind || ""),
+      pickerTarget:String(saved.pickerTarget || ""),
+      pickerSearch:String(saved.pickerSearch || ""),
+      pickerPage:toInt(saved.pickerPage, 0),
+      componentIds:saved.componentIds instanceof Array ? saved.componentIds : []
     }
-    return getSession(player, gui)
-  }
-
-  function persistAndRedraw(player, gui, session){
-    session = currentSessionForRedraw(player, gui, session)
-    if(!session) return
-    redraw(player, session, false)
-  }
-
-  function persistAndOpen(player, gui, session){
-    session = currentSessionForRedraw(player, gui, session)
-    if(!session) return
-    redraw(player, session, true)
-    return null
+    session.file = resolveFile(session.jsonPath)
+    session.i18n = buildEditorI18n(player)
+    return session
   }
 
   function clearSession(player){
@@ -1029,9 +1029,9 @@ var StarterSelectEditorModule = (function(){
   }
 
   function handleButton(e){
-    var session = getSession(e.player, e.gui)
+    var session = getStoredSession(e.player, e.gui)
     var list, idx, copy, c, i
-    if(!session || !e.gui || e.gui.getID() !== GUI_ID) return
+    if(!session || !isStarterGuiEvent(e)) return
     if(handleFlyoutButton(e, session)) return
     if(session.flyoutOpen) return
     gatherEditorFields(e, session)
@@ -1107,7 +1107,7 @@ var StarterSelectEditorModule = (function(){
   }
 
   function handleClosed(e){
-    if(!e || !e.gui || e.gui.getID() !== GUI_ID) return
+    if(!isStarterGuiEvent(e)) return
     clearSession(e.player)
   }
 
@@ -1135,8 +1135,40 @@ var StarterSelectEditorModule = (function(){
 
   return {
     ADDON_ID:ADDON_ID,
+    GUI_ID:GUI_ID,
+    isStarterGuiEvent:isStarterGuiEvent,
     open:open,
     customGuiButton:handleButton,
     customGuiClosed:handleClosed
   }
 })()
+
+var __dcStarterPrevCustomGuiButton = typeof customGuiButton === "function" && customGuiButton.__dcStarterDirect !== true ? customGuiButton : null
+var __dcStarterPrevCustomGuiClosed = typeof customGuiClosed === "function" && customGuiClosed.__dcStarterDirect !== true ? customGuiClosed : null
+
+var customGuiButton = function(e){
+  if(StarterSelectEditorModule.isStarterGuiEvent(e)){
+    try{
+      StarterSelectEditorModule.customGuiButton(e)
+    }catch(err){
+      try{ if(e && e.player) e.player.message("Starter editor button error: " + String(err)) }catch(ignore){}
+    }
+    return
+  }
+  if(typeof __dcStarterPrevCustomGuiButton === "function") __dcStarterPrevCustomGuiButton(e)
+}
+
+var customGuiClosed = function(e){
+  if(StarterSelectEditorModule.isStarterGuiEvent(e)){
+    try{
+      StarterSelectEditorModule.customGuiClosed(e)
+    }catch(err){
+      try{ if(e && e.player) e.player.message("Starter editor close error: " + String(err)) }catch(ignore){}
+    }
+    return
+  }
+  if(typeof __dcStarterPrevCustomGuiClosed === "function") __dcStarterPrevCustomGuiClosed(e)
+}
+
+try{ customGuiButton.__dcStarterDirect = true }catch(err0){}
+try{ customGuiClosed.__dcStarterDirect = true }catch(err1){}
