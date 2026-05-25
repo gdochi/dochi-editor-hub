@@ -24,7 +24,7 @@ body{
   background:var(--bg);
   overflow:hidden;
 }
-button,input,select{
+button,input{
   font-family:inherit;
   font-size:16px;
 }
@@ -43,7 +43,7 @@ button.good{background:#246b50;border-color:#59d39c}
 button.danger{background:#74303a;border-color:#f07b85}
 button.ghost{background:#141d2b}
 button:disabled{opacity:.45;cursor:default}
-input,select{
+input{
   min-height:42px;
   width:100%;
   border:1px solid #3f4d65;
@@ -53,7 +53,7 @@ input,select{
   padding:7px 10px;
   outline:none;
 }
-input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,255,.18)}
+input:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,255,.18)}
 .shell{
   width:calc(100vw - 24px);
   height:calc(100vh - 24px);
@@ -136,12 +136,21 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
 }
 .grid{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(220px,560px));
   gap:12px;
   padding:12px;
+  justify-content:start;
 }
-.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid.three{grid-template-columns:360px 128px 220px 220px}
 .grid.six{grid-template-columns:repeat(6,minmax(72px,1fr))}
+.field.w-title{max-width:520px}
+.field.w-subtitle{max-width:620px}
+.field.w-claimed{max-width:720px}
+.field.w-species{max-width:430px}
+.field.w-level{max-width:128px}
+.field.w-small{max-width:220px}
+.field.w-mid{max-width:300px}
+.field.w-wide{max-width:440px}
 .field label{
   display:block;
   margin-bottom:5px;
@@ -156,6 +165,95 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
   min-height:34px;
 }
 .checkline input{width:18px;min-height:18px}
+.input-pick{
+  display:grid;
+  grid-template-columns:1fr 46px;
+  gap:6px;
+}
+.input-pick input{min-width:0}
+.pick-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:46px;
+  padding:0;
+  font-size:13px;
+  font-weight:800;
+}
+.mag-icon{
+  display:inline-block;
+  width:15px;
+  height:15px;
+  border:2px solid #d9e4ff;
+  border-radius:50%;
+  position:relative;
+  vertical-align:middle;
+}
+.mag-icon:after{
+  content:"";
+  position:absolute;
+  width:8px;
+  height:2px;
+  right:-7px;
+  bottom:-4px;
+  background:#d9e4ff;
+  border-radius:2px;
+  transform:rotate(45deg);
+}
+.picker-pop{
+  display:none;
+  position:fixed;
+  right:34px;
+  top:92px;
+  width:min(430px,calc(100vw - 68px));
+  max-height:calc(100vh - 150px);
+  z-index:100;
+  border:1px solid #5876ad;
+  border-radius:8px;
+  background:#0d1420;
+  box-shadow:0 24px 70px rgba(0,0,0,.65);
+  overflow:hidden;
+}
+.picker-pop.open{
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+}
+.picker-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px;
+  border-bottom:1px solid #293750;
+  background:#121c2b;
+}
+.picker-title{font-size:15px;font-weight:800}
+.picker-meta{display:block;margin-top:3px;color:var(--muted);font-size:12px}
+.picker-search{
+  margin:10px 12px;
+  width:calc(100% - 24px);
+}
+.picker-list{
+  overflow:auto;
+  padding:0 12px 12px;
+}
+.pick-option{
+  width:100%;
+  min-height:36px;
+  margin-bottom:6px;
+  text-align:left;
+  background:#121c2b;
+}
+.pick-option.active{
+  border-color:#7ea0ff;
+  background:#1a2942;
+}
+.pick-empty{
+  padding:14px;
+  color:var(--muted);
+  border:1px dashed #3d4c65;
+  border-radius:7px;
+}
 .raw{
   width:100%;
   min-height:92px;
@@ -180,6 +278,8 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
   .content{grid-template-columns:1fr}
   .side{border-right:0;border-bottom:1px solid var(--line);max-height:290px}
   .grid,.grid.three,.grid.six{grid-template-columns:1fr}
+  .field.w-title,.field.w-subtitle,.field.w-claimed,.field.w-species,.field.w-level,.field.w-small,.field.w-mid,.field.w-wide{max-width:none}
+  .picker-pop{right:12px;top:72px;width:calc(100vw - 24px);max-height:calc(100vh - 110px)}
 }
 </style>
 <script>
@@ -191,11 +291,15 @@ var FALLBACK_FORMS=["","normal","alola","galar","hisui","paldea"]
 var POKEMON_OPTIONS=FALLBACK_POKEMON.slice()
 var ABILITY_OPTIONS=FALLBACK_ABILITIES.slice()
 var MOVE_OPTIONS=["","tackle","growl","scratch","tail-whip","vine-whip","ember","water-gun","razor-leaf","quick-attack","thunder-shock","bubble","pound"]
+var GENDER_OPTIONS=["","random","male","female","genderless"]
+var PICKER={open:false,kind:"",targetId:"",title:"",items:[]}
 
 function byId(id){return document.getElementById(id)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]})}
 function toInt(v,f){var n=parseInt(String(v),10);return isNaN(n)?f:n}
 function cleanToken(v){return String(v||"").replace(/[^A-Za-z0-9_:-]/g,"").toLowerCase()}
+function optionalToken(v){var t=cleanToken(v);return t==="default"||t==="none"||t==="-"?"":t}
+function optionalText(v){var s=String(v||"").trim(),t=cleanToken(s);return t==="default"||t==="none"||t==="-"?"":s}
 function cap(v){v=String(v||"");return v?v.charAt(0).toUpperCase()+v.slice(1):v}
 function defaultListId(){return cleanToken(String(STATE.fileName||STATE.jsonPath||"starter_list").replace(/\.json$/i,""))||"starter_list"}
 function statBlock(){return{hp:0,atk:0,def:0,spatk:0,spdef:0,speed:0}}
@@ -275,10 +379,10 @@ function gatherChoice(){
   c.id=c.species
   c.label=cap(c.species)
   c.level=Math.max(1,Math.min(100,toInt(byId("level").value,5)))
-  c.gender=cleanToken(byId("gender").value)
-  c.nature=cleanToken(byId("nature").value)
-  c.ability=byId("ability").value
-  c.form=byId("form").value
+  c.gender=optionalToken(byId("gender").value)
+  c.nature=optionalToken(byId("nature").value)
+  c.ability=optionalText(byId("ability").value)
+  c.form=optionalText(byId("form").value)
   c.shiny=byId("shiny").checked
   c.moveset=[byId("move1").value,byId("move2").value,byId("move3").value,byId("move4").value]
   c.ivs=c.ivs||statBlock()
@@ -333,57 +437,187 @@ function renderList(){
     box.appendChild(row)
   }
 }
-function fillDatalist(id,items){
-  var el=byId(id),seen={},i,v,opt
-  if(!el)return
-  el.innerHTML=""
+function hasParent(node,parent){
+  while(node){
+    if(node===parent)return true
+    node=node.parentNode
+  }
+  return false
+}
+function isPickerButton(node){
+  while(node&&node!==document.body){
+    if(node.getAttribute&&node.getAttribute("data-picker-button")==="1")return true
+    node=node.parentNode
+  }
+  return false
+}
+function uniqueList(items){
+  var out=[],seen={},i,v,key
   for(i=0;i<items.length;i++){
-    v=String(items[i]||"")
-    if(!v||seen[v])continue
-    seen[v]=true
-    opt=document.createElement("option")
-    opt.value=v
-    el.appendChild(opt)
+    v=String(items[i]==null?"":items[i])
+    key=v.toLowerCase()
+    if(seen[key])continue
+    seen[key]=true
+    out.push(v)
+  }
+  return out
+}
+function currentValue(id){
+  var el=byId(id)
+  return el?String(el.value||""):""
+}
+function allMoveValues(){
+  var out=[],list=choices(),i,j,moves
+  for(i=0;i<list.length;i++){
+    moves=normalizeMoves(list[i].moveset)
+    for(j=0;j<moves.length;j++)out.push(moves[j])
+  }
+  return out
+}
+function optionLabel(v){
+  return String(v||"Default")
+}
+function optionsForKind(kind,targetId){
+  var list=[],current=currentValue(targetId),i
+  if(kind==="species"){
+    list=POKEMON_OPTIONS.slice()
+    for(i=0;i<choices().length;i++)list.push(choices()[i].species||"")
+  }else if(kind==="gender"){
+    list=GENDER_OPTIONS.slice()
+  }else if(kind==="nature"){
+    list=NATURES.slice()
+  }else if(kind==="ability"){
+    list=ABILITY_OPTIONS.slice()
+    for(i=0;i<choices().length;i++)list.push(choices()[i].ability||"")
+  }else if(kind==="form"){
+    list=FALLBACK_FORMS.slice()
+    for(i=0;i<choices().length;i++)list.push(choices()[i].form||"")
+  }else if(kind==="move"){
+    list=MOVE_OPTIONS.concat(allMoveValues())
+  }
+  list.push(current)
+  return uniqueList(list)
+}
+function matchesPickerQuery(value,query){
+  var text=String(value||"Default").toLowerCase()
+  query=String(query||"").toLowerCase()
+  return !query||text.indexOf(query)>=0
+}
+function assignPickerChoice(btn,value){
+  btn.onclick=function(e){
+    if(e&&e.stopPropagation)e.stopPropagation()
+    choosePickerValue(value)
   }
 }
-function fillSelect(id,items,current){
-  var el=byId(id),seen={},i,v,opt
-  if(!el)return
-  el.innerHTML=""
-  if(current&&items.indexOf(current)<0)items=items.concat([current])
-  for(i=0;i<items.length;i++){
-    v=String(items[i]||"")
-    if(seen[v])continue
-    seen[v]=true
-    opt=document.createElement("option")
-    opt.value=v
-    opt.textContent=v?v:"Default"
-    el.appendChild(opt)
+function renderPicker(){
+  var fly=byId("pickerFlyout"),listEl=byId("pickerList"),search=byId("pickerSearch"),q,i,v,btn,count,shown,max
+  if(!fly||!listEl)return
+  byId("pickerTitle").textContent=PICKER.title||"Select"
+  byId("pickerMeta").textContent=currentValue(PICKER.targetId)?"Current: "+currentValue(PICKER.targetId):"Direct input is also available."
+  q=search?search.value:""
+  listEl.innerHTML=""
+  count=0
+  shown=0
+  max=180
+  for(i=0;i<PICKER.items.length;i++){
+    v=PICKER.items[i]
+    if(!matchesPickerQuery(v,q))continue
+    count++
+    if(shown>=max)continue
+    btn=document.createElement("button")
+    btn.type="button"
+    btn.className="pick-option"+(String(v)===currentValue(PICKER.targetId)?" active":"")
+    btn.textContent=optionLabel(v)
+    assignPickerChoice(btn,v)
+    listEl.appendChild(btn)
+    shown++
+  }
+  if(!count){
+    listEl.innerHTML='<div class="pick-empty">No matching option.</div>'
+  }else if(count>max){
+    btn=document.createElement("div")
+    btn.className="pick-empty"
+    btn.textContent=String(count-max)+" more results. Type to narrow the list."
+    listEl.appendChild(btn)
   }
 }
-function renderOptionLists(){
-  fillDatalist("pokemonOptions",POKEMON_OPTIONS.concat(choices().map(function(c){return c.species||""})))
-  fillDatalist("abilityOptions",ABILITY_OPTIONS.concat(choices().map(function(c){return c.ability||""})))
-  fillDatalist("moveOptions",MOVE_OPTIONS)
-  fillSelect("nature",NATURES,activeChoice().nature||"")
-  fillSelect("form",FALLBACK_FORMS,activeChoice().form||"")
+function openPicker(kind,targetId,title){
+  var fly=byId("pickerFlyout"),search=byId("pickerSearch")
+  PICKER.open=true
+  PICKER.kind=kind
+  PICKER.targetId=targetId
+  PICKER.title=title
+  PICKER.items=optionsForKind(kind,targetId)
+  if(search)search.value=""
+  fly.className="picker-pop open"
+  renderPicker()
+  window.setTimeout(function(){if(search)search.focus()},0)
+}
+function closePicker(){
+  var fly=byId("pickerFlyout")
+  PICKER.open=false
+  PICKER.kind=""
+  PICKER.targetId=""
+  PICKER.title=""
+  PICKER.items=[]
+  if(fly)fly.className="picker-pop"
+}
+function refreshPicker(){
+  if(!PICKER.open)return
+  PICKER.items=optionsForKind(PICKER.kind,PICKER.targetId)
+  renderPicker()
+}
+function choosePickerValue(value){
+  var targetId=PICKER.targetId,el=byId(targetId)
+  if(el)el.value=String(value||"")
+  closePicker()
+  if(targetId==="species"){
+    gatherChoice()
+    renderList()
+    renderChoice()
+  }
+}
+function bindPickers(){
+  var buttons=document.getElementsByTagName("button"),i,b
+  for(i=0;i<buttons.length;i++){
+    b=buttons[i]
+    if(b.getAttribute("data-picker-button")!=="1")continue
+    b.onclick=function(e){
+      if(e&&e.stopPropagation)e.stopPropagation()
+      openPicker(this.getAttribute("data-kind"),this.getAttribute("data-target"),this.getAttribute("data-title"))
+    }
+  }
+  byId("pickerCloseBtn").onclick=function(e){
+    if(e&&e.stopPropagation)e.stopPropagation()
+    closePicker()
+  }
+  byId("pickerSearch").oninput=renderPicker
+  document.addEventListener("click",function(e){
+    if(!PICKER.open)return
+    if(hasParent(e.target,byId("pickerFlyout")))return
+    if(isPickerButton(e.target))return
+    closePicker()
+  })
+  document.addEventListener("keydown",function(e){
+    if(e&&e.keyCode===27)closePicker()
+  })
 }
 function loadRemoteOptions(){
   if(!window.fetch)return
   fetch("https://pokeapi.co/api/v2/pokemon?limit=1025").then(function(r){return r.json()}).then(function(data){
     if(data&&data.results)POKEMON_OPTIONS=data.results.map(function(p){return p.name})
-    renderOptionLists()
+    refreshPicker()
   }).catch(function(){})
   fetch("https://pokeapi.co/api/v2/ability?limit=400").then(function(r){return r.json()}).then(function(data){
     if(data&&data.results)ABILITY_OPTIONS=[""].concat(data.results.map(function(p){return p.name}))
-    renderOptionLists()
+    refreshPicker()
   }).catch(function(){})
   fetch("https://pokeapi.co/api/v2/move?limit=1000").then(function(r){return r.json()}).then(function(data){
     if(data&&data.results)MOVE_OPTIONS=[""].concat(data.results.map(function(p){return p.name}))
-    renderOptionLists()
+    refreshPicker()
   }).catch(function(){})
 }
-function renderAll(){renderMeta();renderOptionLists();renderList();renderChoice()}
+function renderAll(){closePicker();renderMeta();renderList();renderChoice()}
 function addChoice(){
   gatherMeta();gatherChoice()
   choices().push(defaultChoice())
@@ -439,6 +673,7 @@ window.onload=function(){
   byId("saveBtn").onclick=save
   byId("backBtn").onclick=back
   byId("closeBtn").onclick=closeEditor
+  bindPickers()
   if(window.cnpc&&typeof window.cnpc.onEvent==="function"){
     window.cnpc.onEvent("starterEditorState",receiveState)
     window.cnpc.onEvent("starterEditorResult",receiveResult)
@@ -474,31 +709,31 @@ window.onload=function(){
       <section class="section">
         <div class="section-title">List Settings</div>
         <div class="grid">
-          <div class="field"><label>Title</label><input id="cfgTitle"></div>
-          <div class="field"><label>Subtitle</label><input id="cfgSubtitle"></div>
-          <div class="field"><label>Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span>Enable one-time claim</span></div></div>
-          <div class="field" style="grid-column:1/-1"><label>Already Claimed Message</label><input id="cfgClaimed"></div>
+          <div class="field w-title"><label>Title</label><input id="cfgTitle"></div>
+          <div class="field w-subtitle"><label>Subtitle</label><input id="cfgSubtitle"></div>
+          <div class="field w-small"><label>Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span>Enable one-time claim</span></div></div>
+          <div class="field w-claimed" style="grid-column:1/-1"><label>Already Claimed Message</label><input id="cfgClaimed"></div>
         </div>
       </section>
       <section class="section">
         <div class="section-title">Selected Pokemon</div>
         <div class="grid three">
-          <div class="field" style="grid-column:span 2"><label>Species</label><input id="species" list="pokemonOptions" placeholder="bulbasaur"><datalist id="pokemonOptions"></datalist></div>
-          <div class="field"><label>Level</label><input id="level" type="number" min="1" max="100"></div>
-          <div class="field"><label>Gender</label><select id="gender"><option value="">Default</option><option value="random">random</option><option value="male">male</option><option value="female">female</option><option value="genderless">genderless</option></select></div>
-          <div class="field"><label>Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span>Shiny Pokemon</span></div></div>
-          <div class="field"><label>Nature</label><select id="nature"></select></div>
-          <div class="field"><label>Ability</label><input id="ability" list="abilityOptions" placeholder="Default"><datalist id="abilityOptions"></datalist></div>
-          <div class="field"><label>Form</label><select id="form"></select></div>
+          <div class="field w-species"><label>Species</label><div class="input-pick"><input id="species" placeholder="bulbasaur"><button type="button" class="pick-btn" data-picker-button="1" data-kind="species" data-target="species" data-title="Species" title="Search species"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-level"><label>Level</label><input id="level" type="number" min="1" max="100"></div>
+          <div class="field w-small"><label>Gender</label><div class="input-pick"><input id="gender" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="gender" data-target="gender" data-title="Gender" title="Search gender"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-small"><label>Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span>Shiny Pokemon</span></div></div>
+          <div class="field w-small"><label>Nature</label><div class="input-pick"><input id="nature" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="nature" data-target="nature" data-title="Nature" title="Search nature"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-mid"><label>Ability</label><div class="input-pick"><input id="ability" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="ability" data-target="ability" data-title="Ability" title="Search ability"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-small"><label>Form</label><div class="input-pick"><input id="form" placeholder="Default"><button type="button" class="pick-btn" data-picker-button="1" data-kind="form" data-target="form" data-title="Form" title="Search form"><span class="mag-icon"></span></button></div></div>
         </div>
       </section>
       <section class="section">
         <div class="section-title">Moves</div>
         <div class="grid">
-          <div class="field"><label>Move 1</label><input id="move1" list="moveOptions"><datalist id="moveOptions"></datalist></div>
-          <div class="field"><label>Move 2</label><input id="move2" list="moveOptions"></div>
-          <div class="field"><label>Move 3</label><input id="move3" list="moveOptions"></div>
-          <div class="field"><label>Move 4</label><input id="move4" list="moveOptions"></div>
+          <div class="field w-wide"><label>Move 1</label><div class="input-pick"><input id="move1"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move1" data-title="Move 1" title="Search move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label>Move 2</label><div class="input-pick"><input id="move2"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move2" data-title="Move 2" title="Search move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label>Move 3</label><div class="input-pick"><input id="move3"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move3" data-title="Move 3" title="Search move"><span class="mag-icon"></span></button></div></div>
+          <div class="field w-wide"><label>Move 4</label><div class="input-pick"><input id="move4"><button type="button" class="pick-btn" data-picker-button="1" data-kind="move" data-target="move4" data-title="Move 4" title="Search move"><span class="mag-icon"></span></button></div></div>
         </div>
       </section>
       <section class="section">
@@ -532,6 +767,17 @@ window.onload=function(){
       <button id="saveBtn" class="primary">Save</button>
     </div>
   </div>
+</div>
+<div class="picker-pop" id="pickerFlyout">
+  <div class="picker-head">
+    <div>
+      <div class="picker-title" id="pickerTitle">Select</div>
+      <span class="picker-meta" id="pickerMeta"></span>
+    </div>
+    <button type="button" class="ghost" id="pickerCloseBtn">Close</button>
+  </div>
+  <input class="picker-search" id="pickerSearch" placeholder="Search or type directly in the field">
+  <div class="picker-list" id="pickerList"></div>
 </div>
 </body>
 </html>
