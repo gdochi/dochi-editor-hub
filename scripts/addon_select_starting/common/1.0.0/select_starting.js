@@ -358,21 +358,50 @@ var StarterSelectionModule = (function(){
   }
 
   function buildGiveCommand(player, choice, cfg){
-    var playerName = String(player.getName())
+    var playerName = quoteCommandArg(String(player.getName()))
     var attrs = []
-    var cmd = String(DcStarterSelectConfig.commandName || "pokegiveother").replace(/^\/+/, "")
-    attrs.push("lvl=" + Math.max(1, Math.min(100, toInt(choice.level, DEFAULT_LEVEL))))
+    var cmd = String((cfg && cfg.commandName) || DcStarterSelectConfig.commandName || "pokegiveother").replace(/^\/+/, "")
+    attrs.push("level=" + Math.max(1, Math.min(100, toInt(choice.level, DEFAULT_LEVEL))))
     if(choice.shiny === true) attrs.push("shiny")
-    if(choice.gender) attrs.push("gender=" + choice.gender)
-    if(choice.nature) attrs.push("nature=" + choice.nature)
-    if(choice.ability) attrs.push("ability=" + choice.ability)
-    if(choice.form) attrs.push("form=" + choice.form)
-    return "/" + cmd + " " + playerName + " " + cleanPokemonName(choice.species) + " " + attrs.join(" ")
+    if(isExplicitProperty(choice.gender)) attrs.push("gender=" + choice.gender)
+    if(isExplicitProperty(choice.nature)) attrs.push("nature=" + choice.nature)
+    if(isExplicitProperty(choice.ability)) attrs.push("ability=" + choice.ability)
+    if(isExplicitProperty(choice.form)) attrs.push("form=" + choice.form)
+    return cmd + " " + playerName + " " + cleanPokemonName(choice.species) + (attrs.length ? (" " + attrs.join(" ")) : "")
+  }
+
+  function isExplicitProperty(value){
+    var v = cleanToken(value)
+    return v !== "" && v !== "default" && v !== "random" && v !== "any" && v !== "none"
+  }
+
+  function quoteCommandArg(value){
+    return "\"" + String(value || "").replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\""
+  }
+
+  function executeGiveCommand(player, npc, command){
+    if(npc && typeof npc.executeCommand === "function"){
+      try{
+        npc.executeCommand(String(command))
+        return { ok:true, via:"npc", command:String(command) }
+      }catch(errNpc){}
+    }
+    if(player && typeof player.executeCommand === "function"){
+      try{
+        player.executeCommand(String(command))
+        return { ok:true, via:"player", command:String(command) }
+      }catch(errPlayer){}
+    }
+    try{
+      StarterSelectAPI.executeCommand(player.getWorld(), String(command))
+      return { ok:true, via:"api", command:String(command) }
+    }catch(errApi){
+      return { ok:false, via:"none", command:String(command), error:String(errApi) }
+    }
   }
 
   function giveStarter(player, npc, choice, cfg){
-    StarterSelectAPI.executeCommand(player.getWorld(), buildGiveCommand(player, choice, cfg))
-    return true
+    return executeGiveCommand(player, npc, buildGiveCommand(player, choice, cfg))
   }
 
   function open(target, maybeNpc, maybeOpts){
@@ -438,7 +467,11 @@ var StarterSelectionModule = (function(){
         delete sessions[key(e.player)]
         return
       }
-      giveStarter(e.player, session.npc, choice, session.config)
+      var give = giveStarter(e.player, session.npc, choice, session.config)
+      if(!give || give.ok !== true){
+        e.player.message("Starter give failed: " + (give && give.error ? give.error : "command did not run"))
+        return
+      }
       markClaimed(e.player, session.config, choice)
       e.player.message("You selected: " + choice.species)
       delete sessions[key(e.player)]

@@ -60,6 +60,20 @@ var StarterSelectEditorModule = (function(){
     Files.write(file.toPath(), new JString(String(text || "")).getBytes(StandardCharsets.UTF_8))
   }
 
+  function logInfo(message){
+    try{
+      Java.type("java.lang.System").out.println("[starter_select_editor] " + String(message))
+    }catch(err){}
+  }
+
+  function choiceSummary(json){
+    var list = json && json.choices instanceof Array ? json.choices : []
+    var out = []
+    var i
+    for(i = 0; i < list.length; i++) out.push(String((list[i] || {}).species || ""))
+    return out.join(",")
+  }
+
   function readStarter(path){
     var file = resolveFile(path)
     var json
@@ -69,7 +83,11 @@ var StarterSelectEditorModule = (function(){
   }
 
   function saveStarter(session){
-    writeTextFile(session.file, JSON.stringify(session.json, null, 2))
+    var text = JSON.stringify(session.json, null, 2)
+    var length = 0
+    writeTextFile(session.file, text)
+    try{ length = session.file && session.file.length ? session.file.length() : text.length }catch(errLen){ length = text.length }
+    logInfo("saved path=" + String(session.file && session.file.getPath ? session.file.getPath() : session.jsonPath) + " bytes=" + length + " choices=" + choiceSummary(session.json))
   }
 
   function statBlock(){
@@ -362,6 +380,7 @@ var StarterSelectEditorModule = (function(){
     if(name === "starterEditorSave"){
       try{
         session.json = normalizeStarterJson(data.json)
+        logInfo("save event player=" + String(player.getName ? player.getName() : "") + " jsonPath=" + session.jsonPath + " choices=" + choiceSummary(session.json))
         saveStarter(session)
         pushBrowser(player, "starterEditorResult", { ok:true, action:"save", path:session.jsonPath })
         pushBrowser(player, "starterEditorState", buildInitData(session, player))
