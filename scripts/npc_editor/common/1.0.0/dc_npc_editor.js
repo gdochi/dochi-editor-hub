@@ -117,7 +117,7 @@ var range=normalizeScanRange(getStoredScanRange(player)),state=buildAdminBrowser
 }
 
 function enrichNpcEditorOpenPayload(player,initData){
-var uuid="",npc=null,scriptData=null,found=null;
+var uuid="",npc=null,scriptData=null,found=null,selection=null,entry=null,prefix="",candidate=null,jsonFound=null;
 if(!initData||!initData.npcs||!initData.npcs.length)return initData;
 uuid=String(initData.npcs[0].uuid||"");
 if(!uuid)return initData;
@@ -130,6 +130,15 @@ initData.selectedScriptData=scriptData;
 if(String(scriptData.scriptStyle||"general")==="dcE"){
 found=listDcInstallableScripts(false);
 initData.initialDcScriptFileList={ok:!found.error,root:found.root||"",label:found.label||"dc_lib",mode:"dcE",files:found.files||[],warnings:found.warnings||[],error:found.error||""};
+selection=normalizeDcSelection(scriptData.dcSelection||{});
+entry=selection.entries&&selection.entries.length?selection.entries[0]:null;
+if(!entry&&selection.scriptPath)entry={scriptPath:selection.scriptPath,jsonPath:selection.jsonPath,prefix:selection.prefix};
+prefix=String((entry&&entry.prefix)||selection.prefix||"");
+candidate=entry&&entry.scriptPath?findDcInstallableCandidate(entry.scriptPath):null;
+if(prefix&&candidate&&candidate.requiresJson===true){
+jsonFound=listDcJsonFiles(prefix,false);
+initData.initialDcJsonFileList={ok:!jsonFound.error,root:jsonFound.root||"",label:getDcJsonRootLabel(prefix),prefix:prefix,files:jsonFound.files||[],error:jsonFound.error||""};
+}
 }
 }catch(err1){
 initData.selectedScriptDataError=String(err1);
