@@ -5,13 +5,22 @@ var StarterSelectEditorModule = (function(){
   var GUI_ID = 781
   var GUI_W = 620
   var GUI_H = 392
-  var LIST_SIZE = 8
+  var LIST_SIZE = 9
   var PICK_SIZE = 9
+  var BG_TEXTURE = "minecraft:textures/gui/options_background.png"
   var sessions = {}
 
   var TEMP = {
     NPC_UUID:"npc_editor_addon_edit_npc_uuid",
     JSON_PATH:"npc_editor_addon_edit_json_path"
+  }
+
+  var CAT = {
+    LIST:"list",
+    POKEMON:"pokemon",
+    MOVES:"moves",
+    IVS:"ivs",
+    EVS:"evs"
   }
 
   var ID = {
@@ -34,6 +43,7 @@ var StarterSelectEditorModule = (function(){
     BTN_PICK_MOVE2:36,
     BTN_PICK_MOVE3:37,
     BTN_PICK_MOVE4:38,
+    BTN_CAT_BASE:50,
     BTN_ROW_START:100,
     TXT_TITLE:200,
     TXT_SUBTITLE:201,
@@ -65,8 +75,18 @@ var StarterSelectEditorModule = (function(){
     BTN_PICK_PREV:302,
     BTN_PICK_NEXT:303,
     BTN_PICK_CANCEL:304,
-    BTN_PICK_ROW_START:400
+    BTN_PICK_ROW_START:400,
+    BG_BASE:9000,
+    LABEL_BASE:1000
   }
+
+  var CATEGORIES = [
+    { id:CAT.LIST, fallback:"List" },
+    { id:CAT.POKEMON, fallback:"Pokemon" },
+    { id:CAT.MOVES, fallback:"Moves" },
+    { id:CAT.IVS, fallback:"IVs" },
+    { id:CAT.EVS, fallback:"EVs" }
+  ]
 
   var NATURES = ["", "hardy", "lonely", "brave", "adamant", "naughty", "bold", "docile", "relaxed", "impish", "lax", "timid", "hasty", "serious", "jolly", "naive", "modest", "mild", "quiet", "bashful", "rash", "calm", "gentle", "sassy", "careful", "quirky"]
   var GENDERS = ["", "random", "male", "female", "genderless"]
@@ -356,9 +376,76 @@ var StarterSelectEditorModule = (function(){
     })
   }
 
-  function addLabel(g, lidBox, text, x, y, w, h){
-    g.addLabel(lidBox.id, String(text), x, y, w, h)
+  function track(session, id){
+    if(!session.componentIds) session.componentIds = []
+    session.componentIds.push(id)
+  }
+
+  function removeTracked(session){
+    var g = session.gui
+    var ids = session.componentIds || []
+    var i, id
+    if(!g) return
+    for(i = ids.length - 1; i >= 0; i--){
+      id = ids[i]
+      try{ if(typeof g.removeComponent === "function") g.removeComponent(id) }catch(err0){}
+      try{ if(typeof g.remove === "function") g.remove(id) }catch(err1){}
+      try{ if(typeof g.deleteComponent === "function") g.deleteComponent(id) }catch(err2){}
+    }
+    session.componentIds = []
+  }
+
+  function updateGui(session){
+    try{ session.gui.update() }catch(err0){}
+  }
+
+  function trySetDefaultBackground(g){
+    try{ if(typeof g.setBackgroundTexture === "function") g.setBackgroundTexture(BG_TEXTURE) }catch(err0){}
+    try{ if(typeof g.setBackground === "function") g.setBackground(BG_TEXTURE) }catch(err1){}
+  }
+
+  function addTexturedRect(session, id, x, y, w, h){
+    try{
+      session.gui.addTexturedRect(id, BG_TEXTURE, x, y, w, h, 0, 0)
+      track(session, id)
+    }catch(err){}
+  }
+
+  function addFrame(session){
+    addTexturedRect(session, ID.BG_BASE, 0, 0, GUI_W, GUI_H)
+    addTexturedRect(session, ID.BG_BASE + 1, 6, 36, 154, 314)
+    addTexturedRect(session, ID.BG_BASE + 2, 166, 36, 446, 314)
+    if(session.flyoutOpen) addTexturedRect(session, ID.BG_BASE + 3, 356, 58, 248, 284)
+  }
+
+  function addLabel(session, lidBox, text, x, y, w, h){
+    session.gui.addLabel(lidBox.id, String(text), x, y, w, h)
+    track(session, lidBox.id)
     lidBox.id++
+  }
+
+  function addButton(session, id, text, x, y, w, h){
+    var b = session.gui.addButton(id, String(text), x, y, w, h)
+    track(session, id)
+    return b
+  }
+
+  function addFlatButton(session, id, text, x, y, w, h){
+    var b = addButton(session, id, text, x, y, w, h)
+    try{ if(b && b.getTextureRect && b.getTextureRect()) b.getTextureRect().setVisible(false) }catch(err5){}
+    try{ if(b && typeof b.setDrawBackground === "function") b.setDrawBackground(false) }catch(err0){}
+    try{ if(b && typeof b.setBackground === "function") b.setBackground(false) }catch(err1){}
+    try{ if(b && typeof b.setHasBackground === "function") b.setHasBackground(false) }catch(err2){}
+    try{ if(b && typeof b.setTexture === "function") b.setTexture("") }catch(err3){}
+    try{ if(b && typeof b.setTextureHoverOffset === "function") b.setTextureHoverOffset(0) }catch(err4){}
+    return b
+  }
+
+  function addTextField(session, id, x, y, w, h, value){
+    var f = session.gui.addTextField(id, x, y, w, h)
+    track(session, id)
+    setText(f, value)
+    return f
   }
 
   function shortPath(path){
@@ -367,156 +454,186 @@ var StarterSelectEditorModule = (function(){
     return "..." + p.substring(p.length - 41)
   }
 
+  function categoryLabel(session, id, fallback){
+    if(id === CAT.LIST) return tr(session, "starter_editor.list_settings", fallback)
+    if(id === CAT.POKEMON) return tr(session, "starter_editor.selected_pokemon", fallback)
+    if(id === CAT.MOVES) return tr(session, "starter_editor.moves", fallback)
+    if(id === CAT.IVS) return tr(session, "starter_editor.ivs", fallback)
+    if(id === CAT.EVS) return tr(session, "starter_editor.evs", fallback)
+    return fallback
+  }
+
   function gatherEditorFields(e, session){
-    var c
-    if(!e || !e.gui || !session || session.mode !== "edit") return
+    var c, cat
+    if(!e || !e.gui || !session) return
     c = activeChoice(session)
-    session.json.title = getText(e.gui, ID.TXT_TITLE, session.json.title)
-    session.json.subtitle = getText(e.gui, ID.TXT_SUBTITLE, session.json.subtitle)
-    session.json.alreadyClaimedMessage = getText(e.gui, ID.TXT_CLAIMED, session.json.alreadyClaimedMessage)
-    session.json.commandName = "pokegiveother"
-    c.species = cleanToken(getText(e.gui, ID.TXT_SPECIES, c.species)) || "sylveon"
-    c.pokemon = c.species
-    c.id = c.species
-    c.label = cap(c.species)
-    c.level = Math.max(1, Math.min(100, toInt(getText(e.gui, ID.TXT_LEVEL, c.level), c.level || 5)))
-    c.gender = optionalToken(getText(e.gui, ID.TXT_GENDER, c.gender))
-    c.nature = optionalToken(getText(e.gui, ID.TXT_NATURE, c.nature))
-    c.ability = optionalText(getText(e.gui, ID.TXT_ABILITY, c.ability))
-    c.form = optionalText(getText(e.gui, ID.TXT_FORM, c.form))
-    c.moveset = [
-      getText(e.gui, ID.TXT_MOVE1, c.moveset[0]),
-      getText(e.gui, ID.TXT_MOVE2, c.moveset[1]),
-      getText(e.gui, ID.TXT_MOVE3, c.moveset[2]),
-      getText(e.gui, ID.TXT_MOVE4, c.moveset[3])
-    ]
-    c.ivs = c.ivs || statBlock()
-    c.evs = c.evs || statBlock()
-    c.ivs.hp = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_HP, c.ivs.hp), 0))
-    c.ivs.atk = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_ATK, c.ivs.atk), 0))
-    c.ivs.def = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_DEF, c.ivs.def), 0))
-    c.ivs.spatk = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPATK, c.ivs.spatk), 0))
-    c.ivs.spdef = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPDEF, c.ivs.spdef), 0))
-    c.ivs.speed = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPEED, c.ivs.speed), 0))
-    c.evs.hp = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_HP, c.evs.hp), 0))
-    c.evs.atk = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_ATK, c.evs.atk), 0))
-    c.evs.def = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_DEF, c.evs.def), 0))
-    c.evs.spatk = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPATK, c.evs.spatk), 0))
-    c.evs.spdef = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPDEF, c.evs.spdef), 0))
-    c.evs.speed = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPEED, c.evs.speed), 0))
+    cat = session.category || CAT.LIST
+    if(cat === CAT.LIST){
+      session.json.title = getText(e.gui, ID.TXT_TITLE, session.json.title)
+      session.json.subtitle = getText(e.gui, ID.TXT_SUBTITLE, session.json.subtitle)
+      session.json.alreadyClaimedMessage = getText(e.gui, ID.TXT_CLAIMED, session.json.alreadyClaimedMessage)
+      session.json.commandName = "pokegiveother"
+    }else if(cat === CAT.POKEMON){
+      c.species = cleanToken(getText(e.gui, ID.TXT_SPECIES, c.species)) || "sylveon"
+      c.pokemon = c.species
+      c.id = c.species
+      c.label = cap(c.species)
+      c.level = Math.max(1, Math.min(100, toInt(getText(e.gui, ID.TXT_LEVEL, c.level), c.level || 5)))
+      c.gender = optionalToken(getText(e.gui, ID.TXT_GENDER, c.gender))
+      c.nature = optionalToken(getText(e.gui, ID.TXT_NATURE, c.nature))
+      c.ability = optionalText(getText(e.gui, ID.TXT_ABILITY, c.ability))
+      c.form = optionalText(getText(e.gui, ID.TXT_FORM, c.form))
+    }else if(cat === CAT.MOVES){
+      c.moveset = [
+        getText(e.gui, ID.TXT_MOVE1, normalizeMoves(c.moveset)[0]),
+        getText(e.gui, ID.TXT_MOVE2, normalizeMoves(c.moveset)[1]),
+        getText(e.gui, ID.TXT_MOVE3, normalizeMoves(c.moveset)[2]),
+        getText(e.gui, ID.TXT_MOVE4, normalizeMoves(c.moveset)[3])
+      ]
+    }else if(cat === CAT.IVS){
+      c.ivs = c.ivs || statBlock()
+      c.ivs.hp = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_HP, c.ivs.hp), 0))
+      c.ivs.atk = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_ATK, c.ivs.atk), 0))
+      c.ivs.def = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_DEF, c.ivs.def), 0))
+      c.ivs.spatk = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPATK, c.ivs.spatk), 0))
+      c.ivs.spdef = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPDEF, c.ivs.spdef), 0))
+      c.ivs.speed = Math.max(0, toInt(getText(e.gui, ID.TXT_IV_SPEED, c.ivs.speed), 0))
+    }else if(cat === CAT.EVS){
+      c.evs = c.evs || statBlock()
+      c.evs.hp = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_HP, c.evs.hp), 0))
+      c.evs.atk = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_ATK, c.evs.atk), 0))
+      c.evs.def = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_DEF, c.evs.def), 0))
+      c.evs.spatk = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPATK, c.evs.spatk), 0))
+      c.evs.spdef = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPDEF, c.evs.spdef), 0))
+      c.evs.speed = Math.max(0, toInt(getText(e.gui, ID.TXT_EV_SPEED, c.evs.speed), 0))
+    }
   }
 
-  function setField(component, value){
-    setText(component, value)
+  function redraw(player, session, firstOpen){
+    if(!session || !session.gui) return
+    removeTracked(session)
+    trySetDefaultBackground(session.gui)
+    addFrame(session)
+    renderMain(player, session)
+    if(session.flyoutOpen) renderFlyout(player, session)
+    if(firstOpen) player.showCustomGui(session.gui)
+    else updateGui(session)
   }
 
-  function showEditor(player){
-    var session = sessions[key(player)]
-    var list, c, moves, g, lid, start, i, choice, rowLabel, f, x, statIds, labels, title, subtitle, claimed
-    if(!session) return
-    session.mode = "edit"
+  function renderMain(player, session){
+    var list, c, lid, i, start, choice, rowLabel, cat, x, moves
     list = choices(session)
     c = activeChoice(session)
-    moves = normalizeMoves(c.moveset)
     c.ivs = normalizeStats(c.ivs)
     c.evs = normalizeStats(c.evs)
     if(session.page < 0) session.page = 0
     if(session.index < session.page * LIST_SIZE) session.page = Math.floor(session.index / LIST_SIZE)
     if(session.index >= (session.page + 1) * LIST_SIZE) session.page = Math.floor(session.index / LIST_SIZE)
     start = session.page * LIST_SIZE
-    g = StarterSelectEditorAPI.createCustomGui(GUI_ID, GUI_W, GUI_H, false, player)
-    lid = { id:1000 }
+    lid = { id:ID.LABEL_BASE }
 
-    addLabel(g, lid, tr(session, "starter_editor.title", "Starter Pokemon Editor"), 8, 6, 180, 12)
-    addLabel(g, lid, shortPath(session.jsonPath), 8, 20, 230, 12)
-    addLabel(g, lid, tr(session, "starter_editor.pokemon", "Pokemon") + " " + list.length, 8, 40, 130, 12)
+    addLabel(session, lid, tr(session, "starter_editor.title", "Starter Pokemon Editor"), 10, 8, 180, 12)
+    addLabel(session, lid, shortPath(session.jsonPath), 10, 22, 250, 12)
+    addLabel(session, lid, tr(session, "starter_editor.pokemon", "Pokemon") + " " + list.length, 10, 45, 130, 12)
 
     for(i = 0; i < LIST_SIZE; i++){
       choice = list[start + i]
-      rowLabel = choice ? ((start + i === session.index ? "> " : "") + cap(choice.species || choice.id || "pokemon")) : "-"
-      g.addButton(ID.BTN_ROW_START + i, rowLabel, 8, 56 + i * 20, 148, 18)
+      rowLabel = choice ? ((start + i === session.index ? "> " : "  ") + cap(choice.species || choice.id || "pokemon")) : "  -"
+      addFlatButton(session, ID.BTN_ROW_START + i, rowLabel, 12, 64 + i * 20, 140, 16)
     }
-    g.addButton(ID.BTN_PREV, "<", 8, 222, 34, 18)
-    g.addButton(ID.BTN_NEXT, ">", 46, 222, 34, 18)
-    g.addButton(ID.BTN_ADD, tr(session, "starter_editor.add", "Add"), 8, 248, 70, 20)
-    g.addButton(ID.BTN_DUP, tr(session, "starter_editor.duplicate", "Duplicate"), 84, 248, 72, 20)
-    g.addButton(ID.BTN_REMOVE, tr(session, "starter_editor.remove", "Remove"), 8, 272, 148, 20)
+    addButton(session, ID.BTN_PREV, "<", 12, 250, 34, 18)
+    addButton(session, ID.BTN_NEXT, ">", 50, 250, 34, 18)
+    addButton(session, ID.BTN_ADD, tr(session, "starter_editor.add", "Add"), 12, 278, 66, 20)
+    addButton(session, ID.BTN_DUP, tr(session, "starter_editor.duplicate", "Duplicate"), 84, 278, 68, 20)
+    addButton(session, ID.BTN_REMOVE, tr(session, "starter_editor.remove", "Remove"), 12, 302, 140, 20)
 
-    addLabel(g, lid, tr(session, "starter_editor.list_settings", "List Settings"), 170, 40, 180, 12)
-    addLabel(g, lid, tr(session, "starter_editor.title_field", "Title"), 170, 58, 46, 12)
-    title = g.addTextField(ID.TXT_TITLE, 218, 54, 118, 18)
-    setField(title, session.json.title || "")
-    addLabel(g, lid, tr(session, "starter_editor.subtitle", "Subtitle"), 342, 58, 58, 12)
-    subtitle = g.addTextField(ID.TXT_SUBTITLE, 404, 54, 142, 18)
-    setField(subtitle, session.json.subtitle || "")
-    g.addButton(ID.BTN_ONCE, (session.json.once ? "[X] " : "[ ] ") + tr(session, "starter_editor.once_per_player", "Once"), 170, 78, 92, 18)
-    addLabel(g, lid, tr(session, "starter_editor.already_claimed", "Claimed Msg"), 270, 82, 72, 12)
-    claimed = g.addTextField(ID.TXT_CLAIMED, 344, 78, 202, 18)
-    setField(claimed, session.json.alreadyClaimedMessage || "")
+    for(i = 0; i < CATEGORIES.length; i++){
+      cat = CATEGORIES[i]
+      x = 170 + i * 78
+      rowLabel = categoryLabel(session, cat.id, cat.fallback)
+      addButton(session, ID.BTN_CAT_BASE + i, (session.category === cat.id ? "[" + rowLabel + "]" : rowLabel), x, 38, 72, 18)
+    }
+    addLabel(session, lid, categoryLabel(session, session.category, "Settings"), 170, 66, 180, 12)
 
-    addLabel(g, lid, tr(session, "starter_editor.selected_pokemon", "Selected Pokemon"), 170, 106, 180, 12)
-    addLabel(g, lid, tr(session, "starter_editor.species", "Species"), 170, 126, 48, 12)
-    f = g.addTextField(ID.TXT_SPECIES, 220, 122, 96, 18)
-    setField(f, c.species)
-    g.addButton(ID.BTN_PICK_SPECIES, "...", 318, 122, 24, 18)
-    addLabel(g, lid, tr(session, "starter_editor.level", "Level"), 348, 126, 36, 12)
-    f = g.addTextField(ID.TXT_LEVEL, 386, 122, 34, 18)
-    setField(f, String(c.level || 5))
-    addLabel(g, lid, tr(session, "starter_editor.gender", "Gender"), 426, 126, 44, 12)
-    f = g.addTextField(ID.TXT_GENDER, 472, 122, 48, 18)
-    setField(f, c.gender || "")
-    g.addButton(ID.BTN_PICK_GENDER, "...", 522, 122, 24, 18)
-    g.addButton(ID.BTN_SHINY, (c.shiny ? "[X] " : "[ ] ") + tr(session, "starter_editor.shiny", "Shiny"), 472, 144, 74, 18)
+    if(session.category === CAT.LIST) renderListCategory(session, lid)
+    else if(session.category === CAT.POKEMON) renderPokemonCategory(session, lid, c)
+    else if(session.category === CAT.MOVES){
+      moves = normalizeMoves(c.moveset)
+      renderMovesCategory(session, lid, moves)
+    }else if(session.category === CAT.IVS) renderStatsCategory(session, lid, c.ivs, true)
+    else if(session.category === CAT.EVS) renderStatsCategory(session, lid, c.evs, false)
 
-    addLabel(g, lid, tr(session, "starter_editor.nature", "Nature"), 170, 150, 48, 12)
-    f = g.addTextField(ID.TXT_NATURE, 220, 146, 80, 18)
-    setField(f, c.nature || "")
-    g.addButton(ID.BTN_PICK_NATURE, "...", 302, 146, 24, 18)
-    addLabel(g, lid, tr(session, "starter_editor.ability", "Ability"), 332, 150, 46, 12)
-    f = g.addTextField(ID.TXT_ABILITY, 380, 146, 80, 18)
-    setField(f, c.ability || "")
-    g.addButton(ID.BTN_PICK_ABILITY, "...", 462, 146, 24, 18)
-    addLabel(g, lid, tr(session, "starter_editor.form", "Form"), 492, 150, 34, 12)
-    f = g.addTextField(ID.TXT_FORM, 526, 146, 52, 18)
-    setField(f, c.form || "")
-    g.addButton(ID.BTN_PICK_FORM, "...", 580, 146, 24, 18)
+    addButton(session, ID.BTN_BACK, tr(session, "starter_editor.npc_editor", "NPC Editor"), 326, 356, 94, 22)
+    addButton(session, ID.BTN_SAVE, tr(session, "starter_editor.save", "Save"), 426, 356, 58, 22)
+    addButton(session, ID.BTN_CLOSE, tr(session, "starter_editor.close", "Close"), 490, 356, 58, 22)
+  }
 
-    addLabel(g, lid, tr(session, "starter_editor.moves", "Moves"), 170, 178, 80, 12)
-    f = g.addTextField(ID.TXT_MOVE1, 170, 194, 120, 18)
-    setField(f, moves[0])
-    g.addButton(ID.BTN_PICK_MOVE1, "...", 292, 194, 24, 18)
-    f = g.addTextField(ID.TXT_MOVE2, 326, 194, 120, 18)
-    setField(f, moves[1])
-    g.addButton(ID.BTN_PICK_MOVE2, "...", 448, 194, 24, 18)
-    f = g.addTextField(ID.TXT_MOVE3, 170, 216, 120, 18)
-    setField(f, moves[2])
-    g.addButton(ID.BTN_PICK_MOVE3, "...", 292, 216, 24, 18)
-    f = g.addTextField(ID.TXT_MOVE4, 326, 216, 120, 18)
-    setField(f, moves[3])
-    g.addButton(ID.BTN_PICK_MOVE4, "...", 448, 216, 24, 18)
+  function renderListCategory(session, lid){
+    addLabel(session, lid, tr(session, "starter_editor.title_field", "Title"), 180, 96, 70, 12)
+    addTextField(session, ID.TXT_TITLE, 250, 92, 210, 18, session.json.title || "")
+    addLabel(session, lid, tr(session, "starter_editor.subtitle", "Subtitle"), 180, 122, 70, 12)
+    addTextField(session, ID.TXT_SUBTITLE, 250, 118, 300, 18, session.json.subtitle || "")
+    addButton(session, ID.BTN_ONCE, (session.json.once ? "[X] " : "[ ] ") + tr(session, "starter_editor.once_per_player", "Once Per Player"), 250, 148, 148, 20)
+    addLabel(session, lid, tr(session, "starter_editor.already_claimed", "Already Claimed Message"), 180, 184, 170, 12)
+    addTextField(session, ID.TXT_CLAIMED, 180, 202, 370, 18, session.json.alreadyClaimedMessage || "")
+    addLabel(session, lid, tr(session, "starter_editor.command", "Command") + ": pokegiveother", 180, 236, 220, 12)
+  }
 
-    labels = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"]
-    statIds = [ID.TXT_IV_HP, ID.TXT_IV_ATK, ID.TXT_IV_DEF, ID.TXT_IV_SPATK, ID.TXT_IV_SPDEF, ID.TXT_IV_SPEED]
-    addLabel(g, lid, tr(session, "starter_editor.ivs", "IVs"), 170, 246, 40, 12)
+  function renderPokemonCategory(session, lid, c){
+    addLabel(session, lid, tr(session, "starter_editor.species", "Species"), 180, 96, 58, 12)
+    addTextField(session, ID.TXT_SPECIES, 240, 92, 120, 18, c.species)
+    addButton(session, ID.BTN_PICK_SPECIES, "...", 364, 92, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.level", "Level"), 400, 96, 48, 12)
+    addTextField(session, ID.TXT_LEVEL, 448, 92, 48, 18, String(c.level || 5))
+    addLabel(session, lid, tr(session, "starter_editor.gender", "Gender"), 180, 126, 58, 12)
+    addTextField(session, ID.TXT_GENDER, 240, 122, 90, 18, c.gender || "")
+    addButton(session, ID.BTN_PICK_GENDER, "...", 334, 122, 24, 18)
+    addButton(session, ID.BTN_SHINY, (c.shiny ? "[X] " : "[ ] ") + tr(session, "starter_editor.shiny", "Shiny"), 400, 122, 80, 18)
+    addLabel(session, lid, tr(session, "starter_editor.nature", "Nature"), 180, 156, 58, 12)
+    addTextField(session, ID.TXT_NATURE, 240, 152, 100, 18, c.nature || "")
+    addButton(session, ID.BTN_PICK_NATURE, "...", 344, 152, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.ability", "Ability"), 180, 186, 58, 12)
+    addTextField(session, ID.TXT_ABILITY, 240, 182, 130, 18, c.ability || "")
+    addButton(session, ID.BTN_PICK_ABILITY, "...", 374, 182, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.form", "Form"), 180, 216, 58, 12)
+    addTextField(session, ID.TXT_FORM, 240, 212, 100, 18, c.form || "")
+    addButton(session, ID.BTN_PICK_FORM, "...", 344, 212, 24, 18)
+  }
+
+  function renderMovesCategory(session, lid, moves){
+    addLabel(session, lid, tr(session, "starter_editor.move_1", "Move 1"), 180, 96, 70, 12)
+    addTextField(session, ID.TXT_MOVE1, 250, 92, 190, 18, moves[0])
+    addButton(session, ID.BTN_PICK_MOVE1, "...", 444, 92, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.move_2", "Move 2"), 180, 126, 70, 12)
+    addTextField(session, ID.TXT_MOVE2, 250, 122, 190, 18, moves[1])
+    addButton(session, ID.BTN_PICK_MOVE2, "...", 444, 122, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.move_3", "Move 3"), 180, 156, 70, 12)
+    addTextField(session, ID.TXT_MOVE3, 250, 152, 190, 18, moves[2])
+    addButton(session, ID.BTN_PICK_MOVE3, "...", 444, 152, 24, 18)
+    addLabel(session, lid, tr(session, "starter_editor.move_4", "Move 4"), 180, 186, 70, 12)
+    addTextField(session, ID.TXT_MOVE4, 250, 182, 190, 18, moves[3])
+    addButton(session, ID.BTN_PICK_MOVE4, "...", 444, 182, 24, 18)
+  }
+
+  function renderStatsCategory(session, lid, stats, isIv){
+    var ids, values, labels, i, x, y
+    labels = [
+      tr(session, "starter_editor.hp", "HP"),
+      tr(session, "starter_editor.atk", "Atk"),
+      tr(session, "starter_editor.def", "Def"),
+      tr(session, "starter_editor.spatk", "SpA"),
+      tr(session, "starter_editor.spdef", "SpD"),
+      tr(session, "starter_editor.speed", "Spe")
+    ]
+    ids = isIv ? [ID.TXT_IV_HP, ID.TXT_IV_ATK, ID.TXT_IV_DEF, ID.TXT_IV_SPATK, ID.TXT_IV_SPDEF, ID.TXT_IV_SPEED] : [ID.TXT_EV_HP, ID.TXT_EV_ATK, ID.TXT_EV_DEF, ID.TXT_EV_SPATK, ID.TXT_EV_SPDEF, ID.TXT_EV_SPEED]
+    values = [stats.hp, stats.atk, stats.def, stats.spatk, stats.spdef, stats.speed]
     for(i = 0; i < 6; i++){
-      x = 210 + i * 55
-      addLabel(g, lid, labels[i], x, 246, 28, 12)
-      f = g.addTextField(statIds[i], x, 260, 44, 18)
-      setField(f, String([c.ivs.hp, c.ivs.atk, c.ivs.def, c.ivs.spatk, c.ivs.spdef, c.ivs.speed][i]))
+      x = 180 + (i % 3) * 120
+      y = 96 + Math.floor(i / 3) * 48
+      addLabel(session, lid, labels[i], x, y, 40, 12)
+      addTextField(session, ids[i], x, y + 16, 70, 18, String(values[i]))
     }
-    statIds = [ID.TXT_EV_HP, ID.TXT_EV_ATK, ID.TXT_EV_DEF, ID.TXT_EV_SPATK, ID.TXT_EV_SPDEF, ID.TXT_EV_SPEED]
-    addLabel(g, lid, tr(session, "starter_editor.evs", "EVs"), 170, 288, 40, 12)
-    for(i = 0; i < 6; i++){
-      x = 210 + i * 55
-      addLabel(g, lid, labels[i], x, 288, 28, 12)
-      f = g.addTextField(statIds[i], x, 302, 44, 18)
-      setField(f, String([c.evs.hp, c.evs.atk, c.evs.def, c.evs.spatk, c.evs.spdef, c.evs.speed][i]))
-    }
-
-    g.addButton(ID.BTN_BACK, tr(session, "starter_editor.npc_editor", "NPC Editor"), 342, 356, 92, 22)
-    g.addButton(ID.BTN_SAVE, tr(session, "starter_editor.save", "Save"), 438, 356, 52, 22)
-    g.addButton(ID.BTN_CLOSE, tr(session, "starter_editor.close", "Close"), 494, 356, 52, 22)
-    player.showCustomGui(g)
+    addLabel(session, lid, isIv ? "0 - 31" : "0 - 252", 180, 210, 160, 12)
   }
 
   function currentPickerValue(session){
@@ -597,37 +714,30 @@ var StarterSelectEditorModule = (function(){
     return v ? v : tr(session, "starter_editor.default", "Default")
   }
 
-  function showPicker(player){
-    var session = sessions[key(player)]
-    var g, lid, items, start, i, value, label, current, search
-    if(!session) return
-    session.mode = "picker"
+  function renderFlyout(player, session){
+    var lid, items, start, i, value, label, current, x, y
     items = pickerItems(session)
     if(session.pickerPage < 0) session.pickerPage = 0
     if(session.pickerPage * PICK_SIZE >= items.length) session.pickerPage = Math.max(0, Math.floor((items.length - 1) / PICK_SIZE))
     start = session.pickerPage * PICK_SIZE
     current = currentPickerValue(session)
-    g = StarterSelectEditorAPI.createCustomGui(GUI_ID, GUI_W, GUI_H, false, player)
-    lid = { id:1000 }
-    addLabel(g, lid, tr(session, "starter_editor.select", "Select") + ": " + pickerTitle(session), 14, 12, 220, 12)
-    addLabel(g, lid, tr(session, "starter_editor.picker_current", "Current: {value}", { value:optionLabel(session, current) }), 14, 28, 260, 12)
-    addLabel(g, lid, tr(session, "starter_editor.picker_direct", "Direct input is also available."), 14, 44, 260, 12)
-    addLabel(g, lid, tr(session, "starter_editor.picker_search_placeholder", "Search"), 14, 68, 80, 12)
-    search = g.addTextField(ID.TXT_PICK_SEARCH, 96, 64, 230, 18)
-    setText(search, session.pickerSearch || "")
-    g.addButton(ID.BTN_PICK_APPLY_SEARCH, tr(session, "npc_editor.apply", "Apply"), 332, 64, 58, 18)
-    g.addButton(ID.BTN_PICK_CANCEL, tr(session, "npc_editor.cancel", "Cancel"), 444, 12, 82, 20)
-
+    lid = { id:ID.LABEL_BASE + 600 }
+    x = 368
+    y = 70
+    addLabel(session, lid, tr(session, "starter_editor.select", "Select") + ": " + pickerTitle(session), x, y, 180, 12)
+    addButton(session, ID.BTN_PICK_CANCEL, tr(session, "npc_editor.cancel", "Cancel"), x + 170, y - 4, 58, 18)
+    addLabel(session, lid, tr(session, "starter_editor.picker_current", "Current: {value}", { value:optionLabel(session, current) }), x, y + 18, 210, 12)
+    addTextField(session, ID.TXT_PICK_SEARCH, x, y + 42, 142, 18, session.pickerSearch || "")
+    addButton(session, ID.BTN_PICK_APPLY_SEARCH, tr(session, "npc_editor.apply", "Apply"), x + 148, y + 42, 58, 18)
     for(i = 0; i < PICK_SIZE; i++){
       value = items[start + i]
       label = value == null ? "-" : optionLabel(session, value)
       if(value != null && String(value) === String(current)) label = "> " + label
-      g.addButton(ID.BTN_PICK_ROW_START + i, label, 14, 98 + i * 24, 300, 20)
+      addFlatButton(session, ID.BTN_PICK_ROW_START + i, label, x, y + 72 + i * 20, 206, 16)
     }
-    g.addButton(ID.BTN_PICK_PREV, "<", 14, 326, 42, 20)
-    g.addButton(ID.BTN_PICK_NEXT, ">", 62, 326, 42, 20)
-    addLabel(g, lid, String(items.length) + " / " + String(session.pickerPage + 1), 114, 330, 120, 12)
-    player.showCustomGui(g)
+    addButton(session, ID.BTN_PICK_PREV, "<", x, y + 258, 34, 18)
+    addButton(session, ID.BTN_PICK_NEXT, ">", x + 38, y + 258, 34, 18)
+    addLabel(session, lid, String(items.length) + " / " + String(session.pickerPage + 1), x + 84, y + 262, 90, 12)
   }
 
   function openPicker(player, session, kind, target){
@@ -635,8 +745,8 @@ var StarterSelectEditorModule = (function(){
     session.pickerTarget = target
     session.pickerSearch = ""
     session.pickerPage = 0
-    session.mode = "picker"
-    showPicker(player)
+    session.flyoutOpen = true
+    redraw(player, session, false)
   }
 
   function applyPickerValue(session, value){
@@ -682,7 +792,7 @@ var StarterSelectEditorModule = (function(){
 
   function open(ctx){
     var player = ctx && ctx.player
-    var temp, path, loaded
+    var temp, path, loaded, g
     if(!player) return false
     temp = player.getTempdata()
     path = cleanPath((ctx && ctx.jsonPath) || temp.get(TEMP.JSON_PATH) || "")
@@ -691,8 +801,11 @@ var StarterSelectEditorModule = (function(){
       return false
     }
     loaded = readStarter(path)
+    g = StarterSelectEditorAPI.createCustomGui(GUI_ID, GUI_W, GUI_H, false, player)
     sessions[key(player)] = {
       player:player,
+      gui:g,
+      componentIds:[],
       npc:ctx.npc || null,
       npcUuid:String((ctx && ctx.uuid) || temp.get(TEMP.NPC_UUID) || ""),
       jsonPath:path,
@@ -700,40 +813,42 @@ var StarterSelectEditorModule = (function(){
       json:loaded.json,
       index:0,
       page:0,
-      mode:"edit",
+      category:CAT.LIST,
+      flyoutOpen:false,
       pickerKind:"",
       pickerTarget:"",
       pickerSearch:"",
       pickerPage:0,
       i18n:buildEditorI18n(player)
     }
-    showEditor(player)
+    redraw(player, sessions[key(player)], true)
     return true
   }
 
-  function handlePickerButton(e, session){
+  function handleFlyoutButton(e, session){
     var items, idx
+    if(!session.flyoutOpen) return false
     if(e.buttonId === ID.BTN_PICK_CANCEL){
-      session.mode = "edit"
-      showEditor(e.player)
+      session.flyoutOpen = false
+      redraw(e.player, session, false)
       return true
     }
     if(e.buttonId === ID.BTN_PICK_APPLY_SEARCH){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, "")
       session.pickerPage = 0
-      showPicker(e.player)
+      redraw(e.player, session, false)
       return true
     }
     if(e.buttonId === ID.BTN_PICK_PREV){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, session.pickerSearch)
       session.pickerPage = Math.max(0, session.pickerPage - 1)
-      showPicker(e.player)
+      redraw(e.player, session, false)
       return true
     }
     if(e.buttonId === ID.BTN_PICK_NEXT){
       session.pickerSearch = getText(e.gui, ID.TXT_PICK_SEARCH, session.pickerSearch)
       session.pickerPage++
-      showPicker(e.player)
+      redraw(e.player, session, false)
       return true
     }
     if(e.buttonId >= ID.BTN_PICK_ROW_START && e.buttonId < ID.BTN_PICK_ROW_START + PICK_SIZE){
@@ -741,8 +856,8 @@ var StarterSelectEditorModule = (function(){
       items = pickerItems(session)
       idx = session.pickerPage * PICK_SIZE + (e.buttonId - ID.BTN_PICK_ROW_START)
       if(idx >= 0 && idx < items.length) applyPickerValue(session, items[idx])
-      session.mode = "edit"
-      showEditor(e.player)
+      session.flyoutOpen = false
+      redraw(e.player, session, false)
       return true
     }
     return false
@@ -750,27 +865,33 @@ var StarterSelectEditorModule = (function(){
 
   function handleButton(e){
     var session = sessions[key(e.player)]
-    var list, idx, copy, c
+    var list, idx, copy, c, i
     if(!session || !e.gui || e.gui.getID() !== GUI_ID) return
-    if(session.mode === "picker"){
-      handlePickerButton(e, session)
-      return
-    }
+    if(handleFlyoutButton(e, session)) return
     gatherEditorFields(e, session)
     list = choices(session)
+    for(i = 0; i < CATEGORIES.length; i++){
+      if(e.buttonId === ID.BTN_CAT_BASE + i){
+        session.category = CATEGORIES[i].id
+        session.flyoutOpen = false
+        redraw(e.player, session, false)
+        return
+      }
+    }
     if(e.buttonId >= ID.BTN_ROW_START && e.buttonId < ID.BTN_ROW_START + LIST_SIZE){
       idx = session.page * LIST_SIZE + (e.buttonId - ID.BTN_ROW_START)
       if(idx >= 0 && idx < list.length) session.index = idx
-      showEditor(e.player)
+      session.flyoutOpen = false
+      redraw(e.player, session, false)
       return
     }
-    if(e.buttonId === ID.BTN_PREV){ session.page = Math.max(0, session.page - 1); showEditor(e.player); return }
-    if(e.buttonId === ID.BTN_NEXT){ if((session.page + 1) * LIST_SIZE < list.length) session.page++; showEditor(e.player); return }
+    if(e.buttonId === ID.BTN_PREV){ session.page = Math.max(0, session.page - 1); redraw(e.player, session, false); return }
+    if(e.buttonId === ID.BTN_NEXT){ if((session.page + 1) * LIST_SIZE < list.length) session.page++; redraw(e.player, session, false); return }
     if(e.buttonId === ID.BTN_ADD){
       list.push(defaultChoice())
       session.index = list.length - 1
       session.page = Math.floor(session.index / LIST_SIZE)
-      showEditor(e.player)
+      redraw(e.player, session, false)
       return
     }
     if(e.buttonId === ID.BTN_DUP){
@@ -779,23 +900,23 @@ var StarterSelectEditorModule = (function(){
       list.splice(session.index + 1, 0, copy)
       session.index++
       session.page = Math.floor(session.index / LIST_SIZE)
-      showEditor(e.player)
+      redraw(e.player, session, false)
       return
     }
     if(e.buttonId === ID.BTN_REMOVE){
       if(list.length <= 1){
         e.player.message(tr(session, "starter_editor.one_required", "At least one Pokemon is required."))
-        showEditor(e.player)
+        redraw(e.player, session, false)
         return
       }
       list.splice(session.index, 1)
       session.index = Math.max(0, Math.min(session.index, list.length - 1))
       session.page = Math.floor(session.index / LIST_SIZE)
-      showEditor(e.player)
+      redraw(e.player, session, false)
       return
     }
-    if(e.buttonId === ID.BTN_ONCE){ session.json.once = !session.json.once; showEditor(e.player); return }
-    if(e.buttonId === ID.BTN_SHINY){ c = activeChoice(session); c.shiny = !c.shiny; showEditor(e.player); return }
+    if(e.buttonId === ID.BTN_ONCE){ session.json.once = !session.json.once; redraw(e.player, session, false); return }
+    if(e.buttonId === ID.BTN_SHINY){ c = activeChoice(session); c.shiny = !c.shiny; redraw(e.player, session, false); return }
     if(e.buttonId === ID.BTN_PICK_SPECIES){ openPicker(e.player, session, "species", "species"); return }
     if(e.buttonId === ID.BTN_PICK_GENDER){ openPicker(e.player, session, "gender", "gender"); return }
     if(e.buttonId === ID.BTN_PICK_NATURE){ openPicker(e.player, session, "nature", "nature"); return }
@@ -809,7 +930,7 @@ var StarterSelectEditorModule = (function(){
       session.json = normalizeStarterJson(session.json)
       saveStarter(session)
       e.player.message(tr(session, "starter_editor.saved_path", "Saved {path}", { path:session.jsonPath }))
-      showEditor(e.player)
+      redraw(e.player, session, false)
       return
     }
     if(e.buttonId === ID.BTN_BACK){ backToNpcEditor(e.player); return }
@@ -818,6 +939,7 @@ var StarterSelectEditorModule = (function(){
 
   function handleClosed(e){
     if(!e || !e.gui || e.gui.getID() !== GUI_ID) return
+    delete sessions[key(e.player)]
   }
 
   function register(){

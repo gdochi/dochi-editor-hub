@@ -13,6 +13,7 @@
   "starter_editor.once_per_player": "Once Per Player",
   "starter_editor.enable_once": "Enable one-time claim",
   "starter_editor.already_claimed": "Already Claimed Message",
+  "starter_editor.command": "Command",
   "starter_editor.species": "Species",
   "starter_editor.level": "Level",
   "starter_editor.gender": "Gender",
