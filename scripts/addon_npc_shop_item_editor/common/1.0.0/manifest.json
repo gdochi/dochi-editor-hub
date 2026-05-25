@@ -8,6 +8,7 @@
   "entry": "shop_item_editor.js",
   "player_scripts": [
     {
+      "line": "dc_lib/addon/shop_item_editor.js",
       "path": "addon/shop_item_editor.js"
     }
   ],

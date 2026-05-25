@@ -8,6 +8,7 @@
   "entry": "dc_npc_editor.js",
   "player_scripts": [
     {
+      "line": "dc_lib/dc_npc_editor.js",
       "path": "dc_npc_editor.js"
     }
   ],

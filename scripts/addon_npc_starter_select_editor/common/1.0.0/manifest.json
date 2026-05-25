@@ -8,6 +8,7 @@
   "entry": "starter_select_editor.js",
   "player_scripts": [
     {
+      "line": "dc_lib/addon/starter_select_editor.js",
       "path": "addon/starter_select_editor.js"
     }
   ],

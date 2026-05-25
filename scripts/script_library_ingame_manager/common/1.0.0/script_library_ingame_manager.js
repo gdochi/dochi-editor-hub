@@ -598,6 +598,14 @@ var DochiScriptLibraryIngameManager = (function(){
     return normalizeTargetRel(path).toLowerCase()
   }
 
+  function sameCanonicalFile(a, b){
+    try{
+      if(!a || !b) return false
+      return String(a.getCanonicalFile().getPath()) === String(b.getCanonicalFile().getPath())
+    }catch(err){}
+    return false
+  }
+
   function addProvider(index, keyValue, record){
     var key = dependencyKey(keyValue)
     if(key && !index[key]) index[key] = record
@@ -898,8 +906,45 @@ var DochiScriptLibraryIngameManager = (function(){
     }
   }
 
-  function playerScriptsFile(){
+  function scriptController(){
+    try{ return Java.type("noppes.npcs.controllers.ScriptController").Instance }catch(err){}
+    return null
+  }
+
+  function readControllerFileField(controller, fieldName){
+    var fields, i, field, value
+    if(!controller) return null
+    try{
+      fields = controller.getClass().getDeclaredFields()
+      for(i = 0; i < fields.length; i++){
+        field = fields[i]
+        if(String(field.getName()) !== fieldName) continue
+        field.setAccessible(true)
+        value = field.get(controller)
+        if(value) return value
+      }
+    }catch(err){}
+    return null
+  }
+
+  function controllerPlayerScriptsFile(){
+    var controller = scriptController()
+    var file = readControllerFileField(controller, "playerScriptsFile")
+    if(file) return file
+    return null
+  }
+
+  function instancePlayerScriptsFile(){
     return resolveTargetFile("scripts/player_scripts.json")
+  }
+
+  function playerScriptsFiles(){
+    var out = []
+    var controllerFile = controllerPlayerScriptsFile()
+    var instanceFile = instancePlayerScriptsFile()
+    if(controllerFile) out.push(controllerFile)
+    if(instanceFile && (!out.length || !sameCanonicalFile(out[0], instanceFile))) out.push(instanceFile)
+    return out
   }
 
   function defaultPlayerScriptsText(line){
@@ -925,6 +970,131 @@ var DochiScriptLibraryIngameManager = (function(){
     return { text: text, changed: replaced }
   }
 
+  function normalizePlayerScriptLineValue(line){
+    return normalizeTargetRel(String(line || "").replace(/\\/g, "/"))
+  }
+
+  function isInvalidDochiPlayerScriptLine(line){
+    var p = normalizePlayerScriptLineValue(line)
+    if(p === "dc_lib/dc_dialogue_trigger.js") return true
+    if(p === "dc_lib/dc_shop_trigger.js") return true
+    if(p === "dc_lib/dc_npc_util/dc_dialogue_trigger.js") return true
+    if(p === "dc_lib/dc_npc_util/dc_shop_trigger.js") return true
+    if(p === "dc_lib/dc_dialogue/dc_dialogue_trigger.js") return true
+    if(p === "dc_lib/dc_shop/dc_shop_trigger.js") return true
+    if(p === "dc_lib/addon_npc_starter_select_editor/starter_select_editor.js") return true
+    if(p === "dc_lib/addon_npc_shop_item_editor/shop_item_editor.js") return true
+    if(p === "dc_lib/addon_npc_starter_select_editor/addon_npc_starter_select_editor/starter_select_editor.js") return true
+    return false
+  }
+
+  function pruneInvalidPlayerScriptLines(text){
+    var source = String(text || "")
+    var changed = false
+    var next
+    if(!source) return { text: source, changed: false }
+    next = source.replace(/\s*,?\s*\{\s*"Line"\s*:\s*"([^"]+)"\s*\}/g, function(full, lineValue){
+      if(!isInvalidDochiPlayerScriptLine(lineValue)) return full
+      changed = true
+      return ""
+    })
+    next = next.replace(/(\[\s*),/g, "$1").replace(/,\s*(\])/g, "$1")
+    return { text: next, changed: changed }
+  }
+
+  function isNpcEditorPlayerScriptLine(line){
+    return normalizePlayerScriptLineValue(line) === "dc_lib/dc_npc_editor.js"
+  }
+
+  function isNpcEditorAddonPlayerScriptLine(line){
+    var p = normalizePlayerScriptLineValue(line)
+    return startsWith(p, "dc_lib/addon/") || startsWith(p, "dc_lib/addon_")
+  }
+
+  function formatPlayerScriptListInner(lines){
+    var out = []
+    var i
+    if(!lines || !lines.length) return "\n            "
+    for(i = 0; i < lines.length; i++){
+      out.push("                {\n                    \"Line\": \"" + lines[i] + "\"\n                }")
+    }
+    return "\n" + out.join(",\n") + "\n            "
+  }
+
+  function normalizeManagedPlayerScriptOrder(text){
+    var source = String(text || "")
+    var pattern = /("ScriptList"\s*:\s*\[)([\s\S]*?)(\s*\])/
+    var match = source.match(pattern)
+    var entries = []
+    var seen = {}
+    var editorIndex = -1
+    var kept = []
+    var addons = []
+    var changed = false
+    var i, line, replaced
+    if(!match) return { text: source, changed: false }
+    String(match[2] || "").replace(/\{\s*"Line"\s*:\s*"([^"]+)"\s*\}/g, function(full, lineValue){
+      line = normalizePlayerScriptLineValue(lineValue)
+      if(!line || seen[line]) return full
+      seen[line] = true
+      entries.push(line)
+      return full
+    })
+    for(i = 0; i < entries.length; i++){
+      if(isNpcEditorPlayerScriptLine(entries[i])) editorIndex = i
+      if(isNpcEditorAddonPlayerScriptLine(entries[i])) addons.push(entries[i])
+      else kept.push(entries[i])
+    }
+    if(editorIndex < 0 || !addons.length) return { text: source, changed: false }
+    editorIndex = -1
+    for(i = 0; i < kept.length; i++) if(isNpcEditorPlayerScriptLine(kept[i])) editorIndex = i
+    if(editorIndex < 0) return { text: source, changed: false }
+    for(i = 0; i < addons.length; i++) kept.splice(editorIndex + 1 + i, 0, addons[i])
+    changed = kept.join("\n") !== entries.join("\n")
+    if(!changed) return { text: source, changed: false }
+    replaced = false
+    source = source.replace(pattern, function(full, start, inner, close){
+      if(replaced) return full
+      replaced = true
+      return start + formatPlayerScriptListInner(kept) + close
+    })
+    return { text: source, changed: true }
+  }
+
+  function invokeControllerNoArg(controller, methodName){
+    var methods, i, method
+    if(!controller) return false
+    try{
+      methods = controller.getClass().getDeclaredMethods()
+      for(i = 0; i < methods.length; i++){
+        method = methods[i]
+        if(String(method.getName()) !== methodName || method.getParameterCount() !== 0) continue
+        method.setAccessible(true)
+        try{ method.invoke(controller, Java.to([], "java.lang.Object[]")) }catch(invokeErr){ method.invoke(controller) }
+        return true
+      }
+    }catch(err){}
+    try{
+      if(methodName === "loadPlayerScripts" && typeof controller.loadPlayerScripts === "function"){
+        controller.loadPlayerScripts()
+        return true
+      }
+      if(methodName === "load" && typeof controller.load === "function"){
+        controller.load()
+        return true
+      }
+    }catch(err2){}
+    return false
+  }
+
+  function reloadControllerPlayerScripts(){
+    var controller = scriptController()
+    if(!controller) return false
+    if(invokeControllerNoArg(controller, "loadPlayerScripts")) return true
+    if(invokeControllerNoArg(controller, "load")) return true
+    return false
+  }
+
   function playerScriptBase(entry){
     var base = installBase(entry)
     base = stripRootPrefix(base)
@@ -942,26 +1112,50 @@ var DochiScriptLibraryIngameManager = (function(){
     return normalizeTargetRel(joinRel(playerScriptBase(entry), rel))
   }
 
-  function ensurePlayerScriptEntries(entry){
+  function ensurePlayerScriptEntriesInFile(entry, file){
     var specs = entry.playerScripts || []
-    var file = playerScriptsFile()
     var text = ""
     var next, i, line, patched
+    var pruned, ordered
     var changed = 0
-    if(!specs.length) return 0
+    var parent
+    if(!specs.length || !file) return 0
     try{
       text = file.exists() ? readLocalText(file) : defaultPlayerScriptsText("")
     }catch(err){
       text = defaultPlayerScriptsText("")
     }
     next = text
+    pruned = pruneInvalidPlayerScriptLines(next)
+    next = pruned.text
+    if(pruned.changed) changed++
+    ordered = normalizeManagedPlayerScriptOrder(next)
+    next = ordered.text
+    if(ordered.changed) changed++
     for(i = 0; i < specs.length; i++){
       line = playerScriptLine(specs[i], entry)
       patched = injectPlayerScriptLine(next, line)
       next = patched.text
       if(patched.changed) changed++
     }
-    if(changed) writeLocalText(file, next)
+    ordered = normalizeManagedPlayerScriptOrder(next)
+    next = ordered.text
+    if(ordered.changed) changed++
+    if(changed){
+      parent = file.getParentFile()
+      if(parent && !parent.exists()) parent.mkdirs()
+      writeLocalText(file, next)
+    }
+    return changed
+  }
+
+  function ensurePlayerScriptEntries(entry){
+    var files = playerScriptsFiles()
+    var changed = 0
+    var i
+    if(!entry.playerScripts || !entry.playerScripts.length) return 0
+    for(i = 0; i < files.length; i++) changed += ensurePlayerScriptEntriesInFile(entry, files[i])
+    if(changed) reloadControllerPlayerScripts()
     return changed
   }
 
