@@ -18,6 +18,8 @@ var StarterSelectEditorModule = (function(){
   var FLYOUT_H = 310
   var FLYOUT_X = Math.floor((GUI_W - FLYOUT_W) / 2)
   var FLYOUT_Y = Math.floor((GUI_H - FLYOUT_H) / 2)
+  var DEBUG_MESSAGES = true
+  var DEBUG_VERSION = "starter-editor-debug-20260525-2248"
 
   var TEMP = {
     NPC_UUID:"npc_editor_addon_edit_npc_uuid",
@@ -110,6 +112,11 @@ var StarterSelectEditorModule = (function(){
     try{ return String(player.getUUID()) }catch(err){}
     try{ return String(player.getName()) }catch(err2){}
     return "player"
+  }
+
+  function debugMsg(player, text){
+    if(DEBUG_MESSAGES !== true) return
+    try{ if(player) player.message("[starter-debug] " + String(text)) }catch(err){}
   }
 
   function guiId(gui){
@@ -1118,8 +1125,10 @@ var StarterSelectEditorModule = (function(){
     var player = ctx && ctx.player
     var temp, path, loaded, g, session
     if(!player) return false
+    debugMsg(player, DEBUG_VERSION + " open called")
     temp = player.getTempdata()
     path = cleanPath((ctx && ctx.jsonPath) || temp.get(TEMP.JSON_PATH) || "")
+    debugMsg(player, "open path=" + path)
     if(!path){
       player.message("Starter JSON path is empty.")
       return false
@@ -1146,6 +1155,7 @@ var StarterSelectEditorModule = (function(){
       i18n:buildEditorI18n(player)
     }
     setSession(player, session)
+    debugMsg(player, "session stored gui=" + GUI_ID + " json=" + session.jsonPath + " choices=" + choices(session).length + " verify=" + (temp.get(TEMP.SESSION) ? "yes" : "no"))
     redraw(player, session, true)
     return true
   }
@@ -1191,9 +1201,18 @@ var StarterSelectEditorModule = (function(){
 
   function handleButton(e){
     var session = getStoredSession(e.player, e.gui)
-    var list, idx, copy, c, i, id
-    if(!session || !isStarterGuiEvent(e)) return
+    var list, idx, copy, c, i, id, eventOk
     id = buttonId(e)
+    eventOk = isStarterGuiEvent(e)
+    debugMsg(e.player, "button event gui=" + guiId(e.gui) + " id=" + id + " session=" + (session ? "yes" : "no") + " eventOk=" + eventOk)
+    if(!session){
+      debugMsg(e.player, "ignored: no temp session")
+      return
+    }
+    if(!eventOk){
+      debugMsg(e.player, "ignored: not starter gui event")
+      return
+    }
     if(id === ID.BTN_MODAL_BLOCKER && !session.flyoutOpen){
       redraw(e.player, session, false)
       return true
@@ -1274,7 +1293,7 @@ var StarterSelectEditorModule = (function(){
 
   function handleClosed(e){
     if(!isStarterGuiEvent(e)) return
-    clearSession(e.player)
+    debugMsg(e.player, "closed gui=" + guiId(e.gui) + " session preserved")
   }
 
   function register(){

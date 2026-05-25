@@ -74,7 +74,7 @@ var data={};
  dispatchNpcEditorAddonEvent("htmlGuiEvent",e);
 }
 
-function customGuiButton(e){dispatchNpcEditorAddonEvent("customGuiButton",e);}
+function customGuiButton(e){debugNpcEditorCustomGuiEvent("customGuiButton",e);dispatchNpcEditorAddonEvent("customGuiButton",e);}
 function customGuiSlot(e){dispatchNpcEditorAddonEvent("customGuiSlot",e);}
 function customGuiClosed(e){dispatchNpcEditorAddonEvent("customGuiClosed",e);}
 
@@ -614,6 +614,21 @@ try{if(typeof gui.getId==="function")return npcEditorInt(gui.getId(),-1);}catch(
 try{v=gui.id;}catch(err2){v=null;}
 return npcEditorInt(v,-1);
 }
+function getCustomGuiButtonEventId(e){
+var v=null;
+if(!e)return -1;
+try{if(e.buttonId!=null)return npcEditorInt(e.buttonId,-1);}catch(err0){}
+try{if(e.id!=null)return npcEditorInt(e.id,-1);}catch(err1){}
+try{if(typeof e.getButtonID==="function")return npcEditorInt(e.getButtonID(),-1);}catch(err2){}
+try{if(typeof e.getButtonId==="function")return npcEditorInt(e.getButtonId(),-1);}catch(err3){}
+try{if(typeof e.getId==="function")v=e.getId();}catch(err4){v=null;}
+return npcEditorInt(v,-1);
+}
+function debugNpcEditorCustomGuiEvent(name,e){
+try{
+if(e&&e.player&&String(name||"")==="customGuiButton")e.player.message("[npc-editor-debug] "+name+" gui="+getCustomGuiEventId(e)+" btn="+getCustomGuiButtonEventId(e));
+}catch(err){}
+}
 function dispatchNpcEditorAddonEvent(name,e){
 var i,a,fn,eventGuiId,customGuiEvent,addonGuiId;
 flushNpcEditorPendingAddons();
@@ -627,6 +642,7 @@ if(addonGuiId>=0&&eventGuiId>=0&&eventGuiId!==addonGuiId)continue;
 }
 fn=a&&a[name];
 if(typeof fn==="function"){
+try{if(customGuiEvent&&String(name||"")==="customGuiButton"&&e&&e.player)e.player.message("[npc-editor-debug] route "+String(name)+" -> "+String(a.id||"")+" eventGui="+eventGuiId+" addonGui="+addonGuiId);}catch(dbgErr){}
 try{if(fn(e)===true)return true;}catch(err){try{if(e&&e.player)e.player.message("NPC editor addon error: "+String(err));}catch(ignore){}}
 }
 }
@@ -2126,10 +2142,16 @@ if(starterPath)store.put(CFG.STARTER_JSON_PATH_KEY,starterPath);
 else clearStoredDataKey(store,CFG.STARTER_JSON_PATH_KEY);
 }
 function onNpcDcJsonFileList(e,data){
-var prefix=String(data.prefix||"");
-var found=listDcJsonFiles(prefix,data.refresh===true),files=found.files||[],root=found.root||"",query=String(data.query||"").toLowerCase(),out=[],i,s;
+var prefix=String(data.prefix||""),found=null,files=[],root="",query=String(data.query||"").toLowerCase(),out=[],i,s;
+try{
+found=listDcJsonFiles(prefix,data.refresh===true);
+files=found.files||[];
+root=found.root||"";
 if(query){for(i=0;i<files.length;i++){s=files[i];if(String(s).toLowerCase().indexOf(query)>=0)out.push(s);}}else out=files;
 pushBrowser(e.player,"npcDcJsonFileList",{ok:!found.error,root:root,label:getDcJsonRootLabel(prefix),prefix:prefix,files:out,error:found.error||""});
+}catch(err){
+pushBrowser(e.player,"npcDcJsonFileList",{ok:false,root:root,label:getDcJsonRootLabel(prefix),prefix:prefix,files:[],error:String(err&&err.message||err)});
+}
 }
 function listDcJsonFiles(prefix,refresh){
 var root=resolveDcJsonRoot(prefix),out=[],seen={},checked,rootPath,cacheKey,cached;
