@@ -18,8 +18,6 @@ var StarterSelectEditorModule = (function(){
   var FLYOUT_H = 310
   var FLYOUT_X = Math.floor((GUI_W - FLYOUT_W) / 2)
   var FLYOUT_Y = Math.floor((GUI_H - FLYOUT_H) / 2)
-  var DEBUG_MESSAGES = true
-  var DEBUG_VERSION = "starter-editor-debug-20260525-2248"
 
   var TEMP = {
     NPC_UUID:"npc_editor_addon_edit_npc_uuid",
@@ -107,17 +105,11 @@ var StarterSelectEditorModule = (function(){
   ]
 
   var COBBLEMON_CACHE = null
-  var LIVE_SESSIONS = {}
 
   function key(player){
     try{ return String(player.getUUID()) }catch(err){}
     try{ return String(player.getName()) }catch(err2){}
     return "player"
-  }
-
-  function debugMsg(player, text){
-    if(DEBUG_MESSAGES !== true) return
-    try{ if(player) player.message("[starter-debug] " + String(text)) }catch(err){}
   }
 
   function guiId(gui){
@@ -165,12 +157,15 @@ var StarterSelectEditorModule = (function(){
       pickerSearch:String(session.pickerSearch || ""),
       pickerPage:toInt(session.pickerPage, 0)
     }
-    LIVE_SESSIONS[key(player)] = JSON.stringify(state)
     try{ td.put(TEMP.SESSION, JSON.stringify(state)) }catch(err){}
   }
 
-  function makeSessionFromSaved(player, gui, saved){
-    var session
+  function getStoredSession(player, gui){
+    var td = player.getTempdata()
+    var raw, saved, session
+    raw = td.get(TEMP.SESSION)
+    if(!raw) return null
+    try{ saved = JSON.parse(String(raw)) }catch(err2){ return null }
     session = {
       player:player,
       gui:gui,
@@ -192,55 +187,7 @@ var StarterSelectEditorModule = (function(){
     return session
   }
 
-  function recoverSessionFromEditContext(player, gui){
-    var td = player.getTempdata()
-    var path = cleanPath(td.get(TEMP.JSON_PATH) || "")
-    var loaded, session
-    if(!path) return null
-    try{
-      loaded = readStarter(path)
-      session = {
-        player:player,
-        gui:gui,
-        componentIds:[],
-        npc:null,
-        npcUuid:String(td.get(TEMP.NPC_UUID) || ""),
-        jsonPath:path,
-        file:loaded.file,
-        json:loaded.json,
-        index:0,
-        page:0,
-        category:CAT.LIST,
-        flyoutOpen:false,
-        pickerKind:"",
-        pickerTarget:"",
-        pickerSearch:"",
-        pickerPage:0,
-        i18n:buildEditorI18n(player)
-      }
-      setSession(player, session)
-      debugMsg(player, "recovered session from edit context path=" + path)
-      return session
-    }catch(err){
-      debugMsg(player, "recover failed path=" + path + " err=" + String(err))
-    }
-    return null
-  }
-
-  function getStoredSession(player, gui){
-    var td = player.getTempdata()
-    var raw, saved, session
-    raw = td.get(TEMP.SESSION)
-    if(!raw) raw = LIVE_SESSIONS[key(player)]
-    if(!raw) return recoverSessionFromEditContext(player, gui)
-    try{ saved = JSON.parse(String(raw)) }catch(err2){ return recoverSessionFromEditContext(player, gui) }
-    session = makeSessionFromSaved(player, gui, saved)
-    if(!td.get(TEMP.SESSION)) setSession(player, session)
-    return session
-  }
-
   function clearSession(player){
-    delete LIVE_SESSIONS[key(player)]
     player.getTempdata().remove(TEMP.SESSION)
   }
 
@@ -1171,10 +1118,8 @@ var StarterSelectEditorModule = (function(){
     var player = ctx && ctx.player
     var temp, path, loaded, g, session
     if(!player) return false
-    debugMsg(player, DEBUG_VERSION + " open called")
     temp = player.getTempdata()
     path = cleanPath((ctx && ctx.jsonPath) || temp.get(TEMP.JSON_PATH) || "")
-    debugMsg(player, "open path=" + path)
     if(!path){
       player.message("Starter JSON path is empty.")
       return false
@@ -1201,7 +1146,6 @@ var StarterSelectEditorModule = (function(){
       i18n:buildEditorI18n(player)
     }
     setSession(player, session)
-    debugMsg(player, "session stored gui=" + GUI_ID + " json=" + session.jsonPath + " choices=" + choices(session).length + " verify=" + (temp.get(TEMP.SESSION) ? "yes" : "no"))
     redraw(player, session, true)
     return true
   }
@@ -1247,18 +1191,9 @@ var StarterSelectEditorModule = (function(){
 
   function handleButton(e){
     var session = getStoredSession(e.player, e.gui)
-    var list, idx, copy, c, i, id, eventOk
+    var list, idx, copy, c, i, id
     id = buttonId(e)
-    eventOk = isStarterGuiEvent(e)
-    debugMsg(e.player, "button event gui=" + guiId(e.gui) + " id=" + id + " session=" + (session ? "yes" : "no") + " eventOk=" + eventOk)
-    if(!session){
-      debugMsg(e.player, "ignored: no temp session")
-      return
-    }
-    if(!eventOk){
-      debugMsg(e.player, "ignored: not starter gui event")
-      return
-    }
+    if(!session || !isStarterGuiEvent(e)) return
     if(id === ID.BTN_MODAL_BLOCKER && !session.flyoutOpen){
       redraw(e.player, session, false)
       return true
@@ -1339,7 +1274,6 @@ var StarterSelectEditorModule = (function(){
 
   function handleClosed(e){
     if(!isStarterGuiEvent(e)) return
-    debugMsg(e.player, "closed gui=" + guiId(e.gui) + " session preserved")
   }
 
   function register(){
