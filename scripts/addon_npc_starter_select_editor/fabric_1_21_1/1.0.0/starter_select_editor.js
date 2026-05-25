@@ -13,6 +13,7 @@ var StarterSelectEditorModule = (function(){
   var FLYOUT_TEXT_COLOR = 0x20242A
   var JSON_TEXT_COLOR = 0x8FEAFF
   var LINE_COLOR = 0x6F86A8
+  var CENTER_LINE_COLOR = 0x42D7C8
   var FLYOUT_W = 286
   var FLYOUT_H = 310
   var FLYOUT_X = Math.floor((GUI_W - FLYOUT_W) / 2)
@@ -122,14 +123,63 @@ var StarterSelectEditorModule = (function(){
 
   function setSession(player, session){
     var td = playerTemp(player)
+    var state
     if(!td) return
-    try{ td.put(TEMP.SESSION, session) }catch(err){}
+    state = {
+      npcUuid:String(session.npcUuid || ""),
+      jsonPath:String(session.jsonPath || ""),
+      json:normalizeStarterJson(session.json || {}),
+      index:toInt(session.index, 0),
+      page:toInt(session.page, 0),
+      category:String(session.category || CAT.LIST),
+      flyoutOpen:session.flyoutOpen === true,
+      pickerKind:String(session.pickerKind || ""),
+      pickerTarget:String(session.pickerTarget || ""),
+      pickerSearch:String(session.pickerSearch || ""),
+      pickerPage:toInt(session.pickerPage, 0),
+      componentIds:session.componentIds instanceof Array ? session.componentIds.slice(0) : []
+    }
+    try{ td.put(TEMP.SESSION, JSON.stringify(state)) }catch(err){}
   }
 
-  function getSession(player){
+  function getSession(player, gui){
     var td = playerTemp(player)
+    var raw, state
     if(!td) return null
-    try{ return td.get(TEMP.SESSION) }catch(err){}
+    try{ raw = td.get(TEMP.SESSION) }catch(err){}
+    if(!raw) return null
+    try{ state = JSON.parse(String(raw)) }catch(err2){ return null }
+    state.player = player
+    state.gui = gui
+    state.componentIds = state.componentIds instanceof Array ? state.componentIds : []
+    state.file = resolveFile(state.jsonPath)
+    state.json = normalizeStarterJson(state.json)
+    state.i18n = buildEditorI18n(player)
+    return state
+  }
+
+  function currentSessionForRedraw(player, gui, session){
+    if(session){
+      session.player = player
+      session.gui = gui || session.gui
+      if(!session.componentIds) session.componentIds = []
+      if(!session.file) session.file = resolveFile(session.jsonPath)
+      if(!session.i18n) session.i18n = buildEditorI18n(player)
+      return session
+    }
+    return getSession(player, gui)
+  }
+
+  function persistAndRedraw(player, gui, session){
+    session = currentSessionForRedraw(player, gui, session)
+    if(!session) return
+    redraw(player, session, false)
+  }
+
+  function persistAndOpen(player, gui, session){
+    session = currentSessionForRedraw(player, gui, session)
+    if(!session) return
+    redraw(player, session, true)
     return null
   }
 
@@ -453,11 +503,15 @@ var StarterSelectEditorModule = (function(){
     addTexturedRectWithTexture(session, id, BG_TEXTURE, x, y, w, h)
   }
 
-  function addLine(session, id, x1, y1, x2, y2){
+  function addLineColor(session, id, x1, y1, x2, y2, color){
     try{
-      session.gui.addColoredLine(id, x1, y1, x2, y2, LINE_COLOR, 1.0)
+      session.gui.addColoredLine(id, x1, y1, x2, y2, color, 1.0)
       track(session, id)
     }catch(err){}
+  }
+
+  function addLine(session, id, x1, y1, x2, y2){
+    addLineColor(session, id, x1, y1, x2, y2, LINE_COLOR)
   }
 
   function addBoxLines(session, idBase, x, y, w, h){
@@ -471,12 +525,12 @@ var StarterSelectEditorModule = (function(){
     addTexturedRect(session, ID.BG_BASE, 0, 0, GUI_W, GUI_H)
     addTexturedRect(session, ID.BG_BASE + 1, 6, 36, 154, 314)
     addTexturedRect(session, ID.BG_BASE + 2, 166, 36, 446, 314)
-    addLine(session, ID.LINE_BASE, 164, 38, 164, 346)
-    addLine(session, ID.LINE_BASE + 1, 170, 62, 604, 62)
+    addLineColor(session, ID.LINE_BASE, 164, 42, 164, 346, CENTER_LINE_COLOR)
+    addLine(session, ID.LINE_BASE + 1, 176, 74, 604, 74)
     addLine(session, ID.LINE_BASE + 2, 170, 346, 604, 346)
     addBoxLines(session, ID.LINE_BASE + 10, 6, 6, GUI_W - 12, GUI_H - 12)
     addBoxLines(session, ID.LINE_BASE + 20, 8, 38, 152, 308)
-    addBoxLines(session, ID.LINE_BASE + 30, 170, 38, 434, 308)
+    addBoxLines(session, ID.LINE_BASE + 30, 170, 30, 434, 316)
   }
 
   function addLabel(session, lidBox, text, x, y, w, h){
@@ -654,7 +708,7 @@ var StarterSelectEditorModule = (function(){
       addButton(session, ID.BTN_CAT_BASE + i, rowLabel, x, 38, fitButtonWidth(rowLabel, 46, 150), 18)
       x += fitButtonWidth(rowLabel, 46, 150) + 8
     }
-    addLabel(session, lid, categoryLabel(session, session.category, "Settings"), 170, 66, 180, 12)
+    addLabel(session, lid, categoryLabel(session, session.category, "Settings"), 176, 84, 180, 12)
 
     if(session.category === CAT.LIST) renderListCategory(session, lid)
     else if(session.category === CAT.POKEMON) renderPokemonCategory(session, lid, c)
@@ -975,7 +1029,7 @@ var StarterSelectEditorModule = (function(){
   }
 
   function handleButton(e){
-    var session = getSession(e.player)
+    var session = getSession(e.player, e.gui)
     var list, idx, copy, c, i
     if(!session || !e.gui || e.gui.getID() !== GUI_ID) return
     if(handleFlyoutButton(e, session)) return
