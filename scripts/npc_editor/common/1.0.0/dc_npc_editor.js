@@ -50,7 +50,7 @@ function keyPressed(e){var p=e&&e.player?e.player:null;if(!p)return;if(matchesKe
 
 function htmlGuiEvent(e){
 var data={};
- if(e.data&&String(e.data)!=="")data=JSON.parse(String(e.data));
+ try{if(e.data&&String(e.data)!=="")data=JSON.parse(String(e.data));}catch(errParse){data={};}
  if(e.eventName==="debug"){onBrowserDebug(e,data);return;}
  if(e.eventName==="npc_i18n_request"){sendNpcEditorI18n(e.player,data);return;}
  if(e.eventName==="admin_bootstrap"){onAdminBootstrap(e,data);return;}
@@ -71,6 +71,7 @@ var data={};
  if(e.eventName==="npc_addon_toggle"){if(requireCanEdit(e,"npcAddonState","addon_toggle"))onNpcAddonToggle(e,data);return;}
  if(e.eventName==="npc_addon_refresh"){if(requireCanBrowse(e,"npcAddonState","addon_refresh"))pushAddonState(e.player);return;}
  if(e.eventName==="npc_addon_open"){if(requireCanEdit(e,"npcAddonActionResult","addon_open"))onNpcAddonOpen(e,data);return;}
+ dispatchNpcEditorAddonEvent("htmlGuiEvent",e);
 }
 
 function customGuiButton(e){dispatchNpcEditorAddonEvent("customGuiButton",e);}
@@ -467,7 +468,8 @@ editLabel:String(spec.editLabel||""),
 open:typeof spec.open==="function"?spec.open:null,
 customGuiButton:typeof spec.customGuiButton==="function"?spec.customGuiButton:null,
 customGuiSlot:typeof spec.customGuiSlot==="function"?spec.customGuiSlot:null,
-customGuiClosed:typeof spec.customGuiClosed==="function"?spec.customGuiClosed:null
+customGuiClosed:typeof spec.customGuiClosed==="function"?spec.customGuiClosed:null,
+htmlGuiEvent:typeof spec.htmlGuiEvent==="function"?spec.htmlGuiEvent:null
 };
 }
 function ensureNpcEditorAddonArrays(){

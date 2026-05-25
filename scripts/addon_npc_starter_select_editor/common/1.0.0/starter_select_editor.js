@@ -2,32 +2,13 @@ var StarterSelectEditorAPI = Java.type("noppes.npcs.api.NpcAPI").Instance()
 
 var StarterSelectEditorModule = (function(){
   var ADDON_ID = "dc_starter_select_editor"
-  var GUI_ID = 735
-  var GUI_W = 440
-  var GUI_H = 270
-  var PAGE_SIZE = 6
+  var HTML_PATH = "html/dc_util/starter_select_editor.html"
   var sessions = {}
 
-  var ID = {
-    BTN_SAVE:20,
-    BTN_CLOSE:21,
-    BTN_PREV:22,
-    BTN_NEXT:23,
-    BTN_BACK:24,
-    BTN_ADD:25,
-    BTN_REMOVE:26,
-    BTN_SHINY:27,
-    BTN_ROW_START:100,
-    TXT_SPECIES:200,
-    TXT_LABEL:201,
-    TXT_LEVEL:202,
-    TXT_GENDER:203,
-    TXT_NATURE:204,
-    TXT_ABILITY:205
-  }
-
   function key(player){
-    return String(player.getUUID())
+    try{ return String(player.getUUID()) }catch(err){}
+    try{ return String(player.getName()) }catch(err2){}
+    return "player"
   }
 
   function toInt(value, fallback){
@@ -71,17 +52,12 @@ var StarterSelectEditorModule = (function(){
   }
 
   function writeTextFile(file, text){
-    var FileWriter = Java.type("java.io.FileWriter")
+    var Files = Java.type("java.nio.file.Files")
+    var StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
+    var JString = Java.type("java.lang.String")
     var parent = file.getParentFile()
-    var fw = null
-    try{
-      if(parent && !parent.exists()) parent.mkdirs()
-      fw = new FileWriter(file, false)
-      fw.write(String(text || ""))
-      fw.flush()
-    }finally{
-      if(fw) fw.close()
-    }
+    if(parent && !parent.exists()) parent.mkdirs()
+    Files.write(file.toPath(), new JString(String(text || "")).getBytes(StandardCharsets.UTF_8))
   }
 
   function readStarter(path){
@@ -89,17 +65,35 @@ var StarterSelectEditorModule = (function(){
     var json
     if(!file || !file.exists()) throw new Error("Starter JSON not found: " + normalizeStarterPath(path))
     json = JSON.parse(readTextFile(file))
-    if(!json || typeof json !== "object") json = {}
-    if(!(json.choices instanceof Array)) json.choices = []
-    return { file:file, json:json }
+    return { file:file, json:normalizeStarterJson(json) }
   }
 
   function saveStarter(session){
     writeTextFile(session.file, JSON.stringify(session.json, null, 2))
   }
 
-  function statBlock(maxValue){
+  function statBlock(){
     return { hp:0, atk:0, def:0, spatk:0, spdef:0, speed:0 }
+  }
+
+  function normalizeStats(raw){
+    raw = raw && typeof raw === "object" ? raw : {}
+    return {
+      hp:Math.max(0, toInt(raw.hp, 0)),
+      atk:Math.max(0, toInt(raw.atk, 0)),
+      def:Math.max(0, toInt(raw.def, 0)),
+      spatk:Math.max(0, toInt(raw.spatk, 0)),
+      spdef:Math.max(0, toInt(raw.spdef, 0)),
+      speed:Math.max(0, toInt(raw.speed, 0))
+    }
+  }
+
+  function normalizeMoves(raw){
+    var arr = raw instanceof Array ? raw : []
+    var out = ["", "", "", ""]
+    var i
+    for(i = 0; i < 4; i++) out[i] = String(arr[i] || "")
+    return out
   }
 
   function defaultChoice(){
@@ -114,208 +108,162 @@ var StarterSelectEditorModule = (function(){
       form:"",
       shiny:false,
       moveset:["", "", "", ""],
-      ivs:statBlock(31),
-      evs:statBlock(252)
+      ivs:statBlock(),
+      evs:statBlock()
     }
   }
 
-  function choices(session){
-    if(!session.json.choices || !(session.json.choices instanceof Array)) session.json.choices = []
-    return session.json.choices
+  function normalizeChoice(raw, index){
+    var c = raw && typeof raw === "object" ? raw : {}
+    var species = cleanToken(c.species || c.pokemon || c.key || c.id || "sylveon") || "sylveon"
+    var label = String(c.label || c.name || species)
+    var id = cleanToken(c.id || species) || species
+    return {
+      id:id,
+      label:label,
+      species:species,
+      pokemon:species,
+      level:Math.max(1, Math.min(100, toInt(c.level || c.lvl, 5))),
+      gender:cleanToken(c.gender || ""),
+      nature:cleanToken(c.nature || ""),
+      ability:String(c.ability || ""),
+      form:String(c.form || ""),
+      shiny:c.shiny === true,
+      moveset:normalizeMoves(c.moveset || c.moves),
+      ivs:normalizeStats(c.ivs),
+      evs:normalizeStats(c.evs)
+    }
   }
 
-  function selectedChoice(session){
-    var list = choices(session)
-    if(!list.length) list.push(defaultChoice())
-    if(session.index < 0) session.index = 0
-    if(session.index >= list.length) session.index = Math.max(0, list.length - 1)
-    return list[session.index] || null
+  function normalizeStarterJson(raw){
+    var src = raw && typeof raw === "object" ? raw : {}
+    var list = src.choices instanceof Array ? src.choices : (src.starters instanceof Array ? src.starters : (src.pokemon instanceof Array ? src.pokemon : []))
+    var out = {}
+    var i
+    out.id = String(src.id || "starter_list")
+    out.title = String(src.title || "Starter Pokemon Selection")
+    out.subtitle = String(src.subtitle || "")
+    out.once = src.once === true
+    out.claimKey = String(src.claimKey || src.id || "starter_list")
+    out.commandName = String(src.commandName || src.command || "pokegiveother")
+    out.alreadyClaimedMessage = String(src.alreadyClaimedMessage || "")
+    out.choices = []
+    for(i = 0; i < list.length; i++) out.choices.push(normalizeChoice(list[i], i))
+    if(!out.choices.length) out.choices.push(defaultChoice())
+    return out
   }
 
-  function choiceLabel(choice, index){
-    if(!choice) return "(empty)"
-    return String(index + 1) + ". " + String(choice.label || choice.species || "pokemon") + " Lv." + String(choice.level || 1)
+  function stringifyBrowserPayload(obj){
+    return escapeBrowserJson(JSON.stringify(obj || {}))
   }
 
-  function setText(field, value){
-    if(field && typeof field.setText === "function") field.setText(String(value == null ? "" : value))
+  function escapeBrowserJson(json){
+    json = String(json == null ? "{}" : json)
+    return json.replace(/[\u007f-\uffff]/g, function(ch){
+      var code = ch.charCodeAt(0).toString(16)
+      while(code.length < 4) code = "0" + code
+      return "\\u" + code
+    })
   }
 
-  function getText(gui, id, fallback){
-    var c
+  function parsePayload(raw){
+    if(!raw) return {}
+    if(typeof raw === "string"){
+      try{ return JSON.parse(String(raw)) }catch(err){ return {} }
+    }
+    return raw && typeof raw === "object" ? raw : {}
+  }
+
+  function pushBrowser(player, eventName, obj){
     try{
-      c = gui.getComponent(id)
-      if(c && typeof c.getText === "function") return String(c.getText())
-    }catch(err){}
-    return String(fallback == null ? "" : fallback)
-  }
-
-  function applyFields(gui, session){
-    var choice = selectedChoice(session)
-    var species, level
-    if(!choice || !gui) return
-    species = cleanToken(getText(gui, ID.TXT_SPECIES, choice.species || "sylveon")) || "sylveon"
-    level = Math.max(1, Math.min(100, toInt(getText(gui, ID.TXT_LEVEL, choice.level || 5), choice.level || 5)))
-    choice.species = species
-    choice.pokemon = species
-    choice.id = cleanToken(choice.id || species) || species
-    choice.label = String(getText(gui, ID.TXT_LABEL, choice.label || species) || species)
-    choice.level = level
-    choice.gender = cleanToken(getText(gui, ID.TXT_GENDER, choice.gender || ""))
-    choice.nature = cleanToken(getText(gui, ID.TXT_NATURE, choice.nature || ""))
-    choice.ability = cleanToken(getText(gui, ID.TXT_ABILITY, choice.ability || ""))
-    if(!(choice.moveset instanceof Array)) choice.moveset = ["", "", "", ""]
-    if(!choice.ivs || typeof choice.ivs !== "object") choice.ivs = statBlock(31)
-    if(!choice.evs || typeof choice.evs !== "object") choice.evs = statBlock(252)
-  }
-
-  function showEditor(player){
-    var session = sessions[key(player)]
-    var list, choice, g, i, idx, btn, speciesField, labelField, levelField, genderField, natureField, abilityField
-    if(!session) return
-    list = choices(session)
-    choice = selectedChoice(session)
-    g = StarterSelectEditorAPI.createCustomGui(GUI_ID, GUI_W, GUI_H, false, player)
-    g.addLabel(1, "Starter Pokemon List", 10, 8, 180, 12)
-    g.addLabel(2, session.jsonPath, 10, 22, 260, 12)
-    g.addLabel(3, "Choices", 10, 44, 90, 12)
-    for(i = 0; i < PAGE_SIZE; i++){
-      idx = session.page * PAGE_SIZE + i
-      btn = g.addButton(ID.BTN_ROW_START + i, idx < list.length ? choiceLabel(list[idx], idx) : "-", 10, 60 + i * 22, 150, 18)
-      if(idx === session.index) btn.setLabel("[" + btn.getLabel() + "]")
-      if(idx >= list.length) btn.setEnabled(false)
+      cnpcext.getClientBridge(player.getMCEntity()).sendToBrowser(String(eventName), stringifyBrowserPayload(obj))
+    }catch(err){
+      try{ player.message("Starter editor browser send failed: " + String(err)) }catch(ignore){}
     }
-    g.addButton(ID.BTN_PREV, "Prev", 10, 196, 45, 18)
-    g.addButton(ID.BTN_NEXT, "Next", 60, 196, 45, 18)
-    g.addButton(ID.BTN_ADD, "Add", 110, 196, 50, 18)
-    g.addButton(ID.BTN_REMOVE, "Remove", 10, 218, 70, 18)
+  }
 
-    g.addLabel(10, "Species", 180, 58, 80, 12)
-    speciesField = g.addTextField(ID.TXT_SPECIES, 250, 54, 150, 18)
-    setText(speciesField, choice.species || "")
-    g.addLabel(11, "Label", 180, 82, 80, 12)
-    labelField = g.addTextField(ID.TXT_LABEL, 250, 78, 150, 18)
-    setText(labelField, choice.label || "")
-    g.addLabel(12, "Level", 180, 106, 80, 12)
-    levelField = g.addTextField(ID.TXT_LEVEL, 250, 102, 50, 18)
-    setText(levelField, choice.level || 5)
-    g.addLabel(13, "Gender", 180, 130, 80, 12)
-    genderField = g.addTextField(ID.TXT_GENDER, 250, 126, 90, 18)
-    setText(genderField, choice.gender || "")
-    g.addLabel(14, "Nature", 180, 154, 80, 12)
-    natureField = g.addTextField(ID.TXT_NATURE, 250, 150, 90, 18)
-    setText(natureField, choice.nature || "")
-    g.addLabel(15, "Ability", 180, 178, 80, 12)
-    abilityField = g.addTextField(ID.TXT_ABILITY, 250, 174, 120, 18)
-    setText(abilityField, choice.ability || "")
-    g.addButton(ID.BTN_SHINY, choice.shiny === true ? "Shiny: On" : "Shiny: Off", 180, 202, 90, 18)
+  function closeHtml(player){
+    var br
+    try{
+      br = cnpcext.getClientBridge(player.getMCEntity())
+      if(br && typeof br.closeHtmlGui === "function") br.closeHtmlGui()
+    }catch(err){}
+  }
 
-    g.addButton(ID.BTN_SAVE, "Save", 280, 228, 50, 20)
-    g.addButton(ID.BTN_BACK, "NPC Editor", 334, 228, 82, 20)
-    g.addButton(ID.BTN_CLOSE, "Close", 334, 8, 72, 20)
-    player.showCustomGui(g)
+  function buildInitData(session){
+    return {
+      ok:true,
+      addonId:ADDON_ID,
+      jsonPath:session.jsonPath,
+      fileName:String(session.file && session.file.getName ? session.file.getName() : session.jsonPath),
+      json:session.json
+    }
   }
 
   function open(ctx){
     var player = ctx && ctx.player
     var path = ctx ? cleanPath(ctx.jsonPath || "") : ""
-    var loaded
+    var loaded, session, payload
     if(!player) return false
     if(!path){
       player.message("Starter JSON path is empty.")
       return false
     }
     loaded = readStarter(path)
-    sessions[key(player)] = {
+    session = {
       npc:ctx.npc || null,
       jsonPath:path,
       file:loaded.file,
-      json:loaded.json,
-      index:0,
-      page:0
+      json:loaded.json
     }
-    showEditor(player)
+    sessions[key(player)] = session
+    if(typeof cnpcext === "undefined" || !cnpcext || typeof cnpcext.openHtmlGui !== "function"){
+      player.message("CNPCExtended HTML GUI is required.")
+      return false
+    }
+    payload = stringifyBrowserPayload(buildInitData(session))
+    cnpcext.openHtmlGui(player, HTML_PATH, 0, 0, payload)
     return true
   }
 
-  function backToNpcEditor(player){
-    delete sessions[key(player)]
-    player.closeGui()
-    if(typeof tryOpenEditor === "function"){
-      tryOpenEditor(player)
+  function handleHtmlEvent(e){
+    var name = String(e && e.eventName || "")
+    var player = e && e.player
+    var session, data
+    if(name.indexOf("starterEditor") !== 0) return
+    if(!player) return
+    session = sessions[key(player)]
+    data = parsePayload(e.data)
+    if(!session){
+      if(name !== "starterEditorClose") pushBrowser(player, "starterEditorResult", { ok:false, error:"Starter editor session expired." })
       return
     }
-    player.message("NPC Editor is not loaded.")
-  }
-
-  function handleButton(e){
-    var session = sessions[key(e.player)]
-    var list, idx
-    if(!session || e.gui.getID() !== GUI_ID) return
-    list = choices(session)
-    if(e.buttonId >= ID.BTN_ROW_START && e.buttonId < ID.BTN_ROW_START + PAGE_SIZE){
-      applyFields(e.gui, session)
-      idx = session.page * PAGE_SIZE + (e.buttonId - ID.BTN_ROW_START)
-      if(idx >= 0 && idx < list.length){
-        session.index = idx
-        showEditor(e.player)
+    if(name === "starterEditorReady"){
+      pushBrowser(player, "starterEditorState", buildInitData(session))
+      return
+    }
+    if(name === "starterEditorSave"){
+      try{
+        session.json = normalizeStarterJson(data.json)
+        saveStarter(session)
+        pushBrowser(player, "starterEditorResult", { ok:true, action:"save", message:"Saved " + session.jsonPath })
+        pushBrowser(player, "starterEditorState", buildInitData(session))
+      }catch(errSave){
+        pushBrowser(player, "starterEditorResult", { ok:false, action:"save", error:String(errSave) })
       }
       return
     }
-    if(e.buttonId === ID.BTN_PREV){
-      applyFields(e.gui, session)
-      session.page = Math.max(0, session.page - 1)
-      showEditor(e.player)
+    if(name === "starterEditorBack"){
+      delete sessions[key(player)]
+      closeHtml(player)
+      if(typeof tryOpenEditor === "function") tryOpenEditor(player)
       return
     }
-    if(e.buttonId === ID.BTN_NEXT){
-      applyFields(e.gui, session)
-      if((session.page + 1) * PAGE_SIZE < list.length) session.page++
-      showEditor(e.player)
+    if(name === "starterEditorClose"){
+      delete sessions[key(player)]
+      closeHtml(player)
       return
     }
-    if(e.buttonId === ID.BTN_ADD){
-      applyFields(e.gui, session)
-      list.push(defaultChoice())
-      session.index = list.length - 1
-      session.page = Math.floor(session.index / PAGE_SIZE)
-      showEditor(e.player)
-      return
-    }
-    if(e.buttonId === ID.BTN_REMOVE){
-      if(list.length > 1){
-        list.splice(session.index, 1)
-        session.index = Math.min(session.index, list.length - 1)
-      }
-      showEditor(e.player)
-      return
-    }
-    if(e.buttonId === ID.BTN_SHINY){
-      applyFields(e.gui, session)
-      selectedChoice(session).shiny = selectedChoice(session).shiny === true ? false : true
-      showEditor(e.player)
-      return
-    }
-    if(e.buttonId === ID.BTN_SAVE){
-      applyFields(e.gui, session)
-      saveStarter(session)
-      e.player.message("Starter JSON saved: " + session.jsonPath)
-      showEditor(e.player)
-      return
-    }
-    if(e.buttonId === ID.BTN_BACK){
-      backToNpcEditor(e.player)
-      return
-    }
-    if(e.buttonId === ID.BTN_CLOSE){
-      delete sessions[key(e.player)]
-      e.player.closeGui()
-      return
-    }
-  }
-
-  function handleClosed(e){
-    if(!e || !e.gui || e.gui.getID() !== GUI_ID) return
   }
 
   function register(){
@@ -327,8 +275,7 @@ var StarterSelectEditorModule = (function(){
       defaultEnabled:true,
       editLabel:"Edit Pokemon",
       open:open,
-      customGuiButton:handleButton,
-      customGuiClosed:handleClosed
+      htmlGuiEvent:handleHtmlEvent
     }
     if(typeof dc_npc_editor_registerAddon === "function"){
       dc_npc_editor_registerAddon(spec)
@@ -343,7 +290,6 @@ var StarterSelectEditorModule = (function(){
   return {
     ADDON_ID:ADDON_ID,
     open:open,
-    customGuiButton:handleButton,
-    customGuiClosed:handleClosed
+    htmlGuiEvent:handleHtmlEvent
   }
 })()

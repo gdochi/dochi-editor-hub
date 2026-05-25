@@ -36,6 +36,19 @@
           "load_order": 2
         }
       ]
+    },
+    {
+      "source": "html/starter_select_editor.html",
+      "install_as": "dc_util/starter_select_editor.html",
+      "type": "html",
+      "dependencies": [
+        {
+          "type": "mod",
+          "id": "cnpcextended",
+          "required": true,
+          "note": "Required for the HTML starter list editor."
+        }
+      ]
     }
   ]
 }

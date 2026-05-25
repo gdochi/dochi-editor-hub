@@ -1,0 +1,488 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+:root{
+  --bg:rgba(8,12,18,.72);
+  --panel:#101722;
+  --panel2:#151f2d;
+  --line:#2f3d55;
+  --text:#eef4ff;
+  --muted:#9aa9c2;
+  --blue:#5e8cff;
+  --green:#4fc48b;
+  --red:#ef6b73;
+  --warn:#e6b856;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  overflow:hidden;
+}
+button,input,select{
+  font-family:inherit;
+  font-size:14px;
+}
+button{
+  min-height:34px;
+  border:1px solid #40506a;
+  border-radius:6px;
+  color:var(--text);
+  background:#243149;
+  padding:0 14px;
+  cursor:pointer;
+}
+button:hover{border-color:#6f8fd2;background:#2c3d5c}
+button.primary{background:#315ecb;border-color:#7198ff}
+button.good{background:#246b50;border-color:#59d39c}
+button.danger{background:#74303a;border-color:#f07b85}
+button.ghost{background:#141d2b}
+button:disabled{opacity:.45;cursor:default}
+input,select{
+  min-height:34px;
+  width:100%;
+  border:1px solid #3f4d65;
+  border-radius:6px;
+  color:var(--text);
+  background:#0d1420;
+  padding:7px 10px;
+  outline:none;
+}
+input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,255,.18)}
+.shell{
+  width:min(1180px,calc(100vw - 48px));
+  height:min(720px,calc(100vh - 48px));
+  margin:24px auto;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:rgba(12,18,28,.94);
+  border:1px solid #31405a;
+  border-radius:8px;
+  box-shadow:0 20px 70px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.top,.bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  background:#0d1420;
+  border-bottom:1px solid var(--line);
+}
+.bottom{border-top:1px solid var(--line);border-bottom:0}
+.title{font-size:18px;font-weight:800}
+.sub{font-size:12px;color:var(--muted);margin-top:3px}
+.status{font-size:13px;color:var(--muted)}
+.status.ok{color:var(--green)}
+.status.err{color:var(--red)}
+.content{
+  display:grid;
+  grid-template-columns:340px 1fr;
+  min-height:0;
+}
+.side{
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  gap:12px;
+  padding:14px;
+  border-right:1px solid var(--line);
+  background:#0f1724;
+  min-height:0;
+}
+.side-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.count{color:var(--muted);font-size:12px}
+.list{
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding-right:2px;
+}
+.row{
+  border:1px solid #2d3a52;
+  border-radius:7px;
+  background:#121c2b;
+  padding:10px;
+  cursor:pointer;
+}
+.row:hover{border-color:#5e79af}
+.row.active{border-color:#6f91ff;background:#1a2942}
+.row-name{font-weight:800;font-size:14px}
+.row-meta{color:var(--muted);font-size:12px;margin-top:4px}
+.side-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.editor{
+  padding:14px;
+  overflow:auto;
+}
+.section{
+  margin-bottom:16px;
+  border:1px solid #293750;
+  border-radius:8px;
+  background:#111a28;
+}
+.section-title{
+  padding:10px 12px;
+  border-bottom:1px solid #293750;
+  color:#c6d5f0;
+  font-size:12px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  padding:12px;
+}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid.six{grid-template-columns:repeat(6,minmax(72px,1fr))}
+.field label{
+  display:block;
+  margin-bottom:5px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
+.checkline{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:34px;
+}
+.checkline input{width:18px;min-height:18px}
+.raw{
+  width:100%;
+  min-height:92px;
+  resize:vertical;
+  border:1px solid #3f4d65;
+  border-radius:6px;
+  color:var(--text);
+  background:#0d1420;
+  padding:8px 10px;
+  font-family:Consolas,monospace;
+  font-size:12px;
+}
+.empty{
+  padding:18px;
+  color:var(--muted);
+  border:1px dashed #3d4c65;
+  border-radius:8px;
+  text-align:center;
+}
+@media(max-width:900px){
+  .shell{width:calc(100vw - 18px);height:calc(100vh - 18px);margin:9px}
+  .content{grid-template-columns:1fr}
+  .side{border-right:0;border-bottom:1px solid var(--line);max-height:290px}
+  .grid,.grid.three,.grid.six{grid-template-columns:1fr}
+}
+</style>
+<script>
+var STATE={jsonPath:"",fileName:"",json:null,index:0}
+
+function byId(id){return document.getElementById(id)}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]})}
+function toInt(v,f){var n=parseInt(String(v),10);return isNaN(n)?f:n}
+function cleanToken(v){return String(v||"").replace(/[^A-Za-z0-9_:-]/g,"").toLowerCase()}
+function cap(v){v=String(v||"");return v?v.charAt(0).toUpperCase()+v.slice(1):v}
+function statBlock(){return{hp:0,atk:0,def:0,spatk:0,spdef:0,speed:0}}
+function normalizeStats(raw){
+  raw=raw&&typeof raw==="object"?raw:{}
+  return{hp:Math.max(0,toInt(raw.hp,0)),atk:Math.max(0,toInt(raw.atk,0)),def:Math.max(0,toInt(raw.def,0)),spatk:Math.max(0,toInt(raw.spatk,0)),spdef:Math.max(0,toInt(raw.spdef,0)),speed:Math.max(0,toInt(raw.speed,0))}
+}
+function normalizeMoves(raw){
+  var arr=Array.isArray(raw)?raw:[],out=["","","",""],i
+  for(i=0;i<4;i++)out[i]=String(arr[i]||"")
+  return out
+}
+function defaultChoice(){
+  return{id:"sylveon",label:"Sylveon",species:"sylveon",pokemon:"sylveon",level:5,gender:"random",nature:"",ability:"",form:"",shiny:false,moveset:["","","",""],ivs:statBlock(),evs:statBlock()}
+}
+function normalizeChoice(raw){
+  var c=raw&&typeof raw==="object"?raw:{},species=cleanToken(c.species||c.pokemon||c.key||c.id||"sylveon")||"sylveon"
+  return{id:cleanToken(c.id||species)||species,label:String(c.label||c.name||cap(species)),species:species,pokemon:species,level:Math.max(1,Math.min(100,toInt(c.level||c.lvl,5))),gender:cleanToken(c.gender||""),nature:cleanToken(c.nature||""),ability:String(c.ability||""),form:String(c.form||""),shiny:c.shiny===true,moveset:normalizeMoves(c.moveset||c.moves),ivs:normalizeStats(c.ivs),evs:normalizeStats(c.evs)}
+}
+function normalizeJson(raw){
+  var src=raw&&typeof raw==="object"?raw:{},list=Array.isArray(src.choices)?src.choices:(Array.isArray(src.starters)?src.starters:(Array.isArray(src.pokemon)?src.pokemon:[])),out={choices:[]},i
+  out.id=String(src.id||"starter_list")
+  out.title=String(src.title||"Starter Pokemon Selection")
+  out.subtitle=String(src.subtitle||"")
+  out.once=src.once===true
+  out.claimKey=String(src.claimKey||src.id||"starter_list")
+  out.commandName=String(src.commandName||src.command||"pokegiveother")
+  out.alreadyClaimedMessage=String(src.alreadyClaimedMessage||"")
+  for(i=0;i<list.length;i++)out.choices.push(normalizeChoice(list[i]))
+  if(!out.choices.length)out.choices.push(defaultChoice())
+  return out
+}
+function readInit(){
+  var raw=window.cnpc&&window.cnpc.initData?window.cnpc.initData:{}
+  try{if(raw&&raw.charAt)raw=JSON.parse(raw)}catch(e){raw={ok:false,error:String(e)}}
+  STATE.jsonPath=String(raw.jsonPath||"")
+  STATE.fileName=String(raw.fileName||STATE.jsonPath||"starter.json")
+  STATE.json=normalizeJson(raw.json||{})
+}
+function sendEvt(name,data){
+  if(window.cnpc&&typeof window.cnpc.sendEvent==="function")window.cnpc.sendEvent(name,data||{})
+}
+function setStatus(text,kind){
+  var el=byId("status")
+  el.className="status "+(kind||"")
+  el.textContent=String(text||"")
+}
+function choices(){if(!STATE.json.choices)STATE.json.choices=[];return STATE.json.choices}
+function activeChoice(){
+  var list=choices()
+  if(!list.length)list.push(defaultChoice())
+  if(STATE.index<0)STATE.index=0
+  if(STATE.index>=list.length)STATE.index=list.length-1
+  return list[STATE.index]
+}
+function gatherMeta(){
+  STATE.json.id=byId("cfgId").value
+  STATE.json.title=byId("cfgTitle").value
+  STATE.json.subtitle=byId("cfgSubtitle").value
+  STATE.json.claimKey=byId("cfgClaimKey").value
+  STATE.json.commandName=byId("cfgCommand").value
+  STATE.json.once=byId("cfgOnce").checked
+  STATE.json.alreadyClaimedMessage=byId("cfgClaimed").value
+}
+function putStat(prefix,target){
+  target.hp=toInt(byId(prefix+"Hp").value,0)
+  target.atk=toInt(byId(prefix+"Atk").value,0)
+  target.def=toInt(byId(prefix+"Def").value,0)
+  target.spatk=toInt(byId(prefix+"Spatk").value,0)
+  target.spdef=toInt(byId(prefix+"Spdef").value,0)
+  target.speed=toInt(byId(prefix+"Speed").value,0)
+}
+function gatherChoice(){
+  var c=activeChoice()
+  c.species=cleanToken(byId("species").value)||"sylveon"
+  c.pokemon=c.species
+  c.id=cleanToken(byId("choiceId").value||c.species)||c.species
+  c.label=byId("label").value||cap(c.species)
+  c.level=Math.max(1,Math.min(100,toInt(byId("level").value,5)))
+  c.gender=cleanToken(byId("gender").value)
+  c.nature=cleanToken(byId("nature").value)
+  c.ability=byId("ability").value
+  c.form=byId("form").value
+  c.shiny=byId("shiny").checked
+  c.moveset=[byId("move1").value,byId("move2").value,byId("move3").value,byId("move4").value]
+  c.ivs=c.ivs||statBlock()
+  c.evs=c.evs||statBlock()
+  putStat("iv",c.ivs)
+  putStat("ev",c.evs)
+}
+function renderMeta(){
+  byId("path").textContent=STATE.jsonPath||STATE.fileName
+  byId("cfgId").value=STATE.json.id||""
+  byId("cfgTitle").value=STATE.json.title||""
+  byId("cfgSubtitle").value=STATE.json.subtitle||""
+  byId("cfgClaimKey").value=STATE.json.claimKey||""
+  byId("cfgCommand").value=STATE.json.commandName||"pokegiveother"
+  byId("cfgOnce").checked=STATE.json.once===true
+  byId("cfgClaimed").value=STATE.json.alreadyClaimedMessage||""
+}
+function setStats(prefix,stats){
+  stats=normalizeStats(stats)
+  byId(prefix+"Hp").value=stats.hp
+  byId(prefix+"Atk").value=stats.atk
+  byId(prefix+"Def").value=stats.def
+  byId(prefix+"Spatk").value=stats.spatk
+  byId(prefix+"Spdef").value=stats.spdef
+  byId(prefix+"Speed").value=stats.speed
+}
+function renderChoice(){
+  var c=activeChoice(),moves=normalizeMoves(c.moveset)
+  byId("choiceId").value=c.id||""
+  byId("species").value=c.species||""
+  byId("label").value=c.label||""
+  byId("level").value=c.level||5
+  byId("gender").value=c.gender||""
+  byId("nature").value=c.nature||""
+  byId("ability").value=c.ability||""
+  byId("form").value=c.form||""
+  byId("shiny").checked=c.shiny===true
+  byId("move1").value=moves[0]
+  byId("move2").value=moves[1]
+  byId("move3").value=moves[2]
+  byId("move4").value=moves[3]
+  setStats("iv",c.ivs)
+  setStats("ev",c.evs)
+}
+function renderList(){
+  var box=byId("list"),list=choices(),i,c,row
+  box.innerHTML=""
+  byId("count").textContent=list.length+" choices"
+  if(!list.length){box.innerHTML='<div class="empty">No Pokemon configured.</div>';return}
+  for(i=0;i<list.length;i++){
+    c=list[i]
+    row=document.createElement("div")
+    row.className="row"+(i===STATE.index?" active":"")
+    row.setAttribute("data-index",String(i))
+    row.innerHTML='<div class="row-name">'+esc(i+1)+'. '+esc(c.label||c.species||"Pokemon")+'</div><div class="row-meta">'+esc(c.species||"")+' / Lv.'+esc(c.level||5)+(c.shiny?' / shiny':'')+'</div>'
+    row.onclick=function(){gatherMeta();gatherChoice();STATE.index=Number(this.getAttribute("data-index"));renderAll()}
+    box.appendChild(row)
+  }
+}
+function renderAll(){renderMeta();renderList();renderChoice()}
+function addChoice(){
+  gatherMeta();gatherChoice()
+  choices().push(defaultChoice())
+  STATE.index=choices().length-1
+  renderAll()
+  setStatus("Added Pokemon.","ok")
+}
+function duplicateChoice(){
+  gatherMeta();gatherChoice()
+  var copy=JSON.parse(JSON.stringify(activeChoice()))
+  copy.id=cleanToken(copy.id+"_copy")
+  choices().splice(STATE.index+1,0,copy)
+  STATE.index=STATE.index+1
+  renderAll()
+  setStatus("Duplicated Pokemon.","ok")
+}
+function removeChoice(){
+  var list=choices()
+  if(list.length<=1){setStatus("At least one Pokemon is required.","err");return}
+  list.splice(STATE.index,1)
+  STATE.index=Math.max(0,Math.min(STATE.index,list.length-1))
+  renderAll()
+  setStatus("Removed Pokemon.","ok")
+}
+function save(){
+  gatherMeta();gatherChoice()
+  STATE.json=normalizeJson(STATE.json)
+  sendEvt("starterEditorSave",{json:STATE.json})
+  setStatus("Saving...","")
+}
+function back(){sendEvt("starterEditorBack",{})}
+function closeEditor(){sendEvt("starterEditorClose",{})}
+function receiveState(data){
+  if(data&&data.json){
+    STATE.jsonPath=String(data.jsonPath||STATE.jsonPath)
+    STATE.fileName=String(data.fileName||STATE.fileName)
+    STATE.json=normalizeJson(data.json)
+    STATE.index=Math.min(STATE.index,choices().length-1)
+    renderAll()
+  }
+}
+function receiveResult(data){
+  data=data||{}
+  if(data.ok)setStatus(data.message||"Saved.","ok")
+  else setStatus(data.error||"Save failed.","err")
+}
+window.onload=function(){
+  readInit()
+  renderAll()
+  byId("addBtn").onclick=addChoice
+  byId("dupBtn").onclick=duplicateChoice
+  byId("removeBtn").onclick=removeChoice
+  byId("saveBtn").onclick=save
+  byId("backBtn").onclick=back
+  byId("closeBtn").onclick=closeEditor
+  if(window.cnpc&&typeof window.cnpc.onEvent==="function"){
+    window.cnpc.onEvent("starterEditorState",receiveState)
+    window.cnpc.onEvent("starterEditorResult",receiveResult)
+  }
+  sendEvt("starterEditorReady",{})
+}
+</script>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div>
+      <div class="title">Starter Pokemon Editor</div>
+      <div class="sub" id="path"></div>
+    </div>
+    <div class="status" id="status">Ready</div>
+  </div>
+  <div class="content">
+    <aside class="side">
+      <div class="side-head">
+        <div class="title" style="font-size:15px">Pokemon</div>
+        <div class="count" id="count">0 choices</div>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="side-actions">
+        <button id="addBtn" class="good">Add</button>
+        <button id="dupBtn">Duplicate</button>
+        <button id="removeBtn" class="danger">Remove</button>
+      </div>
+    </aside>
+    <main class="editor">
+      <section class="section">
+        <div class="section-title">List Settings</div>
+        <div class="grid three">
+          <div class="field"><label>ID</label><input id="cfgId"></div>
+          <div class="field"><label>Title</label><input id="cfgTitle"></div>
+          <div class="field"><label>Command</label><input id="cfgCommand"></div>
+          <div class="field"><label>Subtitle</label><input id="cfgSubtitle"></div>
+          <div class="field"><label>Claim Key</label><input id="cfgClaimKey"></div>
+          <div class="field"><label>Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span>Enable one-time claim</span></div></div>
+          <div class="field" style="grid-column:1/-1"><label>Already Claimed Message</label><input id="cfgClaimed"></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">Selected Pokemon</div>
+        <div class="grid three">
+          <div class="field"><label>Choice ID</label><input id="choiceId"></div>
+          <div class="field"><label>Species</label><input id="species" placeholder="bulbasaur"></div>
+          <div class="field"><label>Label</label><input id="label" placeholder="Bulbasaur"></div>
+          <div class="field"><label>Level</label><input id="level" type="number" min="1" max="100"></div>
+          <div class="field"><label>Gender</label><select id="gender"><option value="">Default</option><option value="random">random</option><option value="male">male</option><option value="female">female</option><option value="genderless">genderless</option></select></div>
+          <div class="field"><label>Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span>Shiny Pokemon</span></div></div>
+          <div class="field"><label>Nature</label><input id="nature"></div>
+          <div class="field"><label>Ability</label><input id="ability"></div>
+          <div class="field"><label>Form</label><input id="form"></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">Moves</div>
+        <div class="grid">
+          <div class="field"><label>Move 1</label><input id="move1"></div>
+          <div class="field"><label>Move 2</label><input id="move2"></div>
+          <div class="field"><label>Move 3</label><input id="move3"></div>
+          <div class="field"><label>Move 4</label><input id="move4"></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">IVs</div>
+        <div class="grid six">
+          <div class="field"><label>HP</label><input id="ivHp" type="number" min="0" max="31"></div>
+          <div class="field"><label>Atk</label><input id="ivAtk" type="number" min="0" max="31"></div>
+          <div class="field"><label>Def</label><input id="ivDef" type="number" min="0" max="31"></div>
+          <div class="field"><label>Sp.Atk</label><input id="ivSpatk" type="number" min="0" max="31"></div>
+          <div class="field"><label>Sp.Def</label><input id="ivSpdef" type="number" min="0" max="31"></div>
+          <div class="field"><label>Speed</label><input id="ivSpeed" type="number" min="0" max="31"></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">EVs</div>
+        <div class="grid six">
+          <div class="field"><label>HP</label><input id="evHp" type="number" min="0" max="252"></div>
+          <div class="field"><label>Atk</label><input id="evAtk" type="number" min="0" max="252"></div>
+          <div class="field"><label>Def</label><input id="evDef" type="number" min="0" max="252"></div>
+          <div class="field"><label>Sp.Atk</label><input id="evSpatk" type="number" min="0" max="252"></div>
+          <div class="field"><label>Sp.Def</label><input id="evSpdef" type="number" min="0" max="252"></div>
+          <div class="field"><label>Speed</label><input id="evSpeed" type="number" min="0" max="252"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="bottom">
+    <button id="closeBtn" class="ghost">Close</button>
+    <div>
+      <button id="backBtn">NPC Editor</button>
+      <button id="saveBtn" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
