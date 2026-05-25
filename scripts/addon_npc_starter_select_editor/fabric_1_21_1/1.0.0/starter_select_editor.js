@@ -107,6 +107,7 @@ var StarterSelectEditorModule = (function(){
   ]
 
   var COBBLEMON_CACHE = null
+  var LIVE_SESSIONS = {}
 
   function key(player){
     try{ return String(player.getUUID()) }catch(err){}
@@ -164,15 +165,12 @@ var StarterSelectEditorModule = (function(){
       pickerSearch:String(session.pickerSearch || ""),
       pickerPage:toInt(session.pickerPage, 0)
     }
+    LIVE_SESSIONS[key(player)] = JSON.stringify(state)
     try{ td.put(TEMP.SESSION, JSON.stringify(state)) }catch(err){}
   }
 
-  function getStoredSession(player, gui){
-    var td = player.getTempdata()
-    var raw, saved, session
-    raw = td.get(TEMP.SESSION)
-    if(!raw) return null
-    try{ saved = JSON.parse(String(raw)) }catch(err2){ return null }
+  function makeSessionFromSaved(player, gui, saved){
+    var session
     session = {
       player:player,
       gui:gui,
@@ -194,7 +192,55 @@ var StarterSelectEditorModule = (function(){
     return session
   }
 
+  function recoverSessionFromEditContext(player, gui){
+    var td = player.getTempdata()
+    var path = cleanPath(td.get(TEMP.JSON_PATH) || "")
+    var loaded, session
+    if(!path) return null
+    try{
+      loaded = readStarter(path)
+      session = {
+        player:player,
+        gui:gui,
+        componentIds:[],
+        npc:null,
+        npcUuid:String(td.get(TEMP.NPC_UUID) || ""),
+        jsonPath:path,
+        file:loaded.file,
+        json:loaded.json,
+        index:0,
+        page:0,
+        category:CAT.LIST,
+        flyoutOpen:false,
+        pickerKind:"",
+        pickerTarget:"",
+        pickerSearch:"",
+        pickerPage:0,
+        i18n:buildEditorI18n(player)
+      }
+      setSession(player, session)
+      debugMsg(player, "recovered session from edit context path=" + path)
+      return session
+    }catch(err){
+      debugMsg(player, "recover failed path=" + path + " err=" + String(err))
+    }
+    return null
+  }
+
+  function getStoredSession(player, gui){
+    var td = player.getTempdata()
+    var raw, saved, session
+    raw = td.get(TEMP.SESSION)
+    if(!raw) raw = LIVE_SESSIONS[key(player)]
+    if(!raw) return recoverSessionFromEditContext(player, gui)
+    try{ saved = JSON.parse(String(raw)) }catch(err2){ return recoverSessionFromEditContext(player, gui) }
+    session = makeSessionFromSaved(player, gui, saved)
+    if(!td.get(TEMP.SESSION)) setSession(player, session)
+    return session
+  }
+
   function clearSession(player){
+    delete LIVE_SESSIONS[key(player)]
     player.getTempdata().remove(TEMP.SESSION)
   }
 
@@ -1303,7 +1349,7 @@ var StarterSelectEditorModule = (function(){
       description:"Edit the selected starter Pokemon JSON list for dc_starter NPCs.",
       targetPrefix:"dc_starter",
       defaultEnabled:true,
-      customGuiId:-1,
+      customGuiId:GUI_ID,
       editLabel:"Edit Pokemon",
       open:open,
       customGuiButton:handleButton,
