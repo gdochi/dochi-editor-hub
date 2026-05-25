@@ -39,19 +39,6 @@
       ]
     },
     {
-      "source": "html/starter_select_editor.html",
-      "install_as": "addon/starter_select_editor.html",
-      "type": "html",
-      "dependencies": [
-        {
-          "type": "mod",
-          "id": "cnpcextended",
-          "required": true,
-          "note": "Required for the HTML starter list editor."
-        }
-      ]
-    },
-    {
       "source": "dc_lang/addon_npc_starter_select_editor/en_us.json",
       "install_as": "dc_data/dc_lang/addon_npc_starter_select_editor/en_us.json",
       "type": "data"
