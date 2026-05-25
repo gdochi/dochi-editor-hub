@@ -145,7 +145,7 @@ var StarterSelectEditorModule = (function(){
     out.subtitle = String(src.subtitle || "")
     out.once = src.once === true
     out.claimKey = String(src.claimKey || src.id || "starter_list")
-    out.commandName = String(src.commandName || src.command || "pokegiveother")
+    out.commandName = "pokegiveother"
     out.alreadyClaimedMessage = String(src.alreadyClaimedMessage || "")
     out.choices = []
     for(i = 0; i < list.length; i++) out.choices.push(normalizeChoice(list[i], i))

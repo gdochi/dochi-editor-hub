@@ -360,7 +360,7 @@ var StarterSelectionModule = (function(){
   function buildGiveCommand(player, choice, cfg){
     var playerName = String(player.getName())
     var attrs = []
-    var cmd = String(cfg.commandName || DcStarterSelectConfig.commandName || "pokegiveother").replace(/^\/+/, "")
+    var cmd = String(DcStarterSelectConfig.commandName || "pokegiveother").replace(/^\/+/, "")
     attrs.push("lvl=" + Math.max(1, Math.min(100, toInt(choice.level, DEFAULT_LEVEL))))
     if(choice.shiny === true) attrs.push("shiny")
     if(choice.gender) attrs.push("gender=" + choice.gender)

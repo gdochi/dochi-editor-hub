@@ -26,10 +26,10 @@ body{
 }
 button,input,select{
   font-family:inherit;
-  font-size:14px;
+  font-size:16px;
 }
 button{
-  min-height:34px;
+  min-height:42px;
   border:1px solid #40506a;
   border-radius:6px;
   color:var(--text);
@@ -44,7 +44,7 @@ button.danger{background:#74303a;border-color:#f07b85}
 button.ghost{background:#141d2b}
 button:disabled{opacity:.45;cursor:default}
 input,select{
-  min-height:34px;
+  min-height:42px;
   width:100%;
   border:1px solid #3f4d65;
   border-radius:6px;
@@ -55,9 +55,9 @@ input,select{
 }
 input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,255,.18)}
 .shell{
-  width:min(1180px,calc(100vw - 48px));
-  height:min(720px,calc(100vh - 48px));
-  margin:24px auto;
+  width:calc(100vw - 24px);
+  height:calc(100vh - 24px);
+  margin:12px auto;
   display:grid;
   grid-template-rows:auto 1fr auto;
   background:rgba(12,18,28,.94);
@@ -77,13 +77,13 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
 }
 .bottom{border-top:1px solid var(--line);border-bottom:0}
 .title{font-size:18px;font-weight:800}
-.sub{font-size:12px;color:var(--muted);margin-top:3px}
-.status{font-size:13px;color:var(--muted)}
+.sub{font-size:14px;color:var(--muted);margin-top:4px}
+.status{font-size:15px;color:var(--muted)}
 .status.ok{color:var(--green)}
 .status.err{color:var(--red)}
 .content{
   display:grid;
-  grid-template-columns:340px 1fr;
+  grid-template-columns:430px 1fr;
   min-height:0;
 }
 .side{
@@ -114,7 +114,7 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
 .row:hover{border-color:#5e79af}
 .row.active{border-color:#6f91ff;background:#1a2942}
 .row-name{font-weight:800;font-size:14px}
-.row-meta{color:var(--muted);font-size:12px;margin-top:4px}
+.row-meta{color:var(--muted);font-size:13px;margin-top:4px}
 .side-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .editor{
   padding:14px;
@@ -130,7 +130,7 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
   padding:10px 12px;
   border-bottom:1px solid #293750;
   color:#c6d5f0;
-  font-size:12px;
+  font-size:14px;
   font-weight:800;
   text-transform:uppercase;
 }
@@ -146,7 +146,7 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
   display:block;
   margin-bottom:5px;
   color:var(--muted);
-  font-size:12px;
+  font-size:14px;
   font-weight:700;
 }
 .checkline{
@@ -184,12 +184,20 @@ input:focus,select:focus{border-color:#6f91ff;box-shadow:0 0 0 2px rgba(94,140,2
 </style>
 <script>
 var STATE={jsonPath:"",fileName:"",json:null,index:0}
+var NATURES=["","hardy","lonely","brave","adamant","naughty","bold","docile","relaxed","impish","lax","timid","hasty","serious","jolly","naive","modest","mild","quiet","bashful","rash","calm","gentle","sassy","careful","quirky"]
+var FALLBACK_POKEMON=["bulbasaur","ivysaur","venusaur","charmander","charmeleon","charizard","squirtle","wartortle","blastoise","pikachu","eevee","chikorita","cyndaquil","totodile","treecko","torchic","mudkip","turtwig","chimchar","piplup","snivy","tepig","oshawott","chespin","fennekin","froakie","rowlet","litten","popplio","grookey","scorbunny","sobble","sprigatito","fuecoco","quaxly","riolu","ralts","gible","bagon","dratini","sylveon"]
+var FALLBACK_ABILITIES=["","overgrow","blaze","torrent","shield-dust","shed-skin","compound-eyes","swarm","keen-eye","tangled-feet","static","lightning-rod","run-away","adaptability","anticipation","inner-focus","synchronize","trace","intimidate","levitate","pressure","chlorophyll","solar-power","swift-swim","rain-dish","protean","battle-bond","long-reach","liquid-voice","grassy-surge","libero","sniper","unaware"]
+var FALLBACK_FORMS=["","normal","alola","galar","hisui","paldea"]
+var POKEMON_OPTIONS=FALLBACK_POKEMON.slice()
+var ABILITY_OPTIONS=FALLBACK_ABILITIES.slice()
+var MOVE_OPTIONS=["","tackle","growl","scratch","tail-whip","vine-whip","ember","water-gun","razor-leaf","quick-attack","thunder-shock","bubble","pound"]
 
 function byId(id){return document.getElementById(id)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]})}
 function toInt(v,f){var n=parseInt(String(v),10);return isNaN(n)?f:n}
 function cleanToken(v){return String(v||"").replace(/[^A-Za-z0-9_:-]/g,"").toLowerCase()}
 function cap(v){v=String(v||"");return v?v.charAt(0).toUpperCase()+v.slice(1):v}
+function defaultListId(){return cleanToken(String(STATE.fileName||STATE.jsonPath||"starter_list").replace(/\.json$/i,""))||"starter_list"}
 function statBlock(){return{hp:0,atk:0,def:0,spatk:0,spdef:0,speed:0}}
 function normalizeStats(raw){
   raw=raw&&typeof raw==="object"?raw:{}
@@ -214,7 +222,7 @@ function normalizeJson(raw){
   out.subtitle=String(src.subtitle||"")
   out.once=src.once===true
   out.claimKey=String(src.claimKey||src.id||"starter_list")
-  out.commandName=String(src.commandName||src.command||"pokegiveother")
+  out.commandName="pokegiveother"
   out.alreadyClaimedMessage=String(src.alreadyClaimedMessage||"")
   for(i=0;i<list.length;i++)out.choices.push(normalizeChoice(list[i]))
   if(!out.choices.length)out.choices.push(defaultChoice())
@@ -244,11 +252,11 @@ function activeChoice(){
   return list[STATE.index]
 }
 function gatherMeta(){
-  STATE.json.id=byId("cfgId").value
   STATE.json.title=byId("cfgTitle").value
   STATE.json.subtitle=byId("cfgSubtitle").value
-  STATE.json.claimKey=byId("cfgClaimKey").value
-  STATE.json.commandName=byId("cfgCommand").value
+  STATE.json.id=STATE.json.id||defaultListId()
+  STATE.json.claimKey=STATE.json.claimKey||STATE.json.id
+  STATE.json.commandName="pokegiveother"
   STATE.json.once=byId("cfgOnce").checked
   STATE.json.alreadyClaimedMessage=byId("cfgClaimed").value
 }
@@ -264,8 +272,8 @@ function gatherChoice(){
   var c=activeChoice()
   c.species=cleanToken(byId("species").value)||"sylveon"
   c.pokemon=c.species
-  c.id=cleanToken(byId("choiceId").value||c.species)||c.species
-  c.label=byId("label").value||cap(c.species)
+  c.id=c.species
+  c.label=cap(c.species)
   c.level=Math.max(1,Math.min(100,toInt(byId("level").value,5)))
   c.gender=cleanToken(byId("gender").value)
   c.nature=cleanToken(byId("nature").value)
@@ -280,11 +288,8 @@ function gatherChoice(){
 }
 function renderMeta(){
   byId("path").textContent=STATE.jsonPath||STATE.fileName
-  byId("cfgId").value=STATE.json.id||""
   byId("cfgTitle").value=STATE.json.title||""
   byId("cfgSubtitle").value=STATE.json.subtitle||""
-  byId("cfgClaimKey").value=STATE.json.claimKey||""
-  byId("cfgCommand").value=STATE.json.commandName||"pokegiveother"
   byId("cfgOnce").checked=STATE.json.once===true
   byId("cfgClaimed").value=STATE.json.alreadyClaimedMessage||""
 }
@@ -299,9 +304,7 @@ function setStats(prefix,stats){
 }
 function renderChoice(){
   var c=activeChoice(),moves=normalizeMoves(c.moveset)
-  byId("choiceId").value=c.id||""
   byId("species").value=c.species||""
-  byId("label").value=c.label||""
   byId("level").value=c.level||5
   byId("gender").value=c.gender||""
   byId("nature").value=c.nature||""
@@ -325,12 +328,62 @@ function renderList(){
     row=document.createElement("div")
     row.className="row"+(i===STATE.index?" active":"")
     row.setAttribute("data-index",String(i))
-    row.innerHTML='<div class="row-name">'+esc(i+1)+'. '+esc(c.label||c.species||"Pokemon")+'</div><div class="row-meta">'+esc(c.species||"")+' / Lv.'+esc(c.level||5)+(c.shiny?' / shiny':'')+'</div>'
+    row.innerHTML='<div class="row-name">'+esc(cap(c.species||"pokemon"))+'</div>'
     row.onclick=function(){gatherMeta();gatherChoice();STATE.index=Number(this.getAttribute("data-index"));renderAll()}
     box.appendChild(row)
   }
 }
-function renderAll(){renderMeta();renderList();renderChoice()}
+function fillDatalist(id,items){
+  var el=byId(id),seen={},i,v,opt
+  if(!el)return
+  el.innerHTML=""
+  for(i=0;i<items.length;i++){
+    v=String(items[i]||"")
+    if(!v||seen[v])continue
+    seen[v]=true
+    opt=document.createElement("option")
+    opt.value=v
+    el.appendChild(opt)
+  }
+}
+function fillSelect(id,items,current){
+  var el=byId(id),seen={},i,v,opt
+  if(!el)return
+  el.innerHTML=""
+  if(current&&items.indexOf(current)<0)items=items.concat([current])
+  for(i=0;i<items.length;i++){
+    v=String(items[i]||"")
+    if(seen[v])continue
+    seen[v]=true
+    opt=document.createElement("option")
+    opt.value=v
+    opt.textContent=v?v:"Default"
+    el.appendChild(opt)
+  }
+}
+function renderOptionLists(){
+  fillDatalist("pokemonOptions",POKEMON_OPTIONS.concat(choices().map(function(c){return c.species||""})))
+  fillDatalist("abilityOptions",ABILITY_OPTIONS.concat(choices().map(function(c){return c.ability||""})))
+  fillDatalist("moveOptions",MOVE_OPTIONS)
+  fillSelect("nature",NATURES,activeChoice().nature||"")
+  fillSelect("form",FALLBACK_FORMS,activeChoice().form||"")
+}
+function loadRemoteOptions(){
+  if(!window.fetch)return
+  fetch("https://pokeapi.co/api/v2/pokemon?limit=1025").then(function(r){return r.json()}).then(function(data){
+    if(data&&data.results)POKEMON_OPTIONS=data.results.map(function(p){return p.name})
+    renderOptionLists()
+  }).catch(function(){})
+  fetch("https://pokeapi.co/api/v2/ability?limit=400").then(function(r){return r.json()}).then(function(data){
+    if(data&&data.results)ABILITY_OPTIONS=[""].concat(data.results.map(function(p){return p.name}))
+    renderOptionLists()
+  }).catch(function(){})
+  fetch("https://pokeapi.co/api/v2/move?limit=1000").then(function(r){return r.json()}).then(function(data){
+    if(data&&data.results)MOVE_OPTIONS=[""].concat(data.results.map(function(p){return p.name}))
+    renderOptionLists()
+  }).catch(function(){})
+}
+function renderAll(){renderMeta();renderOptionLists();renderList();renderChoice()}
 function addChoice(){
   gatherMeta();gatherChoice()
   choices().push(defaultChoice())
@@ -391,6 +444,7 @@ window.onload=function(){
     window.cnpc.onEvent("starterEditorResult",receiveResult)
   }
   sendEvt("starterEditorReady",{})
+  loadRemoteOptions()
 }
 </script>
 </head>
@@ -419,12 +473,9 @@ window.onload=function(){
     <main class="editor">
       <section class="section">
         <div class="section-title">List Settings</div>
-        <div class="grid three">
-          <div class="field"><label>ID</label><input id="cfgId"></div>
+        <div class="grid">
           <div class="field"><label>Title</label><input id="cfgTitle"></div>
-          <div class="field"><label>Command</label><input id="cfgCommand"></div>
           <div class="field"><label>Subtitle</label><input id="cfgSubtitle"></div>
-          <div class="field"><label>Claim Key</label><input id="cfgClaimKey"></div>
           <div class="field"><label>Once Per Player</label><div class="checkline"><input id="cfgOnce" type="checkbox"><span>Enable one-time claim</span></div></div>
           <div class="field" style="grid-column:1/-1"><label>Already Claimed Message</label><input id="cfgClaimed"></div>
         </div>
@@ -432,24 +483,22 @@ window.onload=function(){
       <section class="section">
         <div class="section-title">Selected Pokemon</div>
         <div class="grid three">
-          <div class="field"><label>Choice ID</label><input id="choiceId"></div>
-          <div class="field"><label>Species</label><input id="species" placeholder="bulbasaur"></div>
-          <div class="field"><label>Label</label><input id="label" placeholder="Bulbasaur"></div>
+          <div class="field" style="grid-column:span 2"><label>Species</label><input id="species" list="pokemonOptions" placeholder="bulbasaur"><datalist id="pokemonOptions"></datalist></div>
           <div class="field"><label>Level</label><input id="level" type="number" min="1" max="100"></div>
           <div class="field"><label>Gender</label><select id="gender"><option value="">Default</option><option value="random">random</option><option value="male">male</option><option value="female">female</option><option value="genderless">genderless</option></select></div>
           <div class="field"><label>Shiny</label><div class="checkline"><input id="shiny" type="checkbox"><span>Shiny Pokemon</span></div></div>
-          <div class="field"><label>Nature</label><input id="nature"></div>
-          <div class="field"><label>Ability</label><input id="ability"></div>
-          <div class="field"><label>Form</label><input id="form"></div>
+          <div class="field"><label>Nature</label><select id="nature"></select></div>
+          <div class="field"><label>Ability</label><input id="ability" list="abilityOptions" placeholder="Default"><datalist id="abilityOptions"></datalist></div>
+          <div class="field"><label>Form</label><select id="form"></select></div>
         </div>
       </section>
       <section class="section">
         <div class="section-title">Moves</div>
         <div class="grid">
-          <div class="field"><label>Move 1</label><input id="move1"></div>
-          <div class="field"><label>Move 2</label><input id="move2"></div>
-          <div class="field"><label>Move 3</label><input id="move3"></div>
-          <div class="field"><label>Move 4</label><input id="move4"></div>
+          <div class="field"><label>Move 1</label><input id="move1" list="moveOptions"><datalist id="moveOptions"></datalist></div>
+          <div class="field"><label>Move 2</label><input id="move2" list="moveOptions"></div>
+          <div class="field"><label>Move 3</label><input id="move3" list="moveOptions"></div>
+          <div class="field"><label>Move 4</label><input id="move4" list="moveOptions"></div>
         </div>
       </section>
       <section class="section">
