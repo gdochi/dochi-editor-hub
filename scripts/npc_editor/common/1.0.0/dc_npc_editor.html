@@ -316,8 +316,10 @@ syncScanRange(APP_STATE.scanRange);
 if(APP_STATE.npcs.length&&!APP_STATE.selectedUuid){
 APP_STATE.selectedUuid=APP_STATE.npcs[0].uuid;
 }
+if(APP_STATE.selectedUuid)syncScriptShellToNpc(getSelectedNpc());
 applyFilter();
-clearScriptState("");
+if(!APP_STATE.selectedUuid)clearScriptState("");
+else renderScriptState("");
 updateStyleUi();
 renderKeyboardPicker();
 applyI18n(document.body);
@@ -1021,7 +1023,8 @@ return;
 sendEvt("npc_script_info",{uuid:npc.uuid});
 }
 function renderScriptData(d){
-var tabs=Array.isArray(d.tabs)?d.tabs:[],lock=normalizeDochiLock(d.dochiLock),dataUuid=String(d.uuid||APP_STATE.selectedUuid||""),samePending=String(APP_STATE.script.pendingUuid||"")===dataUuid;
+var tabs=Array.isArray(d.tabs)?d.tabs:[],lock=normalizeDochiLock(d.dochiLock),dataUuid=String(d.uuid||APP_STATE.selectedUuid||""),samePending=String(APP_STATE.script.pendingUuid||"")===dataUuid,incomingSelection;
+if(APP_STATE.selectedUuid&&dataUuid&&String(APP_STATE.selectedUuid)!==dataUuid)return;
 var confirmed=APP_STATE.script.generalConvertConfirmed===true&&lock.locked;
 var keepDce=samePending&&APP_STATE.script.pendingStyle==="dcE"&&!lock.locked&&String(d.scriptStyle||"general")!=="dcE";
 var npc=findNpcByUuid(dataUuid);
@@ -1039,7 +1042,10 @@ if(keepDce)APP_STATE.script.data.scriptStyle="dcE";
 if(confirmed)APP_STATE.script.data.scriptStyle="general";
 APP_STATE.script.generalConvertConfirmed=confirmed;
 APP_STATE.script.dcClearPending=false;
-APP_STATE.script.dcSelection=normalizeDcSelection(d.dcSelection||APP_STATE.script.dcSelection||{});
+incomingSelection=normalizeDcSelection(d.dcSelection||{});
+if(lock.locked&&!incomingSelection.entries.length)incomingSelection=normalizeDcSelection(lock);
+else if(!incomingSelection.entries.length&&samePending)incomingSelection=normalizeDcSelection(APP_STATE.script.dcSelection||{});
+APP_STATE.script.dcSelection=incomingSelection;
 if(tabs.length&&!tabs.some(function(t){return Number(t.tab)===Number(APP_STATE.script.selectedTab);})){
 APP_STATE.script.selectedTab=Number(tabs[0].tab||1);
 }

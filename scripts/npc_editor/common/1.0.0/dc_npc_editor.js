@@ -906,10 +906,12 @@ pushBrowser(e.player,"npcScriptData",payload);
 pushNpcList(e.player,getStoredScanRange(e.player));
 }
 function buildNpcScriptDataPayload(npc){
-var raw=getEntityNbtSafe(npc),result=extractScriptTabsFromRaw(raw),lock=getNpcDochiLock(npc);
+var raw=getEntityNbtSafe(npc),result=extractScriptTabsFromRaw(raw),lock=getNpcDochiLock(npc),selection;
 result.scriptStyle=getNpcScriptStyle(npc);
 if(lock.locked)result.scriptStyle="dcE";
-result.dcSelection=getNpcDcSelection(npc);
+selection=getNpcDcSelection(npc);
+if(lock.locked&&!selection.entries.length)selection=normalizeDcSelection(lock);
+result.dcSelection=selection;
 result.dochiLock=lock;
 result.uuid=String(npc.getUUID());
 return result;
