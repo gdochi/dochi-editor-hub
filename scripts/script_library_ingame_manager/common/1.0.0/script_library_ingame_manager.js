@@ -488,22 +488,31 @@ var DochiScriptLibraryIngameManager = (function(){
     return out
   }
 
+  function isAddonPackage(pkgName, editor){
+    var pkg = lower(pkgName)
+    var ed = lower(editor)
+    return startsWith(pkg, "addon_") || ed.indexOf("addon") >= 0
+  }
+
   function normalizeManifest(data, manifestPath, rootPkg){
     var files = []
     var rawFiles = data && data.files instanceof Array ? data.files : []
-    var i
+    var i, pkgName, editor, subPath
     rootPkg = rootPkg || {}
     for(i = 0; i < rawFiles.length; i++) files.push(normalizeFileSpec(rawFiles[i]))
+    pkgName = trim(data.package || rootPkg.pkgName || "")
+    editor = trim(data.editor || rootPkg.editor || "")
+    subPath = isAddonPackage(pkgName, editor) ? "" : trim(data.sub_path || rootPkg.subPath || "")
     return {
-      key: [trim(data.package || rootPkg.pkgName || ""), trim(data.editor || rootPkg.editor || ""), trim(data.mc_version || rootPkg.mcVersion || "")].join("|").toLowerCase(),
-      pkgName: trim(data.package || rootPkg.pkgName || ""),
+      key: [pkgName, editor, trim(data.mc_version || rootPkg.mcVersion || "")].join("|").toLowerCase(),
+      pkgName: pkgName,
       version: trim(data.version || rootPkg.latest || ""),
-      editor: trim(data.editor || rootPkg.editor || ""),
+      editor: editor,
       mcVersion: trim(data.mc_version || rootPkg.mcVersion || ""),
       description: trim(data.description || ""),
       entry: trim(data.entry || ""),
       installDir: trim(data.install_dir || ""),
-      subPath: trim(data.sub_path || rootPkg.subPath || ""),
+      subPath: subPath,
       manifestPath: manifestPath,
       files: files,
       playerScripts: normalizePlayerScripts(data.player_scripts)
@@ -516,11 +525,13 @@ var DochiScriptLibraryIngameManager = (function(){
     var i, item
     for(i = 0; i < arr.length; i++){
       item = arr[i] || {}
+      var pkgName = trim(item.package || "")
+      var editor = trim(item.editor || "")
       out.push({
-        pkgName: trim(item.package || ""),
-        editor: trim(item.editor || ""),
+        pkgName: pkgName,
+        editor: editor,
         mcVersion: trim(item.mc_version || ""),
-        subPath: trim(item.sub_path || ""),
+        subPath: isAddonPackage(pkgName, editor) ? "" : trim(item.sub_path || ""),
         latest: trim(item.latest || ""),
         versions: item.versions instanceof Array ? item.versions : []
       })
@@ -544,9 +555,7 @@ var DochiScriptLibraryIngameManager = (function(){
   }
 
   function isAddonEntry(entry){
-    var pkg = lower(entry && entry.package)
-    var editor = lower(entry && entry.editor)
-    return startsWith(pkg, "addon_") || editor.indexOf("addon") >= 0
+    return isAddonPackage(entry && (entry.package || entry.pkgName), entry && entry.editor)
   }
 
   function resolveManifestTarget(path, type){

@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_at": "2026-05-25T06:10:40.485Z",
+  "generated_at": "2026-05-25T06:29:12.500Z",
   "detection": "Lists script and HTML dependencies for each main script.",
   "utility_root": "npc_util/common/1.0.0",
   "main_scripts": [
