@@ -8,6 +8,13 @@ var StarterSelectEditorModule = (function(){
   var LIST_SIZE = 9
   var PICK_SIZE = 9
   var BG_TEXTURE = "minecraft:textures/gui/options_background.png"
+  var FLYOUT_TEXTURE = "customnpcs:textures/gui/standardbg.png"
+  var TEXT_COLOR = 0xF2F6FF
+  var LINE_COLOR = 0x6F86A8
+  var FLYOUT_W = 286
+  var FLYOUT_H = 310
+  var FLYOUT_X = Math.floor((GUI_W - FLYOUT_W) / 2)
+  var FLYOUT_Y = Math.floor((GUI_H - FLYOUT_H) / 2)
   var sessions = {}
 
   var TEMP = {
@@ -70,13 +77,16 @@ var StarterSelectEditorModule = (function(){
     TXT_EV_SPATK:243,
     TXT_EV_SPDEF:244,
     TXT_EV_SPEED:245,
-    TXT_PICK_SEARCH:300,
-    BTN_PICK_APPLY_SEARCH:301,
-    BTN_PICK_PREV:302,
-    BTN_PICK_NEXT:303,
-    BTN_PICK_CANCEL:304,
-    BTN_PICK_ROW_START:400,
+    BTN_MODAL_BLOCKER:5000,
+    FLYOUT_BG_BASE:5001,
+    TXT_PICK_SEARCH:6000,
+    BTN_PICK_APPLY_SEARCH:6001,
+    BTN_PICK_PREV:6002,
+    BTN_PICK_NEXT:6003,
+    BTN_PICK_CANCEL:6004,
+    BTN_PICK_ROW_START:6100,
     BG_BASE:1,
+    LINE_BASE:700,
     LABEL_BASE:1000
   }
 
@@ -404,9 +414,20 @@ var StarterSelectEditorModule = (function(){
     try{ if(typeof g.setBackground === "function") g.setBackground(BG_TEXTURE) }catch(err1){}
   }
 
-  function addTexturedRect(session, id, x, y, w, h){
+  function addTexturedRectWithTexture(session, id, texture, x, y, w, h){
     try{
-      session.gui.addTexturedRect(id, BG_TEXTURE, x, y, w, h, 0, 0)
+      session.gui.addTexturedRect(id, texture, x, y, w, h, 0, 0)
+      track(session, id)
+    }catch(err){}
+  }
+
+  function addTexturedRect(session, id, x, y, w, h){
+    addTexturedRectWithTexture(session, id, BG_TEXTURE, x, y, w, h)
+  }
+
+  function addLine(session, id, x1, y1, x2, y2){
+    try{
+      session.gui.addColoredLine(id, x1, y1, x2, y2, LINE_COLOR, 1.0)
       track(session, id)
     }catch(err){}
   }
@@ -415,19 +436,41 @@ var StarterSelectEditorModule = (function(){
     addTexturedRect(session, ID.BG_BASE, 0, 0, GUI_W, GUI_H)
     addTexturedRect(session, ID.BG_BASE + 1, 6, 36, 154, 314)
     addTexturedRect(session, ID.BG_BASE + 2, 166, 36, 446, 314)
-    if(session.flyoutOpen) addTexturedRect(session, ID.BG_BASE + 3, 356, 58, 248, 284)
+    addLine(session, ID.LINE_BASE, 164, 38, 164, 346)
+    addLine(session, ID.LINE_BASE + 1, 170, 62, 604, 62)
+    addLine(session, ID.LINE_BASE + 2, 170, 346, 604, 346)
   }
 
   function addLabel(session, lidBox, text, x, y, w, h){
-    session.gui.addLabel(lidBox.id, String(text), x, y, w, h)
+    var l = session.gui.addLabel(lidBox.id, String(text), x, y, w, h)
+    try{ if(l && typeof l.setColor === "function") l.setColor(TEXT_COLOR) }catch(err){}
     track(session, lidBox.id)
     lidBox.id++
+  }
+
+  function labelWidth(text){
+    var s = String(text || "")
+    var w = 0
+    var i
+    for(i = 0; i < s.length; i++) w += s.charCodeAt(i) > 127 ? 9 : 6
+    return w
+  }
+
+  function fitButtonWidth(text, minW, maxW){
+    var w = labelWidth(text) + 24
+    if(w < minW) w = minW
+    if(maxW && w > maxW) w = maxW
+    return w
   }
 
   function addButton(session, id, text, x, y, w, h){
     var b = session.gui.addButton(id, String(text), x, y, w, h)
     track(session, id)
     return b
+  }
+
+  function addFitButton(session, id, text, x, y, minW, maxW, h){
+    return addButton(session, id, text, x, y, fitButtonWidth(text, minW, maxW), h)
   }
 
   function addFlatButton(session, id, text, x, y, w, h){
@@ -441,9 +484,14 @@ var StarterSelectEditorModule = (function(){
     return b
   }
 
+  function addFlatFitButton(session, id, text, x, y, minW, maxW, h){
+    return addFlatButton(session, id, text, x, y, fitButtonWidth(text, minW, maxW), h)
+  }
+
   function addTextField(session, id, x, y, w, h, value){
     var f = session.gui.addTextField(id, x, y, w, h)
     track(session, id)
+    try{ if(f && typeof f.setColor === "function") f.setColor(TEXT_COLOR) }catch(err){}
     setText(f, value)
     return f
   }
@@ -539,7 +587,7 @@ var StarterSelectEditorModule = (function(){
     for(i = 0; i < LIST_SIZE; i++){
       choice = list[start + i]
       rowLabel = choice ? ((start + i === session.index ? "> " : "  ") + cap(choice.species || choice.id || "pokemon")) : "  -"
-      addFlatButton(session, ID.BTN_ROW_START + i, rowLabel, 12, 64 + i * 20, 140, 16)
+      addFlatFitButton(session, ID.BTN_ROW_START + i, rowLabel, 12, 64 + i * 20, 28, 140, 16)
     }
     addButton(session, ID.BTN_PREV, "<", 12, 250, 34, 18)
     addButton(session, ID.BTN_NEXT, ">", 50, 250, 34, 18)
@@ -547,11 +595,13 @@ var StarterSelectEditorModule = (function(){
     addButton(session, ID.BTN_DUP, tr(session, "starter_editor.duplicate", "Duplicate"), 84, 278, 68, 20)
     addButton(session, ID.BTN_REMOVE, tr(session, "starter_editor.remove", "Remove"), 12, 302, 140, 20)
 
+    x = 170
     for(i = 0; i < CATEGORIES.length; i++){
       cat = CATEGORIES[i]
-      x = 170 + i * 78
       rowLabel = categoryLabel(session, cat.id, cat.fallback)
-      addButton(session, ID.BTN_CAT_BASE + i, (session.category === cat.id ? "[" + rowLabel + "]" : rowLabel), x, 38, 72, 18)
+      rowLabel = session.category === cat.id ? "[" + rowLabel + "]" : rowLabel
+      addButton(session, ID.BTN_CAT_BASE + i, rowLabel, x, 38, fitButtonWidth(rowLabel, 46, 150), 18)
+      x += fitButtonWidth(rowLabel, 46, 150) + 8
     }
     addLabel(session, lid, categoryLabel(session, session.category, "Settings"), 170, 66, 180, 12)
 
@@ -715,29 +765,34 @@ var StarterSelectEditorModule = (function(){
   }
 
   function renderFlyout(player, session){
-    var lid, items, start, i, value, label, current, x, y
+    var lid, items, start, i, value, label, current, x, y, rowW
     items = pickerItems(session)
     if(session.pickerPage < 0) session.pickerPage = 0
     if(session.pickerPage * PICK_SIZE >= items.length) session.pickerPage = Math.max(0, Math.floor((items.length - 1) / PICK_SIZE))
     start = session.pickerPage * PICK_SIZE
     current = currentPickerValue(session)
-    lid = { id:ID.LABEL_BASE + 600 }
-    x = 368
-    y = 70
-    addLabel(session, lid, tr(session, "starter_editor.select", "Select") + ": " + pickerTitle(session), x, y, 180, 12)
-    addButton(session, ID.BTN_PICK_CANCEL, tr(session, "npc_editor.cancel", "Cancel"), x + 170, y - 4, 58, 18)
-    addLabel(session, lid, tr(session, "starter_editor.picker_current", "Current: {value}", { value:optionLabel(session, current) }), x, y + 18, 210, 12)
-    addTextField(session, ID.TXT_PICK_SEARCH, x, y + 42, 142, 18, session.pickerSearch || "")
-    addButton(session, ID.BTN_PICK_APPLY_SEARCH, tr(session, "npc_editor.apply", "Apply"), x + 148, y + 42, 58, 18)
+    lid = { id:ID.LABEL_BASE + 6000 }
+    x = FLYOUT_X + 16
+    y = FLYOUT_Y + 14
+    addFlatButton(session, ID.BTN_MODAL_BLOCKER, "", 0, 0, GUI_W, GUI_H)
+    addTexturedRectWithTexture(session, ID.FLYOUT_BG_BASE, FLYOUT_TEXTURE, FLYOUT_X, FLYOUT_Y, FLYOUT_W, FLYOUT_H)
+    addLine(session, ID.FLYOUT_BG_BASE + 1, FLYOUT_X + 12, y + 30, FLYOUT_X + FLYOUT_W - 12, y + 30)
+    addLine(session, ID.FLYOUT_BG_BASE + 2, FLYOUT_X + 12, y + 82, FLYOUT_X + FLYOUT_W - 12, y + 82)
+    addLabel(session, lid, tr(session, "starter_editor.select", "Select") + ": " + pickerTitle(session), x, y, 170, 12)
+    addFitButton(session, ID.BTN_PICK_CANCEL, tr(session, "npc_editor.cancel", "Cancel"), FLYOUT_X + FLYOUT_W - 76, y - 4, 56, 78, 18)
+    addLabel(session, lid, tr(session, "starter_editor.picker_current", "Current: {value}", { value:optionLabel(session, current) }), x, y + 20, 210, 12)
+    addTextField(session, ID.TXT_PICK_SEARCH, x, y + 48, 170, 18, session.pickerSearch || "")
+    addFitButton(session, ID.BTN_PICK_APPLY_SEARCH, tr(session, "npc_editor.apply", "Apply"), x + 176, y + 48, 54, 76, 18)
     for(i = 0; i < PICK_SIZE; i++){
       value = items[start + i]
       label = value == null ? "-" : optionLabel(session, value)
       if(value != null && String(value) === String(current)) label = "> " + label
-      addFlatButton(session, ID.BTN_PICK_ROW_START + i, label, x, y + 72 + i * 20, 206, 16)
+      rowW = fitButtonWidth(label, 34, FLYOUT_W - 44)
+      addFlatButton(session, ID.BTN_PICK_ROW_START + i, label, x, y + 92 + i * 20, rowW, 16)
     }
-    addButton(session, ID.BTN_PICK_PREV, "<", x, y + 258, 34, 18)
-    addButton(session, ID.BTN_PICK_NEXT, ">", x + 38, y + 258, 34, 18)
-    addLabel(session, lid, String(items.length) + " / " + String(session.pickerPage + 1), x + 84, y + 262, 90, 12)
+    addButton(session, ID.BTN_PICK_PREV, "<", x, y + 274, 34, 18)
+    addButton(session, ID.BTN_PICK_NEXT, ">", x + 38, y + 274, 34, 18)
+    addLabel(session, lid, String(items.length) + " / " + String(session.pickerPage + 1), x + 86, y + 278, 90, 12)
   }
 
   function openPicker(player, session, kind, target){
@@ -828,6 +883,7 @@ var StarterSelectEditorModule = (function(){
   function handleFlyoutButton(e, session){
     var items, idx
     if(!session.flyoutOpen) return false
+    if(e.buttonId === ID.BTN_MODAL_BLOCKER) return true
     if(e.buttonId === ID.BTN_PICK_CANCEL){
       session.flyoutOpen = false
       redraw(e.player, session, false)
@@ -868,6 +924,7 @@ var StarterSelectEditorModule = (function(){
     var list, idx, copy, c, i
     if(!session || !e.gui || e.gui.getID() !== GUI_ID) return
     if(handleFlyoutButton(e, session)) return
+    if(session.flyoutOpen) return
     gatherEditorFields(e, session)
     list = choices(session)
     for(i = 0; i < CATEGORIES.length; i++){
