@@ -76,7 +76,7 @@ var StarterSelectEditorModule = (function(){
     BTN_PICK_NEXT:303,
     BTN_PICK_CANCEL:304,
     BTN_PICK_ROW_START:400,
-    BG_BASE:9000,
+    BG_BASE:1,
     LABEL_BASE:1000
   }
 
