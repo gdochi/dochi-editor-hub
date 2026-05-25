@@ -40,7 +40,7 @@
     },
     {
       "source": "html/select_starting.html",
-      "install_as": "addon_select_starting/select_starting.html",
+      "install_as": "dc_util/select_starting.html",
       "type": "html",
       "dependencies": []
     },

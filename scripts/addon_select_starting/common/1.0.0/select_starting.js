@@ -4,14 +4,14 @@ var StarterSelectPokemonSpecies = Java.type("com.cobblemon.mod.common.api.pokemo
 var DcStarterSelectConfig = {
   enabled:true,
   starterJsonPath:"sample_starters.json",
-  htmlPath:"html/addon_select_starting/select_starting.html",
+  htmlPath:"html/dc_util/select_starting.html",
   commandName:"pokegiveother",
   directInteractWhenDialogue:false
 }
 
 var StarterSelectionModule = (function(){
   var OVERLAY_NAME = "starter_selection"
-  var OVERLAY_HTML = "html/addon_select_starting/select_starting.html"
+  var OVERLAY_HTML = "html/dc_util/select_starting.html"
   var DEFAULT_POKEMON = "sylveon"
   var DEFAULT_LEVEL = 5
   var DIRECT_PATH_KEY = "dc_starter_json_path"

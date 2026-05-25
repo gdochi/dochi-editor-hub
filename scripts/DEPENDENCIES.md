@@ -1,6 +1,6 @@
 # Dochi Script Dependencies
 
-- Generated: `2026-05-25T02:17:32.188Z`
+- Generated: `2026-05-25T02:46:55.205Z`
 - Utility root: `npc_util/common/1.0.0`
 - Main scripts: `10`
 
