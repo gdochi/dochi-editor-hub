@@ -423,6 +423,7 @@ var ShopItemEditorModule = (function(){
       name:"NPC Shop Item Editor",
       description:"Edit selected shop JSON item slots, price, currency, base stock, and restock ticks in-game.",
       targetPrefix:"dc_shop",
+      customGuiId:GUI_ID,
       open:open,
       customGuiButton:handleButton,
       customGuiClosed:handleClosed

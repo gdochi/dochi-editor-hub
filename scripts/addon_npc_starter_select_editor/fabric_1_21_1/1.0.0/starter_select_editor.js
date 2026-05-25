@@ -1118,6 +1118,7 @@ var StarterSelectEditorModule = (function(){
       description:"Edit the selected starter Pokemon JSON list for dc_starter NPCs.",
       targetPrefix:"dc_starter",
       defaultEnabled:true,
+      customGuiId:GUI_ID,
       editLabel:"Edit Pokemon",
       open:open,
       customGuiButton:handleButton,
@@ -1142,33 +1143,3 @@ var StarterSelectEditorModule = (function(){
     customGuiClosed:handleClosed
   }
 })()
-
-var __dcStarterPrevCustomGuiButton = typeof customGuiButton === "function" && customGuiButton.__dcStarterDirect !== true ? customGuiButton : null
-var __dcStarterPrevCustomGuiClosed = typeof customGuiClosed === "function" && customGuiClosed.__dcStarterDirect !== true ? customGuiClosed : null
-
-var customGuiButton = function(e){
-  if(StarterSelectEditorModule.isStarterGuiEvent(e)){
-    try{
-      StarterSelectEditorModule.customGuiButton(e)
-    }catch(err){
-      try{ if(e && e.player) e.player.message("Starter editor button error: " + String(err)) }catch(ignore){}
-    }
-    return
-  }
-  if(typeof __dcStarterPrevCustomGuiButton === "function") __dcStarterPrevCustomGuiButton(e)
-}
-
-var customGuiClosed = function(e){
-  if(StarterSelectEditorModule.isStarterGuiEvent(e)){
-    try{
-      StarterSelectEditorModule.customGuiClosed(e)
-    }catch(err){
-      try{ if(e && e.player) e.player.message("Starter editor close error: " + String(err)) }catch(ignore){}
-    }
-    return
-  }
-  if(typeof __dcStarterPrevCustomGuiClosed === "function") __dcStarterPrevCustomGuiClosed(e)
-}
-
-try{ customGuiButton.__dcStarterDirect = true }catch(err0){}
-try{ customGuiClosed.__dcStarterDirect = true }catch(err1){}
