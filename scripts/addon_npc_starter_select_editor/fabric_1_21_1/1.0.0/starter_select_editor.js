@@ -105,7 +105,7 @@ var StarterSelectEditorModule = (function(){
   ]
 
   var COBBLEMON_CACHE = null
-  var DEBUG_MESSAGES = true
+  var DEBUG_MESSAGES = false
   var LIVE_SESSIONS = {}
 
   function key(player){
