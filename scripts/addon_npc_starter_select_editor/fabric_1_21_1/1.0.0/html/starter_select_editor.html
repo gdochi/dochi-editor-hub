@@ -382,6 +382,7 @@ function sendEvt(name,data){
   return false
 }
 function tryClientClose(){
+  try{if(window.cnpc&&typeof window.cnpc.close==="function"){window.cnpc.close();return true}}catch(errClose){}
   try{if(window.cnpc&&typeof window.cnpc.closeHtmlGui==="function"){window.cnpc.closeHtmlGui();return true}}catch(err0){}
   try{if(window.cnpc&&typeof window.cnpc.closeGui==="function"){window.cnpc.closeGui();return true}}catch(err1){}
   try{if(window.close){window.close();return true}}catch(err2){}
@@ -705,6 +706,7 @@ function save(){
 function back(){
   setStatus(tr("starter_editor.closing","Closing..."),"")
   sendEvt("starterEditorBack",{})
+  window.setTimeout(tryClientClose,500)
 }
 function closeEditor(){
   setStatus(tr("starter_editor.closing","Closing..."),"")

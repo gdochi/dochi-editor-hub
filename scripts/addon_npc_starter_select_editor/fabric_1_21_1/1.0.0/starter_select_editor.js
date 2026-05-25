@@ -348,6 +348,12 @@ var StarterSelectEditorModule = (function(){
       return false
     }
     payload = stringifyBrowserPayload(buildInitData(session, player))
+    if(ctx && ctx.event){
+      try{
+        cnpcext.openHtmlGui(ctx.event, HTML_PATH, 0, 0, payload)
+        return true
+      }catch(errEventOpen){}
+    }
     cnpcext.openHtmlGui(player, HTML_PATH, 0, 0, payload)
     return true
   }

@@ -426,7 +426,12 @@ var StarterSelectionModule = (function(){
         config:cfg,
         source:String(opts.source || "npc_interact")
       }
-      handle = cnpcext.openHtmlGui(ctx.player, String(opts.htmlPath || opts.overlayHtml || DcStarterSelectConfig.htmlPath || OVERLAY_HTML), 0.5, 0.5, initData)
+      if(ctx.event){
+        try{
+          handle = cnpcext.openHtmlGui(ctx.event, String(opts.htmlPath || opts.overlayHtml || DcStarterSelectConfig.htmlPath || OVERLAY_HTML), 0.5, 0.5, initData)
+        }catch(errEventOpen){}
+      }
+      if(handle == null) handle = cnpcext.openHtmlGui(ctx.player, String(opts.htmlPath || opts.overlayHtml || DcStarterSelectConfig.htmlPath || OVERLAY_HTML), 0.5, 0.5, initData)
       if(cfg.choices.length === 1) playCry(ctx.player, cfg.choices[0].species, 0.6)
       return handle
     }catch(err){

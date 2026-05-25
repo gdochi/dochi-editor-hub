@@ -564,7 +564,7 @@ if(!npc){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",err
 if(!addon.open){pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",error:"Addon has no open handler: "+id});return;}
 setNpcAddonEditContext(e.player,id,npc,jsonPath,prefix);
 try{
-res=addon.open({player:e.player,npc:npc,uuid:uuid,jsonPath:jsonPath,prefix:prefix,addonId:id});
+res=addon.open({player:e.player,npc:npc,event:e,uuid:uuid,jsonPath:jsonPath,prefix:prefix,addonId:id});
 if(res===false)pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",id:id,error:"Addon open returned false."});
 }catch(err){
 pushBrowser(e.player,"npcAddonActionResult",{ok:false,action:"open",id:id,error:String(err)});
