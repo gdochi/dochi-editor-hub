@@ -324,6 +324,8 @@ var StarterSelectEditorModule = (function(){
       name:"Starter Pokemon List Editor",
       description:"Edit the selected starter Pokemon JSON list for dc_starter NPCs.",
       targetPrefix:"dc_starter",
+      defaultEnabled:true,
+      editLabel:"Edit Pokemon",
       open:open,
       customGuiButton:handleButton,
       customGuiClosed:handleClosed

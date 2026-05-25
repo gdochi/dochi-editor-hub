@@ -462,6 +462,8 @@ id:id,
 name:String(spec.name||id),
 description:String(spec.description||""),
 targetPrefix:String(spec.targetPrefix||spec.prefix||""),
+defaultEnabled:spec.defaultEnabled===true,
+editLabel:String(spec.editLabel||""),
 open:typeof spec.open==="function"?spec.open:null,
 customGuiButton:typeof spec.customGuiButton==="function"?spec.customGuiButton:null,
 customGuiSlot:typeof spec.customGuiSlot==="function"?spec.customGuiSlot:null,
@@ -499,7 +501,8 @@ for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++)if(String(DC_NPC_EDITOR_ADDONS[i].id||
 return null;
 }
 function getNpcEditorAddonEnabled(player,id){
-var store=player.getStoreddata(),v=String(store.get(CFG.ADDON_ENABLED_PREFIX+String(id||""))||"");
+var addon=getNpcEditorAddon(id),store=player.getStoreddata(),raw=store.get(CFG.ADDON_ENABLED_PREFIX+String(id||"")),v=String(raw||"");
+if(raw==null||v==="")return !!(addon&&addon.defaultEnabled===true);
 return v==="1"||v==="true";
 }
 function setNpcEditorAddonEnabled(player,id,enabled){
@@ -512,7 +515,7 @@ ensureNpcEditorAddonArrays();
 for(i=0;i<DC_NPC_EDITOR_ADDONS.length;i++){
 a=DC_NPC_EDITOR_ADDONS[i];
 if(!a||!a.id)continue;
-list.push({id:a.id,name:a.name,description:a.description,targetPrefix:a.targetPrefix,enabled:getNpcEditorAddonEnabled(player,a.id)});
+list.push({id:a.id,name:a.name,description:a.description,targetPrefix:a.targetPrefix,editLabel:a.editLabel,enabled:getNpcEditorAddonEnabled(player,a.id)});
 }
 return list;
 }
