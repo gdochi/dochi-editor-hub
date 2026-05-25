@@ -8,13 +8,13 @@
   "entry": "starter_select_editor.js",
   "player_scripts": [
     {
-      "path": "starter_select_editor.js"
+      "path": "addon/starter_select_editor.js"
     }
   ],
   "files": [
     {
       "source": "starter_select_editor.js",
-      "install_as": "starter_select_editor.js",
+      "install_as": "addon/starter_select_editor.js",
       "type": "script",
       "dependencies": [
         {

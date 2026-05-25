@@ -9,7 +9,7 @@
   "files": [
     {
       "source": "select_starting.js",
-      "install_as": "select_starting.js",
+      "install_as": "addon/select_starting.js",
       "type": "script",
       "dependencies": [
         {

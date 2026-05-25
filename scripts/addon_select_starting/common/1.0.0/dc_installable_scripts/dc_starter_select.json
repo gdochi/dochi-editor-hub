@@ -1,7 +1,7 @@
 {
   "id": "dc_starter_select",
   "name": "Starter Pokemon Selector",
-  "path": "addon_select_starting/select_starting.js",
+  "path": "addon/select_starting.js",
   "prefix": "dc_starter",
   "requires_json": true,
   "json_root": "dc_data/dc_starters",

@@ -143,6 +143,40 @@ var DochiScriptLibraryIngameManager = (function(){
     return new File("customnpcs").getCanonicalFile()
   }
 
+  function saveCustomNpcsRoot(){
+    var candidates = ["saves", "minecraft/saves", "./saves", "./minecraft/saves"]
+    var best = null
+    var bestScore = -1
+    var i, savesDir, worlds, j, worldDir, customDir, htmlDir, score
+    for(i = 0; i < candidates.length; i++){
+      savesDir = new File(candidates[i])
+      if(!savesDir.exists() || !savesDir.isDirectory()) continue
+      worlds = savesDir.listFiles()
+      if(!worlds) continue
+      for(j = 0; j < worlds.length; j++){
+        worldDir = worlds[j]
+        if(!worldDir || !worldDir.isDirectory()) continue
+        customDir = new File(worldDir, "customnpcs")
+        if(!customDir.exists() && !worldDir.exists()) continue
+        htmlDir = new File(customDir, "scripts/ecmascript/html")
+        score = (customDir.exists() ? customDir.lastModified() : worldDir.lastModified())
+        if(htmlDir.exists()) score += 1000000000000
+        if(score > bestScore){
+          bestScore = score
+          best = customDir
+        }
+      }
+    }
+    if(best) return best.getCanonicalFile()
+    throw new Error("HTML install requires a world save customnpcs folder")
+  }
+
+  function targetRootFor(relativePath){
+    var rel = normalizeTargetRel(relativePath)
+    if(rel === "scripts/ecmascript/html" || startsWith(rel, "scripts/ecmascript/html/")) return saveCustomNpcsRoot()
+    return customNpcsRoot()
+  }
+
   function isInside(file, root){
     var f = String(file.getCanonicalFile().getPath())
     var r = String(root.getCanonicalFile().getPath())
@@ -150,7 +184,7 @@ var DochiScriptLibraryIngameManager = (function(){
   }
 
   function resolveTargetFile(relativePath){
-    var root = customNpcsRoot()
+    var root = targetRootFor(relativePath)
     var rel = normalizeTargetRel(relativePath).replace(/\//g, File.separator)
     var file = new File(root, rel).getCanonicalFile()
     if(!isInside(file, root)) throw new Error("Target escapes customnpcs: " + relativePath)

@@ -1695,8 +1695,7 @@ for(i=0;i<baseCandidates.length;i++)pushDirIfExists(out,seen,baseCandidates[i]);
 return out;
 }
 function findHtmlRoots(){
-var File=Java.type("java.io.File"),out=[],seen={},baseCandidates=[new File("customnpcs/scripts/ecmascript/html"),new File("minecraft/customnpcs/scripts/ecmascript/html"),new File("./customnpcs/scripts/ecmascript/html"),new File("./minecraft/customnpcs/scripts/ecmascript/html")],i;
-for(i=0;i<baseCandidates.length;i++)pushDirIfExists(out,seen,baseCandidates[i]);
+var File=Java.type("java.io.File"),out=[],seen={};
 pushSaveHtmlRoots(out,seen,new File("saves"));
 pushSaveHtmlRoots(out,seen,new File("minecraft/saves"));
 pushSaveHtmlRoots(out,seen,new File("./saves"));
